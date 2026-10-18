@@ -4186,3 +4186,93 @@ curves	Smooth	Haluskan
 	Stroke preview	Pratinjau sapuan
 	Scratch pad	Papan coret
 	Icon library	Pustaka ikon
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	Aktifkan Seleksi Lokal
+	Add Curve Key	Tambah Kunci Kurva
+	Add Filter…	Tambah Filter…
+	Add Local Selection	Tambah Seleksi Lokal
+	Add Scene	Tambah Adegan
+	Add Transform Key	Tambah Kunci Transformasi
+	Alpha into Mask	Alfa ke Mask
+	Attach Audio…	Lampirkan Audio…
+	Backup count	Jumlah cadangan
+	Capture Snapshot	Ambil Snapshot
+	Change Clone Source…	Ubah Sumber Klon…
+	Clone Keyframe	Klon Keyframe
+	Clone Layer	Klon Layer
+	Clones Array…	Larik Klon…
+	Colorize Mask Properties…	Properti Mask Pewarnaan…
+	Convert	Konversi
+	Convert Group to Animated Layer	Konversi Grup ke Layer Animasi
+	Convert to Paint Layer	Konversi ke Layer Lukis
+	Copy Keyframe	Salin Keyframe
+	Curved	Melengkung
+	Drag	Seret
+	Duplicate Keyframe	Duplikat Keyframe
+	Edit Generated Fill…	Edit Isian Terbangkitkan…
+	Edit Transform Mask…	Edit Mask Transformasi…
+	Ellipse	Elips
+	Export Storyboard…	Ekspor Storyboard…
+	Export Timelapse…	Ekspor Timelapse…
+	File Layer Properties…	Properti Layer Berkas…
+	File Layer…	Layer Berkas…
+	Filter Layer…	Layer Filter…
+	Filter Mask…	Mask Filter…
+	Frame rate limit	Batas laju frame
+	Frames	Frame
+	Freeze Live Layer	Bekukan Layer Langsung
+	High quality	Kualitas tinggi
+	Import Animation Frames…	Impor Frame Animasi…
+	Import Image as…	Impor Gambar sebagai…
+	Import Video Animation…	Impor Animasi Video…
+	Input controllers	Pengontrol masukan
+	Input devices	Perangkat masukan
+	Invisible	Tak Terlihat
+	Label	Label
+	Layer Color Space…	Ruang Warna Layer…
+	Layers by State	Layer menurut Status
+	Local Selection	Seleksi Lokal
+	Locked	Terkunci
+	Mass	Massa
+	Move Clone…	Pindahkan Klon…
+	Move Keyframe	Pindahkan Keyframe
+	Multigrid…	Multigrid…
+	Mute Audio	Bisukan Audio
+	Nearest	Terdekat
+	New Keyframe	Keyframe Baru
+	Onion Skin…	Onion Skin…
+	Pan	Geser
+	Pixel grid threshold	Ambang kisi piksel
+	Profile	Profil
+	Reload File Layer	Muat Ulang Layer Berkas
+	Remove Audio	Hapus Audio
+	Remove Curve Key	Hapus Kunci Kurva
+	Remove Filter	Hapus Filter
+	Remove Keyframe	Hapus Keyframe
+	Remove Local Selection	Hapus Seleksi Lokal
+	Remove Transform Key	Hapus Kunci Transformasi
+	Remove Transform Mask	Hapus Mask Transformasi
+	Render Animation…	Render Animasi…
+	Save Merged…	Simpan Hasil Gabungan…
+	Scaling filter	Filter penskalaan
+	Screentone…	Screentone…
+	Script…	Skrip…
+	Set Filter…	Atur Filter…
+	Shear	Geser Miring
+	Show Output	Tampilkan Keluaran
+	Split Alpha	Pisahkan Alfa
+	Start Recording	Mulai Merekam
+	Stop Recording	Berhenti Merekam
+	Swap directory	Direktori swap
+	Ten scripts	Sepuluh skrip
+	Threads	Thread
+	Transform Mask…	Mask Transformasi…
+	Unlocked	Tidak Terkunci
+	Update Local Selection	Perbarui Seleksi Lokal
+	Write as Alpha	Tulis sebagai Alfa
+	to File Layer…	ke Layer Berkas…
+	to Filter Mask…	ke Mask Filter…
+	to Paint Layer	ke Layer Lukis
+	to Selection Mask	ke Mask Seleksi
+	to Transparency Mask	ke Mask Transparansi

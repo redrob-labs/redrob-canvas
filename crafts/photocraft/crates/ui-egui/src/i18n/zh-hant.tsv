@@ -3815,3 +3815,94 @@ curves	Smooth	平滑
 	Stroke preview	筆畫預覽
 	Scratch pad	試筆板
 	Icon library	圖示庫
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	啟用局部選取範圍
+	Add Curve Key	新增曲線關鍵點
+	Add Filter…	新增濾鏡…
+	Add Local Selection	新增局部選取範圍
+	Add Scene	新增場景
+	Add Transform Key	新增變形關鍵影格
+	Alpha into Mask	Alpha 轉入遮色片
+	Attach Audio…	附加音訊…
+	Backup count	備份數量
+	Capture Snapshot	擷取快照
+	Change Clone Source…	變更仿製來源…
+	Clone Keyframe	複製關鍵影格為副本
+	Clone Layer	複製圖層為副本
+	Clones Array…	複製陣列…
+	Colorize Mask Properties…	著色遮色片屬性…
+	Convert	轉換
+	Convert Group to Animated Layer	將群組轉換為動畫圖層
+	Convert to Paint Layer	轉換為繪圖圖層
+	Copy Keyframe	拷貝關鍵影格
+	Curved	曲線
+	Drag	拖曳
+	Duplicate Keyframe	重製關鍵影格
+	Edit Generated Fill…	編輯生成填色…
+	Edit Transform Mask…	編輯變形遮色片…
+	Ellipse	橢圓
+	Export Storyboard…	匯出分鏡腳本…
+	Export Timelapse…	匯出縮時影片…
+	File Layer Properties…	檔案圖層屬性…
+	File Layer…	檔案圖層…
+	Filter Layer…	濾鏡圖層…
+	Filter Mask…	濾鏡遮色片…
+	Frame rate limit	影格率限制
+	Frames	影格
+	Freeze Live Layer	凍結即時圖層
+	High quality	高品質
+	Import Animation Frames…	匯入動畫影格…
+	Import Image as…	將影像匯入為…
+	Import Video Animation…	匯入視訊動畫…
+	Input controllers	輸入控制器
+	Input devices	輸入裝置
+	Invisible	不可見
+	Label	標籤
+	Layer Color Space…	圖層色彩空間…
+	Layers by State	依狀態列出圖層
+	Local Selection	局部選取範圍
+	Locked	已鎖定
+	Mass	質量
+	Move Clone…	移動仿製…
+	Move Keyframe	移動關鍵影格
+	Multigrid…	多重網格…
+	Mute Audio	靜音音訊
+	Nearest	最近鄰
+	New Keyframe	新增關鍵影格
+	Onion Skin…	洋蔥皮…
+	Pan	平移
+	Pixel	像素
+	Pixel grid threshold	像素格線臨界值
+	Profile	描述檔
+	Reload File Layer	重新載入檔案圖層
+	Remove Audio	移除音訊
+	Remove Curve Key	移除曲線關鍵點
+	Remove Filter	移除濾鏡
+	Remove Keyframe	移除關鍵影格
+	Remove Local Selection	移除局部選取範圍
+	Remove Transform Key	移除變形關鍵影格
+	Remove Transform Mask	移除變形遮色片
+	Render Animation…	演算動畫…
+	Save Merged…	合併後儲存…
+	Scaling filter	縮放濾鏡
+	Screentone…	網點…
+	Script…	指令碼…
+	Set Filter…	設定濾鏡…
+	Shear	切變
+	Show Output	顯示輸出
+	Split Alpha	分離 Alpha
+	Start Recording	開始錄製
+	Stop Recording	停止錄製
+	Swap directory	交換目錄
+	Ten scripts	十個指令碼
+	Threads	執行緒數
+	Transform Mask…	變形遮色片…
+	Unlocked	未鎖定
+	Update Local Selection	更新局部選取範圍
+	Write as Alpha	寫入為 Alpha
+	to File Layer…	轉為檔案圖層…
+	to Filter Mask…	轉為濾鏡遮色片…
+	to Paint Layer	轉為繪圖圖層
+	to Selection Mask	轉為選取範圍遮色片
+	to Transparency Mask	轉為透明度遮色片

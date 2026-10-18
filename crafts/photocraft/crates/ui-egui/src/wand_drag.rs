@@ -45,7 +45,8 @@ fn run(app: &mut PhotocraftApp, d: &WandDrag) {
 pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers) -> bool {
     match ev {
         ToolEvent::Down { x, y, .. } => {
-            if app.ui.tool != Tool::MagicWand || app.drag.is_some() || app.session.active().is_none() {
+            // ⌘ with any tool is the Move tool (and a ⌘-drag over a guide moves the guide, #2690).
+            if app.ui.tool != Tool::MagicWand || mods.command || app.drag.is_some() || app.session.active().is_none() {
                 return false;
             }
             let n = PRESSES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

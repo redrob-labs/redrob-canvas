@@ -1055,7 +1055,7 @@ pub fn body(app: &mut PhotocraftApp, ui: &mut egui::Ui, f: &mut Map<String, Valu
     }
 }
 
-fn humanize(key: &str) -> String {
+pub(crate) fn humanize(key: &str) -> String {
     match key {
         "appearanceMode" => return "Appearance Mode".into(),
         "exrAcesCg" => return "Open color-less EXR as ACEScg".into(),
@@ -2364,6 +2364,13 @@ mod shortcut_set_tests;
 
 #[cfg(test)]
 mod tests {
+    /// The Preferences dialog's Apply button: the Brush options bar (above the dialog) has a Text
+    /// Tip row with an Apply of its own.
+    fn apply_button<'h>(h: &'h egui_kittest::Harness<'_, crate::PhotocraftApp>) -> egui_kittest::Node<'h> {
+        use egui_kittest::kittest::Queryable;
+        h.query_all_by_label("Apply").max_by(|a, b| a.rect().top().total_cmp(&b.rect().top())).expect("the dialog's Apply button")
+    }
+
     #[test]
     fn colour_preferences_take_a_typed_hex_value() {
         // #668: the canvas colour (and every colour preference) showed its hex but couldn't take one.
@@ -2753,7 +2760,7 @@ mod tests {
         h.run_steps(2);
         h.get_by_label("Sync with system").click();
         h.run_steps(2);
-        h.get_by_label("Apply").click();
+        apply_button(&h).click();
         h.run_steps(4);
         assert_eq!(h.state().session.prefs().interface.appearance_mode, AppearanceMode::Auto);
         assert_eq!(h.state().session.prefs().interface.dark_theme, interface.dark_theme);
@@ -2788,7 +2795,7 @@ mod tests {
         h.run_steps(2);
         h.get_by_label("Add to favorites: Classic").click();
         h.run_steps(2);
-        h.get_by_label("Apply").click();
+        apply_button(&h).click();
         h.run_steps(2);
         assert_eq!(h.state().session.prefs().interface.favorite_themes, vec![SavedTheme::Classic]);
         assert!(h.query_by_label("Remove from favorites: Classic").is_some());
@@ -3473,7 +3480,7 @@ mod tests {
             app
         });
         h.run_steps(4);
-        assert!(h.get_by_label("Apply").accesskit_node().is_disabled());
+        assert!(apply_button(&h).accesskit_node().is_disabled());
 
         let values = h.state_mut().ui.dialog_mut(id).unwrap().fields.get_mut("values").unwrap();
         values["interface"]["appearanceMode"] = json!("light");
@@ -3481,8 +3488,8 @@ mod tests {
         values["interface"]["uiFontSize"] = json!("large");
         values["performance"]["historyStates"] = json!(12);
         h.run_steps(2);
-        assert!(!h.get_by_label("Apply").accesskit_node().is_disabled());
-        h.get_by_label("Apply").click();
+        assert!(!apply_button(&h).accesskit_node().is_disabled());
+        apply_button(&h).click();
         h.run_steps(4);
 
         assert_eq!(h.state().session.prefs().performance.history_states, 12);
@@ -3492,7 +3499,7 @@ mod tests {
         let d = h.state().ui.dialogs.iter().find(|d| d.id == id).unwrap();
         assert_eq!(d.fields["section"], "interface");
         assert_eq!(d.fields["values"]["performance"]["historyStates"], 12);
-        assert!(h.get_by_label("Apply").accesskit_node().is_disabled());
+        assert!(apply_button(&h).accesskit_node().is_disabled());
         let saved: Value = serde_json::from_str(store.lock().unwrap().as_ref().unwrap()).unwrap();
         assert_eq!(saved["performance"]["historyStates"], 12);
         assert_eq!(saved["interface"]["appearanceMode"], "light");
@@ -3502,7 +3509,7 @@ mod tests {
         // Repeated Apply starts from the validated values, not the dialog's original snapshot.
         h.state_mut().ui.dialog_mut(id).unwrap().fields.get_mut("values").unwrap()["performance"]["historyStates"] = json!(22);
         h.run_steps(2);
-        h.get_by_label("Apply").click();
+        apply_button(&h).click();
         h.run_steps(4);
         assert_eq!(h.state().session.prefs().performance.history_states, 22);
         h.state_mut().ui.dialog_mut(id).unwrap().fields.get_mut("values").unwrap()["performance"]["historyStates"] = json!(33);
@@ -3544,7 +3551,7 @@ mod tests {
             assert_eq!(h.state().ui.dialogs.iter().find(|d| d.id == id).unwrap().fields["values"]["interface"]["systemTitleBar"], desired);
             assert_eq!(h.state().session.prefs().interface.system_title_bar, !desired, "the draft is not applied yet");
             h.get_by_label("Applies at next launch.");
-            h.get_by_label("Apply").click();
+            apply_button(&h).click();
             h.run_steps(4);
             assert_eq!(h.state().session.prefs().interface.system_title_bar, desired);
             assert_eq!(stored(&store)["interface"]["systemTitleBar"], desired);

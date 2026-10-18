@@ -218,10 +218,12 @@ fn grab_at(d: &mut Drag, p: [f64; 2], reach: f64) -> bool {
 }
 
 fn modifiers(app: &mut PhotocraftApp, mods: Modifiers) {
+    // Foreground Select: ⌥ marks background (foreground_select_ui), never straight segments.
+    let foreground_select = crate::foreground_select_ui::active(app);
     let Some(d) = app.drag.as_mut().filter(|d| owns(d.tool)) else { return };
     d.track(mods);
     // Free select: clicks are straight segments already, Alt only sets the intent at the press.
-    if d.lasso.as_ref().is_some_and(|l| l.free) {
+    if d.lasso.as_ref().is_some_and(|l| l.free) || foreground_select {
         return;
     }
     // Alt held before the initial press still means subtract, until released and pressed again.

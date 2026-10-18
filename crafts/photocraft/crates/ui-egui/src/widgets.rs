@@ -1381,6 +1381,42 @@ fn dropdown_with<T: PartialEq + Clone>(
     wheel: bool,
     translate: bool,
 ) -> (Vec<T>, Option<T>) {
+    dropdown_with_rows(ui, id, current, options, width, wheel, translate, &mut |ui, draw| {
+        for i in 0..options.len() {
+            draw(ui, i);
+        }
+        false
+    })
+}
+
+/// [`dropdown_wheel_hovered`] whose open list is laid out by `rows`: it is handed a `draw`
+/// that draws (and handles) option `i` of `options` as a row, and calls it in any order, with
+/// headers, separators or other widgets between (the Layers panel's grouped blend menu, with its
+/// favourites and families). An option may be drawn more than once. The wheel, the arrow keys and
+/// the typed letters still step through `options` in their order. `rows` returns whether the list
+/// stays open after a click inside it (a toggle on a row, not a choice).
+pub fn dropdown_grouped<T: PartialEq + Clone>(
+    ui: &mut Ui,
+    id: &str,
+    current: &mut T,
+    options: &[(T, &str)],
+    width: f32,
+    rows: &mut dyn FnMut(&mut Ui, &mut dyn FnMut(&mut Ui, usize)) -> bool,
+) -> (Vec<T>, Option<T>) {
+    dropdown_with_rows(ui, id, current, options, width, true, true, rows)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn dropdown_with_rows<T: PartialEq + Clone>(
+    ui: &mut Ui,
+    id: &str,
+    current: &mut T,
+    options: &[(T, &str)],
+    width: f32,
+    wheel: bool,
+    translate: bool,
+    rows: &mut dyn FnMut(&mut Ui, &mut dyn FnMut(&mut Ui, usize)) -> bool,
+) -> (Vec<T>, Option<T>) {
     let shown = |l: &str| if translate { tl!(l).to_string() } else { l.to_string() };
     let label = options.iter().find(|(v, _)| v == current).map(|(_, l)| shown(l)).unwrap_or_else(|| "—".into());
     let (mut chosen, mut hovered) = (Vec::new(), None);
@@ -1395,6 +1431,7 @@ fn dropdown_with<T: PartialEq + Clone>(
     // The list opens on the press: press, drag onto an option and release to choose it (#2735).
     let (press, close) = crate::press_menu::PressCombo::before(ui, id);
     let texts: Vec<String> = options.iter().map(|(_, l)| shown(l)).collect();
+    let mut keep_open = false;
     let response =
         egui::ComboBox::from_id_salt(id).selected_text(label).width(width).height(420.0).icon(chevron_icon).close_behavior(close).show_ui(ui, |ui| {
             fit_widest_option(ui, texts.iter().map(|l| l.as_str()));
@@ -1418,7 +1455,8 @@ fn dropdown_with<T: PartialEq + Clone>(
             // The row nearest the pointer, by its distance to each row.
             let pointer = ui.ctx().pointer_hover_pos().filter(|_| ui.rect_contains_pointer(ui.clip_rect()));
             let mut nearest: Option<(f32, &T)> = None;
-            for ((v, _), text) in options.iter().zip(texts.iter()) {
+            let mut draw = |ui: &mut Ui, i: usize| {
+                let Some(((v, _), text)) = options.get(i).zip(texts.get(i)) else { return };
                 let item = ui.selectable_label(v == current, text.as_str());
                 if reveal && v == current {
                     item.scroll_to_me(None);
@@ -1436,7 +1474,8 @@ fn dropdown_with<T: PartialEq + Clone>(
                     *current = v.clone();
                     chosen.push(v.clone());
                 }
-            }
+            };
+            keep_open = rows(ui, &mut draw);
             // Between two rows (item spacing) the pointer hovers neither; it is still over the list,
             // so keep previewing the nearest row instead of flashing the current value back (#2553).
             if hovered.is_none() {
@@ -1444,6 +1483,10 @@ fn dropdown_with<T: PartialEq + Clone>(
             }
         });
     press.after(&response.response);
+    // A click on a toggle inside the list (a favourite's star) is not a choice: the list stays.
+    if keep_open && ui.input(|i| i.pointer.any_click()) {
+        egui::Popup::open_id(ui.ctx(), egui::Popup::default_response_id(&response.response));
+    }
     if combo_box_arrow_keys(ui, &response.response, current, options) {
         chosen.push(current.clone());
     }

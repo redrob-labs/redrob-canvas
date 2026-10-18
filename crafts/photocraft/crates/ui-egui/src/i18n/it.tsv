@@ -5840,3 +5840,186 @@ shape	Appearance	Aspetto
 	Stroke preview	Anteprima tratto
 	Scratch pad	Blocco prove
 	Icon library	Libreria icone
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	Attiva selezione locale
+	Add Curve Key	Aggiungi chiave di curva
+	Add Filter…	Aggiungi filtro…
+	Add Local Selection	Aggiungi selezione locale
+	Add Scene	Aggiungi scena
+	Add Transform Key	Aggiungi chiave di trasformazione
+	Alpha into Mask	Alfa nella maschera
+	Attach Audio…	Allega audio…
+	Backup count	Numero di backup
+	Capture Snapshot	Acquisisci istantanea
+	Change Clone Source…	Cambia origine di clonazione…
+	Clone Keyframe	Clona fotogramma chiave
+	Clone Layer	Clona livello
+	Clones Array…	Matrice di cloni…
+	Colorize Mask Properties…	Proprietà della maschera di colorazione…
+	Convert Group to Animated Layer	Converti gruppo in livello animato
+	Convert to Paint Layer	Converti in livello di pittura
+	Copy Keyframe	Copia fotogramma chiave
+	Duplicate Keyframe	Duplica fotogramma chiave
+	Edit Generated Fill…	Modifica riempimento generato…
+	Edit Transform Mask…	Modifica maschera di trasformazione…
+	Export Storyboard…	Esporta storyboard…
+	Export Timelapse…	Esporta timelapse…
+	File Layer Properties…	Proprietà del livello file…
+	File Layer…	Livello file…
+	Filter Layer…	Livello filtro…
+	Filter Mask…	Maschera filtro…
+	Frame rate limit	Limite di fotogrammi al secondo
+	Freeze Live Layer	Congela livello dinamico
+	High quality	Alta qualità
+	Import Animation Frames…	Importa fotogrammi di animazione…
+	Import Image as…	Importa immagine come…
+	Import Video Animation…	Importa animazione video…
+	Input controllers	Controller di input
+	Input devices	Dispositivi di input
+	Invisible	Invisibile
+	Layer Color Space…	Spazio colore del livello…
+	Layers by State	Livelli per stato
+	Local Selection	Selezione locale
+	Move Clone…	Sposta clone…
+	Move Keyframe	Sposta fotogramma chiave
+	Multigrid…	Multigriglia…
+	Mute Audio	Silenzia audio
+	New Keyframe	Nuovo fotogramma chiave
+	Onion Skin…	Carta da lucido…
+	Pixel grid threshold	Soglia della griglia di pixel
+	Reload File Layer	Ricarica livello file
+	Remove Audio	Rimuovi audio
+	Remove Curve Key	Rimuovi chiave di curva
+	Remove Filter	Rimuovi filtro
+	Remove Keyframe	Rimuovi fotogramma chiave
+	Remove Local Selection	Rimuovi selezione locale
+	Remove Transform Key	Rimuovi chiave di trasformazione
+	Remove Transform Mask	Rimuovi maschera di trasformazione
+	Render Animation…	Renderizza animazione…
+	Save Merged…	Salva unito…
+	Scaling filter	Filtro di ridimensionamento
+	Screentone…	Retino…
+	Script…	Script…
+	Set Filter…	Imposta filtro…
+	Show Output	Mostra output
+	Split Alpha	Separa alfa
+	Start Recording	Avvia registrazione
+	Stop Recording	Interrompi registrazione
+	Swap directory	Cartella di swap
+	Ten scripts	Dieci script
+	Threads	Thread
+	Transform Mask…	Maschera di trasformazione…
+	Update Local Selection	Aggiorna selezione locale
+	Write as Alpha	Scrivi come alfa
+	to File Layer…	in livello file…
+	to Filter Mask…	in maschera filtro…
+	to Paint Layer	in livello di pittura
+	to Selection Mask	in maschera di selezione
+	to Transparency Mask	in maschera di trasparenza
+
+# v0.11 parity: generated filter option labels (GIMP / Krita filter parameters and choices)
+	Active Layer	Livello attivo
+	All Directions	Tutte le direzioni
+	Alpha Index	Indice alfa
+	Alpha Levels	Livelli alfa
+	Alpha Mode	Modalità alfa
+	Alpha Steps	Passi alfa
+	Alpha Threshold	Soglia alfa
+	Beta	Beta
+	Between Ramps	Tra le rampe
+	Blue Channel	Canale blu
+	Blue Levels	Livelli blu
+	Blue Phase	Fase blu
+	Chromatic	Cromatico
+	Clip High	Taglio alto
+	Clip Low	Taglio basso
+	Color Space Model	Modello di spazio colore
+	Component	Componente
+	Create Histogram	Crea istogramma
+	Destination Clockwise	Destinazione in senso orario
+	Destination From	Destinazione da
+	Destination To	Destinazione a
+	Dither Amount	Quantità di dithering
+	Driven	Guidato
+	Driver	Guida
+	Drop Size	Dimensione goccia
+	Dynamic	Dinamico
+	Enhance Shadows	Migliora le ombre
+	Executable	Eseguibile
+	Fish Eye	Occhio di pesce
+	Gray Hue	Tonalità del grigio
+	Gray Mode	Modalità grigio
+	Gray Saturation	Saturazione del grigio
+	Gray Threshold	Soglia del grigio
+	Green Channel	Canale verde
+	Green Levels	Livelli verde
+	Green Phase	Fase verde
+	Height Channel	Canale altezza
+	High Limit	Limite superiore
+	Hold Intensity	Mantieni intensità
+	Horizontal Radius	Raggio orizzontale
+	In Between	Intermedio
+	In High	Ingresso alto
+	In Low	Ingresso basso
+	Keep Blue	Mantieni blu
+	Keep Green	Mantieni verde
+	Keep Red	Mantieni rosso
+	Laplacian	Laplaciano
+	Light1 Azimuth	Azimut luce 1
+	Light1 Color	Colore luce 1
+	Light1 Enabled	Luce 1 attiva
+	Light1 Inclination	Inclinazione luce 1
+	Light2 Azimuth	Azimut luce 2
+	Light2 Color	Colore luce 2
+	Light2 Enabled	Luce 2 attiva
+	Light2 Inclination	Inclinazione luce 2
+	Light3 Azimuth	Azimut luce 3
+	Light3 Color	Colore luce 3
+	Light3 Enabled	Luce 3 attiva
+	Light3 Inclination	Inclinazione luce 3
+	Light4 Azimuth	Azimut luce 4
+	Light4 Color	Colore luce 4
+	Light4 Enabled	Luce 4 attiva
+	Light4 Inclination	Inclinazione luce 4
+	Low Limit	Limite inferiore
+	Luma Weight	Peso della luma
+	Nearest Colors	Colori più vicini
+	Offset Blue	Scostamento blu
+	Offset Green	Scostamento verde
+	Offset Red	Scostamento rosso
+	Ordered	Ordinato
+	Original Intensity	Intensità originale
+	Out High	Uscita alta
+	Out Low	Uscita bassa
+	Palette	Tavolozza
+	Per Channel Offset	Scostamento per canale
+	Power Blue	Potenza blu
+	Power Green	Potenza verde
+	Power Red	Potenza rosso
+	Pythagorean	Pitagorico
+	Quadrilateral	Quadrilatero
+	Radians	Radianti
+	Red Channel	Canale rosso
+	Red Levels	Livelli rosso
+	Red Phase	Fase rosso
+	Samples	Campioni
+	Scale Division	Divisione della scala
+	Search Depth	Profondità di ricerca
+	Shininess	Lucentezza
+	Slope Blue	Pendenza blu
+	Slope Green	Pendenza verde
+	Slope Red	Pendenza rosso
+	Smooth Samples	Campioni levigati
+	Source Clockwise	Origine in senso orario
+	Source From	Origine da
+	Source To	Origine a
+	Unchanged	Invariato
+	Use Gradient	Usa gradiente
+	Use Normal Map	Usa mappa normale
+	Variable Depth	Profondità variabile
+	Vertical Radius	Raggio verticale
+	Window Size	Dimensione finestra
+	Write To Alpha	Scrivi nell'alfa
+	X Only	Solo X
+	Y Only	Solo Y

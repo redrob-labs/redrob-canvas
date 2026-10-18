@@ -1067,8 +1067,9 @@ mod tests {
         let size = egui::vec2(1280.0, 800.0);
         let mut h = dialog_harness(size, "filter.blur.gaussianBlur");
         let centred = h.get_by_label("Gaussian Blur").rect();
-        // Drag the title bar up and to the left.
-        let (from, by) = (centred.center(), egui::vec2(-240.0, -150.0));
+        // Drag the title bar up and to the left (not past the top of the window: the dialog is
+        // tall enough to be centred near it, and the window clamps a title bar to stay in reach).
+        let (from, by) = (centred.center(), egui::vec2(-240.0, -(centred.top() - 40.0).min(150.0)));
         h.event(egui::Event::PointerMoved(from));
         h.event(egui::Event::PointerButton { pos: from, button: egui::PointerButton::Primary, pressed: true, modifiers: Default::default() });
         for k in 1..=6 {

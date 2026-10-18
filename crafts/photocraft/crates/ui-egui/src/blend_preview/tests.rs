@@ -69,6 +69,11 @@ fn harness(session: redrob_photo_engine::Session) -> Harness<'static, Photocraft
     h
 }
 
+/// The row of `label` in the open list (the one in its family, not a favourite's copy).
+fn row(h: &Harness<'_, PhotocraftApp>, label: &str) -> egui::Rect {
+    crate::blend_menu_ui::test_row(h, label).expect(label)
+}
+
 fn click(h: &mut Harness<'_, PhotocraftApp>, at: Pos2) {
     h.hover_at(at);
     h.run_steps(1);
@@ -90,7 +95,7 @@ fn hovering_the_layers_panel_blend_list_previews_and_a_click_commits() {
     // The Layers panel's dropdown: the lowest one (the options bar and the title bar have some too).
     let dropdown = h.query_all_by_role(Role::ComboBox).map(|n| n.rect()).max_by(|a, b| a.top().total_cmp(&b.top())).unwrap();
     click(&mut h, dropdown.center());
-    let multiply = h.get_by_label("Multiply").rect().center();
+    let multiply = row(&h, "Multiply").center();
     h.hover_at(multiply);
     h.run_steps(3);
     assert_eq!(previewed(&mut h), Some(BlendMode::Multiply), "the hovered mode shows");
@@ -98,7 +103,7 @@ fn hovering_the_layers_panel_blend_list_previews_and_a_click_commits() {
     h.hover_at(Pos2::new(400.0, 400.0));
     h.run_steps(3);
     assert_eq!(previewed(&mut h), None, "off the list: the document again");
-    let screen = h.get_by_label("Screen").rect().center();
+    let screen = row(&h, "Screen").center();
     click(&mut h, screen);
     assert_eq!(blend(h.state(), top), BlendMode::Screen);
     assert_eq!(steps(h.state()), undo + 1, "choosing records one step");
@@ -112,9 +117,10 @@ fn moving_between_modes_keeps_a_preview_across_the_gaps_between_them() {
     let mut h = harness(s);
     let dropdown = h.query_all_by_role(Role::ComboBox).map(|n| n.rect()).max_by(|a, b| a.top().total_cmp(&b.top())).unwrap();
     click(&mut h, dropdown.center());
-    let (dissolve, darken) = (h.get_by_label("Dissolve").rect(), h.get_by_label("Darken").rect());
+    // Three neighbouring rows at the top of the grouped list (the default favourites after Normal).
+    let (dissolve, darken) = (row(&h, "Multiply"), row(&h, "Screen"));
     assert!(darken.top() > dissolve.bottom(), "the rows have a gap between them");
-    let multiply = h.get_by_label("Multiply").rect().center();
+    let multiply = row(&h, "Overlay").center();
     let mut y = dissolve.center().y;
     while y <= multiply.y {
         h.hover_at(Pos2::new(multiply.x, y));
@@ -122,5 +128,5 @@ fn moving_between_modes_keeps_a_preview_across_the_gaps_between_them() {
         assert!(previewed(&mut h).is_some(), "a mode previews at y = {y}");
         y += 0.5;
     }
-    assert_eq!(previewed(&mut h), Some(BlendMode::Multiply));
+    assert_eq!(previewed(&mut h), Some(BlendMode::Overlay));
 }

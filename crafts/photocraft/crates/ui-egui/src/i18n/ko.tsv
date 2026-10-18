@@ -4941,3 +4941,190 @@ curves	Smooth	매끄럽게
 	Stroke preview	스트로크 미리보기
 	Scratch pad	스크래치 패드
 	Icon library	아이콘 라이브러리
+
+# v0.11 parity: animation, clone, file and filter layers, local selections, Krita brushes, new preferences
+	Activate Local Selection	로컬 선택 영역 활성화
+	Add Curve Key	곡선 키 추가
+	Add Filter…	필터 추가…
+	Add Local Selection	로컬 선택 영역 추가
+	Add Scene	장면 추가
+	Add Transform Key	변형 키 추가
+	Alpha into Mask	알파를 마스크로
+	Attach Audio…	오디오 첨부…
+	Backup count	백업 개수
+	Capture Snapshot	스냅숏 캡처
+	Change Clone Source…	복제 원본 변경…
+	Clone Keyframe	키프레임 클론
+	Clone Layer	레이어 클론
+	Clones Array…	클론 배열…
+	Colorize Mask Properties…	색상화 마스크 속성…
+	Convert	변환
+	Convert Group to Animated Layer	그룹을 애니메이션 레이어로 변환
+	Convert to Paint Layer	페인트 레이어로 변환
+	Copy Keyframe	키프레임 복사
+	Duplicate Keyframe	키프레임 복제
+	Edit Generated Fill…	생성된 채우기 편집…
+	Edit Transform Mask…	변형 마스크 편집…
+	Export Storyboard…	스토리보드 내보내기…
+	Export Timelapse…	타임랩스 내보내기…
+	File Layer Properties…	파일 레이어 속성…
+	File Layer…	파일 레이어…
+	Filter Layer…	필터 레이어…
+	Filter Mask…	필터 마스크…
+	Frame rate limit	프레임 속도 제한
+	Freeze Live Layer	라이브 레이어 고정
+	High quality	고품질
+	Import Animation Frames…	애니메이션 프레임 가져오기…
+	Import Image as…	이미지를 다음으로 가져오기…
+	Import Video Animation…	비디오 애니메이션 가져오기…
+	Input controllers	입력 컨트롤러
+	Input devices	입력 장치
+	Invisible	숨김
+	Layer Color Space…	레이어 색 공간…
+	Layers by State	상태별 레이어
+	Local Selection	로컬 선택 영역
+	Locked	잠김
+	Move Clone…	클론 이동…
+	Move Keyframe	키프레임 이동
+	Multigrid…	다중 격자…
+	Mute Audio	오디오 음소거
+	New Keyframe	새 키프레임
+	Onion Skin…	어니언 스킨…
+	Pixel grid threshold	픽셀 격자 임계값
+	Reload File Layer	파일 레이어 다시 불러오기
+	Remove Audio	오디오 제거
+	Remove Curve Key	곡선 키 제거
+	Remove Filter	필터 제거
+	Remove Keyframe	키프레임 제거
+	Remove Local Selection	로컬 선택 영역 제거
+	Remove Transform Key	변형 키 제거
+	Remove Transform Mask	변형 마스크 제거
+	Render Animation…	애니메이션 렌더링…
+	Save Merged…	병합하여 저장…
+	Scaling filter	크기 조절 필터
+	Screentone…	스크린톤…
+	Script…	스크립트…
+	Set Filter…	필터 설정…
+	Show Output	출력 표시
+	Split Alpha	알파 분리
+	Start Recording	녹화 시작
+	Stop Recording	녹화 중지
+	Swap directory	스왑 디렉터리
+	Ten scripts	열 개의 스크립트
+	Threads	스레드
+	Transform Mask…	변형 마스크…
+	Unlocked	잠김 해제
+	Update Local Selection	로컬 선택 영역 업데이트
+	Write as Alpha	알파로 쓰기
+	to File Layer…	파일 레이어로…
+	to Filter Mask…	필터 마스크로…
+	to Paint Layer	페인트 레이어로
+	to Selection Mask	선택 영역 마스크로
+	to Transparency Mask	투명도 마스크로
+
+# v0.11 parity: generated filter option labels (GIMP / Krita filter parameters and choices)
+	Active Layer	활성 레이어
+	All Directions	모든 방향
+	Alpha Index	알파 인덱스
+	Alpha Levels	알파 레벨
+	Alpha Mode	알파 모드
+	Alpha Steps	알파 단계
+	Alpha Threshold	알파 임계값
+	Beta	베타
+	Between Ramps	램프 사이
+	Blue Channel	파랑 채널
+	Blue Levels	파랑 레벨
+	Blue Phase	파랑 위상
+	Chromatic	색채
+	Clip High	상한 자르기
+	Clip Low	하한 자르기
+	Color Space Model	색 공간 모델
+	Component	구성 요소
+	Create Histogram	히스토그램 만들기
+	Destination Clockwise	대상 시계 방향
+	Destination From	대상 시작
+	Destination To	대상 끝
+	Dither Amount	디더 양
+	Driven	피동
+	Driver	구동
+	Drop Size	물방울 크기
+	Dynamic	동적
+	Enhance Shadows	어두운 영역 강화
+	Executable	실행 파일
+	Fish Eye	어안
+	Gray Hue	회색 색조
+	Gray Mode	회색 모드
+	Gray Saturation	회색 채도
+	Gray Threshold	회색 임계값
+	Green Channel	녹색 채널
+	Green Levels	녹색 레벨
+	Green Phase	녹색 위상
+	Height Channel	높이 채널
+	High Limit	상한
+	Hold Intensity	강도 유지
+	Horizontal Radius	가로 반경
+	In Between	중간
+	In High	입력 최대
+	In Low	입력 최소
+	Input	입력
+	Keep Blue	파랑 유지
+	Keep Green	녹색 유지
+	Keep Red	빨강 유지
+	Laplacian	라플라시안
+	Light1 Azimuth	조명 1 방위각
+	Light1 Color	조명 1 색상
+	Light1 Enabled	조명 1 사용
+	Light1 Inclination	조명 1 경사
+	Light2 Azimuth	조명 2 방위각
+	Light2 Color	조명 2 색상
+	Light2 Enabled	조명 2 사용
+	Light2 Inclination	조명 2 경사
+	Light3 Azimuth	조명 3 방위각
+	Light3 Color	조명 3 색상
+	Light3 Enabled	조명 3 사용
+	Light3 Inclination	조명 3 경사
+	Light4 Azimuth	조명 4 방위각
+	Light4 Color	조명 4 색상
+	Light4 Enabled	조명 4 사용
+	Light4 Inclination	조명 4 경사
+	Low Limit	하한
+	Luma Weight	루마 가중치
+	Nearest Colors	가장 가까운 색상
+	Offset Blue	파랑 오프셋
+	Offset Green	녹색 오프셋
+	Offset Red	빨강 오프셋
+	Ordered	정렬
+	Original Intensity	원본 강도
+	Out High	출력 최대
+	Out Low	출력 최소
+	Palette	팔레트
+	Per Channel Offset	채널별 오프셋
+	Power Blue	파랑 거듭제곱
+	Power Green	녹색 거듭제곱
+	Power Red	빨강 거듭제곱
+	Pythagorean	피타고라스
+	Quadrilateral	사각형
+	Radians	라디안
+	Red Channel	빨강 채널
+	Red Levels	빨강 레벨
+	Red Phase	빨강 위상
+	Samples	샘플
+	Scale Division	눈금 분할
+	Search Depth	검색 깊이
+	Shininess	광택
+	Slope Blue	파랑 기울기
+	Slope Green	녹색 기울기
+	Slope Red	빨강 기울기
+	Smooth Samples	부드러운 샘플
+	Source Clockwise	원본 시계 방향
+	Source From	원본 시작
+	Source To	원본 끝
+	Unchanged	변경 없음
+	Use Gradient	그레이디언트 사용
+	Use Normal Map	노멀 맵 사용
+	Variable Depth	가변 깊이
+	Vertical Radius	세로 반경
+	Window Size	창 크기
+	Write To Alpha	알파에 쓰기
+	X Only	X만
+	Y Only	Y만

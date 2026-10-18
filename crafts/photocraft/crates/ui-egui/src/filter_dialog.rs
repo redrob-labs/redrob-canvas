@@ -278,6 +278,38 @@ const FULL_RESOLUTION_PREVIEW: &[&str] = &[
     // Dither's per-pixel patterns and Destripe's per-column correction are sized in pixels.
     "image.adjustments.dither",
     "image.adjustments.destripe",
+    // More GIMP-family filters with pixel-sized features: one-pixel kernels (Sobel, Edge
+    // Detection, Emboss (Directional), Height to Normal Map, Phong Bump Map's slopes), tiles,
+    // cells and dots on the pixel grid (Mosaic Tiles, Newsprint, Geometric Shapes, Raindrops),
+    // noise and dither (Clothify, Index Colors), borders and corners in pixels (Add Border, Old
+    // Photo, Round Corners), and the local-contrast tools whose windows are in pixels (Local
+    // Threshold, Retinex).
+    "filter.distort.mosaicTiles",
+    "filter.distort.newsprint",
+    "filter.stylize.sobel",
+    "filter.stylize.edgeDetection",
+    "filter.stylize.embossDirectional",
+    "filter.artistic.clothify",
+    "filter.artistic.indexColors",
+    "filter.artistic.raindrops",
+    "filter.decor.addBorder",
+    "filter.decor.oldPhoto",
+    "filter.decor.roundCorners",
+    "filter.render.geometricShapes",
+    "filter.map.phongBumpMap",
+    "filter.map.heightToNormalMap",
+    "image.adjustments.localThreshold",
+    "image.adjustments.retinex",
+    // Stress and Color to Gray sample pixel neighbourhoods by random rays, Smooth Palette lays
+    // its strip out in pixels, Cartoon's mask and Polygon Blur's kernel are pixel-sized, and
+    // Wavelet Noise Reducer and Random Pick work per pixel.
+    "image.adjustments.stress",
+    "image.adjustments.colorToGray",
+    "image.adjustments.smoothPalette",
+    "filter.artistic.cartoon",
+    "filter.blur.polygonBlur",
+    "filter.noise.waveletNoiseReducer",
+    "filter.noise.randomPick",
 ];
 
 /// Whether `command` with `params` previews at full resolution: [`FULL_RESOLUTION_PREVIEW`], every

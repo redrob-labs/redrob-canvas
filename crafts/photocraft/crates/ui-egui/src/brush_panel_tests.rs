@@ -449,6 +449,9 @@ fn airbrush_smoothing_options_and_symmetry_buttons_work() {
     h.state_mut().run("file.new", json!({"width": 80, "height": 60})).unwrap();
     h.state_mut().run("path.set", json!({"name": "work", "path": {"subpaths": [{"closed": false, "knots": [[40, 0], [40, 60]]}]}})).unwrap();
     h.run_steps(3);
+    // The Brush bar is wider than the window now (engines, text tip): bring the button into view.
+    h.get_by_label("Set painting symmetry options").scroll_to_me();
+    h.run_steps(2);
     h.get_by_label("Set painting symmetry options").click();
     h.run_steps(3);
     h.get_by_label("Work Path").click();
@@ -456,6 +459,8 @@ fn airbrush_smoothing_options_and_symmetry_buttons_work() {
     let source = |h: &Harness<'static, PhotocraftApp>| h.state().session.active().unwrap().symmetry.as_ref().and_then(|a| a.path_source().map(str::to_owned));
     assert_eq!(source(&h).as_deref(), Some("work"));
     assert_eq!(last_journal(h.state()).unwrap(), ("paint.symmetryFromPath".to_string(), json!({"name": "work"})));
+    h.get_by_label("Set painting symmetry options").scroll_to_me();
+    h.run_steps(2);
     h.get_by_label("Set painting symmetry options").click();
     h.run_steps(3);
     h.get_by_label("Symmetry Off").click();

@@ -61,8 +61,9 @@ pub fn checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
         | "view.displayFilters.deuteranopia"
         | "view.displayFilters.tritanopia"
         | "view.displayFilters.clipWarning" => {
-            let d = app.session.active()?;
-            let f = app.session.color.display_filters.get(&d.doc.id).copied().unwrap_or_default();
+            // Always a check item (a native menu can't change an item's kind in place): with no
+            // document, None is checked and the others are not.
+            let f = app.session.active().map(|d| app.session.color.display_filters.get(&d.doc.id).copied().unwrap_or_default()).unwrap_or_default();
             Some(match id {
                 "view.displayFilters.clipWarning" => f.clip_warning,
                 "view.displayFilters.none" => f.deficiency.is_none(),

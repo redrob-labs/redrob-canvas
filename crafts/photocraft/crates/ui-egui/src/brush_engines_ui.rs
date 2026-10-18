@@ -293,7 +293,9 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     let mut k = kind(app);
     label(ui, "Engine");
     let options: Vec<(String, &str)> = ENGINES.iter().map(|(id, l)| (id.to_string(), *l)).collect();
-    if widgets::dropdown(ui, "brush-engine", &mut k, &options, 110.0) {
+    // Not "brush-engine": that is the tip / Ink / MyPaint dropdown's id (paint_engines_ui), on the
+    // same bar.
+    if widgets::dropdown(ui, "brush-engine-kind", &mut k, &options, 110.0) {
         select_kind(app, &k);
     }
     if k == "pixel" {

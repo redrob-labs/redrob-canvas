@@ -2,7 +2,8 @@
 //! The Layers panel's grouped blend-mode menu: favourites first (a star on each row toggles
 //! them), then the modes by family (arithmetic, binary, darken, HSX, lighten, misc, mix, modulo,
 //! negative, quadratic) with headers. A typed letter jumps to the next mode starting with it,
-//! Return closes; the wheel over the button steps through the flat list as before.
+//! Return closes; the wheel over the button or the open list steps through the modes in the
+//! Layers panel's order (Photoshop's list, then the extra families), one notch per mode.
 
 use egui::{RichText, Ui};
 use redrob_photo_color::BlendMode;
@@ -78,9 +79,12 @@ pub fn flat(options: &[(BlendMode, &'static str)], favourites: &[BlendMode]) -> 
     out
 }
 
-/// Draw the menu. `options` are the modes the layer may take (with labels); `favourites` is the
-/// user's list, edited in place by the stars. Returns the modes chosen this frame (one per click,
-/// key or wheel notch; the last is `current`) and the mode under the pointer in the open list.
+/// Draw the menu. `options` are the modes the layer may take (with labels), in the order the
+/// wheel, the arrow keys and ⇧+/⇧− step through; `favourites` is the user's list, edited in place
+/// by the stars. Returns the modes chosen this frame (one per click, key or wheel notch; the last
+/// is `current`) and the mode under the pointer in the open list. The list itself is
+/// [`crate::widgets::dropdown_grouped`]: press-drag-release, type-ahead and the wheel over the
+/// open list work as in every other dropdown.
 pub fn menu(
     ui: &mut Ui,
     id: &str,
@@ -90,74 +94,27 @@ pub fn menu(
     width: f32,
 ) -> (Vec<BlendMode>, Option<BlendMode>) {
     let t = Tokens::get(ui.ctx());
-    let label = options.iter().find(|(m, _)| m == current).map(|(_, l)| tl!(l).to_string()).unwrap_or_else(|| "—".into());
-    let (mut chosen, mut hovered) = (Vec::new(), None);
-    let order = flat(options, favourites);
-    // The wheel over the closed button steps through the flat order, one notch per step.
-    let button_rect = ui.available_rect_before_wrap();
-    let wheel = ui.input(|i| i.smooth_scroll_delta.y);
-    if wheel != 0.0
-        && ui.rect_contains_pointer(egui::Rect::from_min_size(button_rect.min, egui::vec2(width, ui.spacing().interact_size.y)))
-        && let Some(pos) = order.iter().position(|m| m == current)
-    {
-        let next = if wheel < 0.0 { (pos + 1).min(order.len().saturating_sub(1)) } else { pos.saturating_sub(1) };
-        if next != pos {
-            *current = order[next];
-            chosen.push(order[next]);
-        }
-    }
-    let label_of = |m: BlendMode| options.iter().find(|(o, _)| *o == m).map(|(_, l)| *l).unwrap_or_else(|| m.label());
-    egui::ComboBox::from_id_salt(id).selected_text(label).width(width).height(480.0).show_ui(ui, |ui| {
-        ui.set_min_width(width.max(180.0));
-        // A typed letter jumps to the next mode whose (translated) label starts with it.
-        let typed: Option<char> = ui.input(|i| {
-            i.events.iter().find_map(|e| match e {
-                egui::Event::Text(s) => s.chars().next().filter(|c| c.is_alphabetic()),
-                _ => None,
-            })
-        });
-        if let Some(c) = typed {
-            let c = c.to_lowercase().next().unwrap_or(c);
-            let pos = order.iter().position(|m| m == current).unwrap_or(0);
-            let next = order
-                .iter()
-                .cycle()
-                .skip(pos + 1)
-                .take(order.len())
-                .find(|m| tl!(label_of(**m)).chars().next().is_some_and(|f| f.to_lowercase().next() == Some(c)));
-            if let Some(m) = next {
-                *current = *m;
-                chosen.push(*m);
-            }
-        }
-        if ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-            ui.close();
-        }
+    let index = |m: BlendMode| options.iter().position(|(o, _)| *o == m);
+    let mut rows = |ui: &mut Ui, draw: &mut dyn FnMut(&mut Ui, usize)| -> bool {
+        let mut starred = false;
         let mut row = |ui: &mut Ui, m: BlendMode, favourites: &mut Vec<BlendMode>| {
+            let Some(i) = index(m) else { return };
             ui.horizontal(|ui| {
                 let fav = favourites.contains(&m);
                 let icon = if fav { "star-filled" } else { "star" };
                 let star = crate::icons::button(ui, icon, 18.0, fav, if fav { tl!("Remove from favourites") } else { tl!("Add to favourites") });
                 if star.clicked() {
+                    starred = true;
                     if fav {
                         favourites.retain(|f| *f != m);
                     } else {
                         favourites.push(m);
                     }
                 }
-                let selected = *current == m;
-                let r = ui.selectable_label(selected, RichText::new(tl!(label_of(m))).color(t.text));
-                if r.hovered() {
-                    hovered = Some(m);
-                }
-                if r.clicked() {
-                    *current = m;
-                    chosen.push(m);
-                    ui.close();
-                }
+                draw(ui, i);
             });
         };
-        let favs: Vec<BlendMode> = favourites.iter().copied().filter(|m| options.iter().any(|(o, _)| o == m)).collect();
+        let favs: Vec<BlendMode> = favourites.iter().copied().filter(|m| index(*m).is_some()).collect();
         if !favs.is_empty() {
             ui.label(RichText::new(tl!("Favourites")).small().color(t.text_dim));
             for m in favs {
@@ -165,12 +122,12 @@ pub fn menu(
             }
             ui.separator();
         }
-        if options.iter().any(|(m, _)| *m == BlendMode::PassThrough) {
+        if index(BlendMode::PassThrough).is_some() {
             row(ui, BlendMode::PassThrough, favourites);
             ui.separator();
         }
         for (name, modes) in families() {
-            let present: Vec<BlendMode> = modes.into_iter().filter(|m| options.iter().any(|(o, _)| o == m)).collect();
+            let present: Vec<BlendMode> = modes.into_iter().filter(|m| index(*m).is_some()).collect();
             if present.is_empty() {
                 continue;
             }
@@ -180,6 +137,20 @@ pub fn menu(
             }
             ui.add_space(2.0);
         }
-    });
-    (chosen, hovered)
+        starred
+    };
+    crate::widgets::dropdown_grouped(ui, id, current, options, width, &mut rows)
+}
+
+/// The row of mode `label` in the open grouped list, for tests. A favourite is listed twice (its
+/// favourites row first) and a family header may read the same as a mode, so this takes the
+/// first row *button* that is in the list's unscrolled view (the 420 pt below its first row, the
+/// favourites' Normal), or the first one at all when none is.
+#[cfg(test)]
+pub(crate) fn test_row(h: &egui_kittest::Harness<'_, crate::PhotocraftApp>, label: &str) -> Option<egui::Rect> {
+    use egui_kittest::kittest::{NodeT, Queryable};
+    let button = |n: &egui_kittest::Node<'_>| n.accesskit_node().role() == egui::accesskit::Role::Button;
+    let list_top = h.query_all_by_label("Normal").filter(button).map(|n| n.rect().top()).fold(f32::INFINITY, f32::min);
+    let rows: Vec<egui::Rect> = h.query_all_by_label(label).filter(button).map(|n| n.rect()).collect();
+    rows.iter().copied().find(|r| r.top() >= list_top - 0.5 && r.bottom() <= list_top + 420.0 + 0.5).or_else(|| rows.first().copied())
 }

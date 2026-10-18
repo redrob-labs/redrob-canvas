@@ -4474,7 +4474,15 @@ mod symmetry_theme_tests {
                 let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
                 app.run("file.new", json!({"width": 80, "height": 80})).unwrap();
                 app.ui.tool = tool;
-                let mut h = Harness::builder().with_size(vec2(1600.0, 300.0)).build_ui_state(|ui, app| options_bar(app, ui), app);
+                // The first pass runs before the fonts are installed: the bar's medium weight needs them.
+                let mut h = Harness::builder().with_size(vec2(1600.0, 300.0)).build_ui_state(
+                    |ui, app| {
+                        if ui.ctx().fonts(|f| f.families().contains(&egui::FontFamily::Name("medium".into()))) {
+                            options_bar(app, ui);
+                        }
+                    },
+                    app,
+                );
                 PhotocraftApp::setup_context(&h.ctx, kind);
                 h.run_steps(4);
                 assert!(h.query_by_label("Set painting symmetry options").is_some(), "missing symmetry menu in {:?} for {:?}", kind, tool);
@@ -5311,7 +5319,16 @@ mod swatch_type_tests {
             resize: None,
             preedit: None,
         });
-        let mut h = Harness::builder().with_size(vec2(300.0, 300.0)).build_ui_state(|ui, app: &mut PhotocraftApp| color_picker(app, ui), app);
+        // The first pass runs before the fonts are installed: the panel's medium weight needs them.
+        let mut h = Harness::builder().with_size(vec2(300.0, 300.0)).build_ui_state(
+            |ui, app: &mut PhotocraftApp| {
+                if ui.ctx().fonts(|f| f.families().contains(&egui::FontFamily::Name("medium".into()))) {
+                    color_picker(app, ui);
+                }
+            },
+            app,
+        );
+        PhotocraftApp::setup_context(&h.ctx, crate::theme::ThemeKind::ALL[0]);
         h.run_steps(4);
         assert_eq!(h.state().session.tools.foreground, fg);
         let st = h.state().session.active().unwrap();
@@ -5535,9 +5552,11 @@ mod type_flyout_tests {
         // A press on the flyout itself keeps it open (the row picks on release).
         open(&mut app, 1.0);
         let menu = ctx.memory(|m| m.area_rect(egui::Id::new(("tool-slot", index)).with("flyout"))).unwrap();
-        frame(&mut app, &ctx, 1.5, vec![egui::Event::PointerMoved(menu.center()), primary(menu.center(), true)]);
+        // Its first row (the Brush): the release picks it, so the slot keeps showing the Brush.
+        let first_row = egui::pos2(menu.left() + 65.0, menu.top() + 21.0);
+        frame(&mut app, &ctx, 1.5, vec![egui::Event::PointerMoved(first_row), primary(first_row, true)]);
         assert!(flyout(&ctx), "a press on the flyout keeps it");
-        frame(&mut app, &ctx, 1.55, vec![primary(menu.center(), false)]);
+        frame(&mut app, &ctx, 1.55, vec![primary(first_row, false)]);
         // A drag far from the toolbar (the canvas) closes it as soon as it starts.
         open(&mut app, 2.0);
         let canvas = egui::pos2(900.0, 900.0);
@@ -5623,8 +5642,8 @@ mod type_flyout_tests {
         frame(&mut app, &ctx, 0.1, vec![]);
         let index = TOOL_SECTIONS.iter().flat_map(|section| section.iter()).position(|slot| slot.contains(&Tool::Brush)).unwrap();
         let slot = TOOL_SECTIONS.iter().flat_map(|section| section.iter()).nth(index).copied().unwrap();
-        // Photoshop's Brush group, Color Replacement after the Mixer Brush.
-        assert_eq!(slot, &[Tool::Brush, Tool::Pencil, Tool::MixerBrush, Tool::ColorReplacement]);
+        // Photoshop's Brush group, Color Replacement after the Mixer Brush, then the Krita brushes.
+        assert_eq!(slot, &[Tool::Brush, Tool::Pencil, Tool::MixerBrush, Tool::ColorReplacement, Tool::StraightLine, Tool::Multibrush, Tool::DynamicBrush]);
         let bx = if Tokens::get(&ctx).pro { 30.0 } else { 36.0 };
         let mut buttons: Vec<Rect> = ctx.viewport(|v| {
             v.prev_pass
@@ -5644,8 +5663,8 @@ mod type_flyout_tests {
         frame(&mut app, &ctx, 1.45, vec![]);
         let key = egui::Id::new(("tool-slot", index));
         let menu = ctx.memory(|m| m.area_rect(key.with("flyout"))).unwrap();
-        // The last of the four 26-point rows.
-        let row = egui::pos2(menu.left() + 65.0, menu.bottom() - 20.0);
+        // The fourth of the seven 26-point rows (3 pt apart, under the popup frame's margin).
+        let row = egui::pos2(menu.left() + 65.0, menu.top() + 6.0 + 3.0 * 29.0 + 13.0);
         frame(&mut app, &ctx, 2.0, vec![egui::Event::PointerMoved(row), pointer(row, true)]);
         frame(&mut app, &ctx, 2.05, vec![pointer(row, false)]);
         assert_eq!(app.ui.tool, Tool::ColorReplacement);
@@ -5700,7 +5719,8 @@ mod toolbar_hidden_tests {
         let slots: usize = TOOL_SECTIONS.iter().map(|section| section.len()).sum();
         hide(&mut app, &Tool::ALL);
         assert_eq!(tool_buttons(&mut app), all - slots, "every tool slot is gone when every tool is hidden");
-        hide(&mut app, &[Tool::Brush, Tool::Pencil, Tool::MixerBrush, Tool::ColorReplacement]);
+        let brushes = TOOL_SECTIONS.iter().flat_map(|section| section.iter()).find(|slot| slot.contains(&Tool::Brush)).unwrap();
+        hide(&mut app, brushes);
         assert_eq!(tool_buttons(&mut app), all - 1, "a slot whose tools are all hidden is gone");
         hide(&mut app, &[Tool::Sponge]);
         assert_eq!(tool_buttons(&mut app), all, "a slot with a visible tool stays");
@@ -6482,7 +6502,8 @@ mod compact_visual_regressions {
                     crate::theme::install_fonts(&ctx);
                     crate::theme::apply(&ctx, kind);
                     let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), Default::default());
-                    let (tool, last_label) = if Tokens::get(&ctx).pro { (Tool::Pencil, "Auto Erase") } else { (Tool::Brush, "Pressure for Opacity") };
+                    // The Brush bar ends with its engine controls and the Text Tip row's Apply button.
+                    let (tool, last_label) = if Tokens::get(&ctx).pro { (Tool::Pencil, "Auto Erase") } else { (Tool::Brush, "Apply") };
                     app.ui.tool = tool;
                     let screen = Rect::from_min_size(egui::Pos2::ZERO, vec2(width, 120.0));
                     let mut output = ctx.run_ui(input_at_scale(screen, scale), |ui| options_bar(&mut app, ui));

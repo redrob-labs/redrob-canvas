@@ -3485,7 +3485,9 @@ mod tests {
         PhotocraftApp::setup_context(&h.ctx, crate::theme::ThemeKind::Studio);
         h.run_steps(6);
         let commit = h.get_by_label("Commit transform").rect();
-        assert!(commit.right() < width * 0.7, "commit sits next to the fields, not at the far right: {commit:?}");
+        // The bar's fields (reference point, position, size, angle, skew, interpolation…) run to
+        // about 1700 pt; the buttons follow them rather than sit at the far right.
+        assert!(commit.right() < width * 0.8, "commit sits next to the fields, not at the far right: {commit:?}");
     }
 
     #[test]

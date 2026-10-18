@@ -260,7 +260,9 @@ mod tests {
         assert_eq!(parse_mapping("50,0,50,100"), Some([0.5, 0.0, 0.5, 1.0]));
         assert_eq!(parse_mapping("0.5, 0, 0.5, 1"), Some([0.5, 0.0, 0.5, 1.0]));
         assert_eq!(parse_mapping(""), None);
-        assert_eq!(parse_mapping("0,0,2,1"), None, "past the screen");
+        assert_eq!(parse_mapping("0,0,2,1"), Some([0.0, 0.0, 0.02, 0.01]), "a value above 1 reads the four as percentages");
+        assert_eq!(parse_mapping("0,0,150,100"), None, "past the screen");
+        assert_eq!(parse_mapping("50,0,60,100"), None, "past the screen's right edge");
     }
 
     #[test]

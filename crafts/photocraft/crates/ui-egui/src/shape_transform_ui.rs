@@ -688,7 +688,9 @@ mod tests {
 
     fn app() -> PhotocraftApp {
         let mut app = PhotocraftApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
-        app.session.execute("file.new", json!({"width": 64, "height": 64})).unwrap();
+        // A transparent layer: the transform's frame is the painted square's bounds, not the
+        // whole of an opaque Background.
+        app.session.execute("file.new", json!({"width": 64, "height": 64, "background": "transparent"})).unwrap();
         app.session
             .edit("fill", |doc, a| {
                 let surf = doc.layer_mut(a.unwrap()).unwrap().surface_mut().unwrap();
@@ -718,8 +720,10 @@ mod tests {
         let four = handle_homography(&[([0.0, 0.0], [2.0, 0.0]), ([10.0, 0.0], [8.0, 0.0]), ([10.0, 10.0], [10.0, 10.0]), ([0.0, 10.0], [0.0, 10.0])]);
         let (x, _) = four.apply(5.0, 0.0);
         assert!((x - 5.0).abs() < 1e-6);
+        // The source's middle row maps to the trapezoid's diagonals' crossing, which lies towards
+        // the narrow top (equal steps along a receding plane shrink towards the far edge).
         let (_, y) = four.apply(5.0, 5.0);
-        assert!(y > 5.0, "the middle row sinks towards the wide bottom: {y}");
+        assert!(y < 5.0, "the middle row rises towards the narrow top: {y}");
     }
 
     #[test]
