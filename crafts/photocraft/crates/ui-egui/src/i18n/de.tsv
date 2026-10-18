@@ -3899,3 +3899,12 @@ curves	Smooth	Glätten
 	Code	Code
 	Cmd+Enter runs the code	Cmd+Eingabe führt den Code aus
 	Clear Log	Protokoll löschen
+	Length over which the value goes from 0 to 1	Länge, über die der Wert von 0 auf 1 steigt
+	Start over past the length instead of holding the end value	Nach der Länge von vorn beginnen statt den Endwert zu halten
+	Pressure In	Druck (nur ansteigend)
+	X-Tilt	X-Neigung
+	Y-Tilt	Y-Neigung
+	Tilt Direction	Neigungsrichtung
+	Tilt Elevation	Neigungshöhe
+	Time	Zeit
+	Fuzzy Stroke	Zufall pro Strich

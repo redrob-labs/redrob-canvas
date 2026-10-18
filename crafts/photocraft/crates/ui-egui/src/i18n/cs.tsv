@@ -4430,3 +4430,11 @@ navigator	Zoom	Zvětšení
 	Code	Kód
 	Cmd+Enter runs the code	Cmd+Enter spustí kód
 	Clear Log	Vymazat protokol
+	Length over which the value goes from 0 to 1	Délka, na které hodnota roste z 0 na 1
+	Start over past the length instead of holding the end value	Po dosažení délky začít znovu místo držení koncové hodnoty
+	Pressure In	Tlak (jen nárůst)
+	X-Tilt	Náklon X
+	Y-Tilt	Náklon Y
+	Tilt Direction	Směr náklonu
+	Tilt Elevation	Výška náklonu
+	Fuzzy Stroke	Náhodně na tah

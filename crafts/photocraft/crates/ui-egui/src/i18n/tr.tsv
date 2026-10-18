@@ -4551,3 +4551,11 @@ cameraData	Lens	Lens
 	Code	Kod
 	Cmd+Enter runs the code	Cmd+Enter kodu çalıştırır
 	Clear Log	Günlüğü Temizle
+	Length over which the value goes from 0 to 1	Değerin 0'dan 1'e çıktığı uzunluk
+	Start over past the length instead of holding the end value	Uzunluğu aşınca son değeri tutmak yerine yeniden başla
+	Pressure In	Basınç (yalnızca artan)
+	X-Tilt	X Eğimi
+	Y-Tilt	Y Eğimi
+	Tilt Direction	Eğim Yönü
+	Tilt Elevation	Eğim Yükseltisi
+	Fuzzy Stroke	Vuruş Başına Rastgele

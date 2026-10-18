@@ -21,6 +21,7 @@ pub mod automate_cmds;
 pub mod background_cmds;
 pub mod brush_cmds;
 pub mod brush_engine_cmds;
+pub mod brush_extras_cmds;
 pub mod brush_key_cmds;
 pub mod brush_preset_cmds;
 pub mod build_info;
@@ -71,8 +72,8 @@ pub mod inspect;
 pub mod installed_profiles;
 pub mod jobs;
 pub mod kys;
-pub mod layer_copy_cmds;
 pub mod layer_boundary_cmds;
+pub mod layer_copy_cmds;
 pub mod layer_label_cmds;
 pub mod layer_list_cmds;
 pub mod layer_mask_props_cmds;
@@ -84,9 +85,11 @@ pub mod lens_cmds;
 pub mod link_watch;
 pub mod magnetic_cmds;
 pub mod mask_view_cmds;
+pub mod metadata_cmds;
 mod migrate_cmds;
 pub mod mode_cmds;
 pub mod multichannel_cmds;
+pub mod mypaint_cmds;
 pub mod new_layer;
 pub mod notes_cmds;
 pub mod paint_cmds;
@@ -108,14 +111,12 @@ pub mod proof_sim;
 pub mod rasterize_style_cmds;
 pub mod redeye_cmds;
 pub mod render_cmds;
+pub mod resource_tags_cmds;
 pub mod retouch_cmds;
 pub mod sample_cmds;
 pub mod sampler_cmds;
 pub mod select_extra_cmds;
 pub mod select_refine_cmds;
-pub mod resource_tags_cmds;
-pub mod mypaint_cmds;
-pub mod metadata_cmds;
 pub mod selection_cmds;
 pub mod shortcut_sets;
 pub mod slice_cmds;
@@ -154,10 +155,12 @@ pub mod mypaint_engine_cmds;
 pub mod path_svg_cmds;
 pub mod perspective_clone_cmds;
 pub mod python_cmds;
+pub mod resource_cmds;
 pub mod resource_export_cmds;
 pub mod scheme;
 pub mod script_cmds;
 mod wia_cmds;
+pub mod workflow_cmds;
 
 use std::sync::Arc;
 
@@ -410,6 +413,16 @@ pub struct ToolState {
     /// A preset may carry any number of tags; the preset store keeps them in its index. Bumping
     /// `presets_rev` syncs them.
     pub preset_tags: std::collections::BTreeMap<String, Vec<String>>,
+    /// Recently used brush presets (`brush.history.*`): the Brush Preset History docker.
+    pub preset_history: brush_extras_cmds::PresetHistory,
+    /// Ten Brushes: the preset names on the ten shortcut slots (`brush.tenBrushes.*`).
+    pub ten_brushes: [Option<String>; 10],
+    /// Brush Preset History: the preset active before the last Ten Brushes activation, so the
+    /// shortcut toggles back to it (`brush.tenBrushes.activate` twice).
+    pub ten_brushes_previous: Option<String>,
+    /// Custom preset thumbnails (`brush.presets.setThumbnail`, the icon library), by preset
+    /// name; a preset without one shows its generated stroke preview.
+    pub preset_thumbnails: std::collections::BTreeMap<String, redrob_photo_paint::ColorTile>,
 }
 
 impl ToolState {
@@ -480,6 +493,10 @@ impl Default for ToolState {
             dynamics_presets: redrob_photo_paint::dynamics_preset::builtin(),
             current_dynamics: None,
             preset_tags: Default::default(),
+            preset_history: Default::default(),
+            ten_brushes: Default::default(),
+            ten_brushes_previous: None,
+            preset_thumbnails: Default::default(),
         }
     }
 }
@@ -571,6 +588,13 @@ pub struct Session {
     /// document, source read-only)`. The shell takes them with [`Session::take_held_open`].
     held_opens: Vec<(u64, Document, bool)>,
     next_held_open: u64,
+    /// The brush editor's scratch pad (`brush.scratchPad.*`): a small paintable surface.
+    pub scratch_pad: Option<brush_extras_cmds::ScratchPad>,
+    /// Resource storages (`resources.storages.*`): the user folder, bundles, Adobe libraries,
+    /// the document and memory, each active or not.
+    pub resource_storages: resource_cmds::StorageState,
+    /// Reference images docker (`reference.*`): the browsed folder and the shown image.
+    pub reference_images: workflow_cmds::ReferenceState,
 }
 
 /// Move item `i` of `v` to position `to`, clamped to the end. Returns where it went; `None` when

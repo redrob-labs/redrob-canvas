@@ -4611,3 +4611,11 @@ layerLabel	No Color	Sem cor
 	Code	Código
 	Cmd+Enter runs the code	Cmd+Enter executa o código
 	Clear Log	Limpar registro
+	Length over which the value goes from 0 to 1	Comprimento em que o valor vai de 0 a 1
+	Start over past the length instead of holding the end value	Recomeçar após o comprimento em vez de manter o valor final
+	Pressure In	Pressão crescente
+	X-Tilt	Inclinação X
+	Y-Tilt	Inclinação Y
+	Tilt Direction	Direção da inclinação
+	Tilt Elevation	Elevação da inclinação
+	Fuzzy Stroke	Aleatório por traço

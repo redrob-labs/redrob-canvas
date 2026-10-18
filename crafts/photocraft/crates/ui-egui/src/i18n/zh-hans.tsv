@@ -3528,3 +3528,12 @@ curves	Smooth	平滑
 	Code	代码
 	Cmd+Enter runs the code	Cmd+Enter 运行代码
 	Clear Log	清除日志
+	Length over which the value goes from 0 to 1	数值从 0 到 1 所经过的长度
+	Start over past the length instead of holding the end value	超过长度后重新开始，而不是保持终值
+	Pressure In	压力（仅上升）
+	X-Tilt	X 倾斜
+	Y-Tilt	Y 倾斜
+	Tilt Direction	倾斜方向
+	Tilt Elevation	倾斜仰角
+	Time	时间
+	Fuzzy Stroke	每笔随机

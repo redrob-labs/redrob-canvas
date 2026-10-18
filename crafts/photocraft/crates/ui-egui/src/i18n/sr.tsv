@@ -4890,3 +4890,11 @@ shape	Appearance	Izgled
 	Code	Kod
 	Cmd+Enter runs the code	Cmd+Enter pokreće kod
 	Clear Log	Obriši dnevnik
+	Length over which the value goes from 0 to 1	Дужина на којој вредност расте од 0 до 1
+	Start over past the length instead of holding the end value	После дужине почни испочетка уместо да задржиш крајњу вредност
+	Pressure In	Притисак (само раст)
+	X-Tilt	Нагиб X
+	Y-Tilt	Нагиб Y
+	Tilt Direction	Смер нагиба
+	Tilt Elevation	Висина нагиба
+	Fuzzy Stroke	Насумично по потезу

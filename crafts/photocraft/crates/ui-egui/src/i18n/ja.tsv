@@ -4560,3 +4560,11 @@ curves	Smooth	スムーズ
 	Code	コード
 	Cmd+Enter runs the code	Cmd+Enterでコードを実行します
 	Clear Log	ログを消去
+	Length over which the value goes from 0 to 1	値が0から1になるまでの長さ
+	Start over past the length instead of holding the end value	長さを超えたら最終値を保持せず最初から繰り返す
+	Pressure In	筆圧（上昇のみ）
+	X-Tilt	X傾き
+	Y-Tilt	Y傾き
+	Tilt Direction	傾き方向
+	Tilt Elevation	傾き仰角
+	Fuzzy Stroke	ストロークごとのランダム

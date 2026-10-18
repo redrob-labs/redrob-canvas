@@ -3449,3 +3449,12 @@ curves	Smooth	平滑
 	Code	程式碼
 	Cmd+Enter runs the code	Cmd+Enter 執行程式碼
 	Clear Log	清除記錄
+	Length over which the value goes from 0 to 1	數值從 0 到 1 所經過的長度
+	Start over past the length instead of holding the end value	超過長度後重新開始，而不是保持終值
+	Pressure In	壓力（僅上升）
+	X-Tilt	X 傾斜
+	Y-Tilt	Y 傾斜
+	Tilt Direction	傾斜方向
+	Tilt Elevation	傾斜仰角
+	Time	時間
+	Fuzzy Stroke	每筆隨機

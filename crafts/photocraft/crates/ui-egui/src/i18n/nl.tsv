@@ -4581,3 +4581,11 @@ curves	Smooth	Vloeiend maken
 	Code	Code
 	Cmd+Enter runs the code	Cmd+Enter voert de code uit
 	Clear Log	Logboek wissen
+	Length over which the value goes from 0 to 1	Lengte waarover de waarde van 0 naar 1 gaat
+	Start over past the length instead of holding the end value	Na de lengte opnieuw beginnen in plaats van de eindwaarde vast te houden
+	Pressure In	Druk (alleen stijgend)
+	X-Tilt	X-kanteling
+	Y-Tilt	Y-kanteling
+	Tilt Direction	Kantelrichting
+	Tilt Elevation	Kantelhoogte
+	Fuzzy Stroke	Willekeurig per streek

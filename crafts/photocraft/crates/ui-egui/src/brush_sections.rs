@@ -13,22 +13,31 @@ use crate::brush_preview;
 use crate::theme::{self, Tokens};
 use crate::widgets;
 
-pub const CONTROLS: [(Control, &str); 11] = [
+pub const CONTROLS: [(Control, &str); 20] = [
     (Control::Off, "Off"),
     (Control::Fade, "Fade"),
     (Control::PenPressure, "Pen Pressure"),
+    (Control::PressureIn, "Pressure In"),
     (Control::PenTilt, "Pen Tilt"),
+    (Control::TiltX, "X-Tilt"),
+    (Control::TiltY, "Y-Tilt"),
+    (Control::TiltDirection, "Tilt Direction"),
+    (Control::TiltElevation, "Tilt Elevation"),
     (Control::StylusWheel, "Stylus Wheel"),
     (Control::Rotation, "Rotation"),
-    (Control::Velocity, "Velocity"),
+    (Control::Velocity, "Speed"),
+    (Control::Distance, "Distance"),
+    (Control::Time, "Time"),
     (Control::DrawingAngle, "Drawing Angle"),
     (Control::Random, "Random"),
+    (Control::FuzzyStroke, "Fuzzy Stroke"),
+    (Control::Perspective, "Perspective"),
     (Control::InitialDirection, "Initial Direction"),
     (Control::Direction, "Direction"),
 ];
 
 /// How many of [`CONTROLS`] have a 0..1 value (the rest are the angle-only direction controls).
-pub const SCALAR_CONTROLS: usize = 9;
+pub const SCALAR_CONTROLS: usize = 18;
 
 const COMBINES: [(SensorCombine, &str); 5] = [
     (SensorCombine::Multiply, "Multiply"),
@@ -95,12 +104,21 @@ pub(crate) fn takes_curve(control: Control, angle: bool) -> bool {
             control,
             Control::Fade
                 | Control::PenPressure
+                | Control::PressureIn
                 | Control::PenTilt
+                | Control::TiltX
+                | Control::TiltY
+                | Control::TiltDirection
+                | Control::TiltElevation
                 | Control::StylusWheel
                 | Control::Rotation
                 | Control::Velocity
+                | Control::Distance
+                | Control::Time
                 | Control::DrawingAngle
                 | Control::Random
+                | Control::FuzzyStroke
+                | Control::Perspective
         )
 }
 
@@ -149,6 +167,9 @@ fn sensor_rows(ui: &mut egui::Ui, id: &str, d: &mut Dynamic) {
                     sen.fade_steps = steps.round().clamp(1.0, 9999.0) as u32;
                 }
             }
+            if matches!(sen.control, Control::Distance | Control::Time) {
+                length_fields(ui, sen.control, &mut sen.length, &mut sen.repeat);
+            }
             if sen.control != Control::Off {
                 let open_id = curve_open_id(&sid);
                 let mut open: bool = ui.data(|m| m.get_temp(open_id)).unwrap_or(false);
@@ -177,6 +198,16 @@ fn sensor_rows(ui: &mut egui::Ui, id: &str, d: &mut Dynamic) {
     }
 }
 
+/// The Distance sensor's length in pixels (or the Time sensor's in seconds) and its Repeat box.
+fn length_fields(ui: &mut egui::Ui, control: Control, length: &mut f32, repeat: &mut bool) {
+    let (suffix, max) = if control == Control::Time { (" s", 600.0) } else { (" px", 100_000.0) };
+    let mut l = *length;
+    if widgets::value_field(ui, &mut l, 0.1..=max, suffix, 70.0).on_hover_text(tl!("Length over which the value goes from 0 to 1")).changed() {
+        *length = l.clamp(0.1, max);
+    }
+    widgets::checkbox(ui, repeat, tl!("Repeat")).on_hover_text(tl!("Start over past the length instead of holding the end value"));
+}
+
 /// egui memory key of the open/closed state of a dynamic's curve editor.
 pub(crate) fn curve_open_id(id: &str) -> egui::Id {
     egui::Id::new(("brush-curve-open", id))
@@ -197,6 +228,9 @@ fn control_row(ui: &mut egui::Ui, id: &str, d: &mut Dynamic, angle: bool) {
             if widgets::value_field(ui, &mut steps, 1.0..=9999.0, "", 56.0).on_hover_text(tl!("Fade steps")).changed() {
                 d.fade_steps = steps.round().clamp(1.0, 9999.0) as u32;
             }
+        }
+        if matches!(d.control, Control::Distance | Control::Time) {
+            length_fields(ui, d.control, &mut d.length, &mut d.repeat);
         }
         if takes_curve(d.control, angle) && crate::icons::button(ui, "spline", 22.0, open || !d.curve.is_linear(), tl!("Response curve")).clicked() {
             open = !open;

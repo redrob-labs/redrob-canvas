@@ -4423,3 +4423,11 @@ curves	Smooth	Wygładź
 	Code	Kod
 	Cmd+Enter runs the code	Cmd+Enter uruchamia kod
 	Clear Log	Wyczyść dziennik
+	Length over which the value goes from 0 to 1	Długość, na której wartość rośnie od 0 do 1
+	Start over past the length instead of holding the end value	Po przekroczeniu długości zaczynać od nowa zamiast trzymać wartość końcową
+	Pressure In	Nacisk (tylko wzrost)
+	X-Tilt	Nachylenie X
+	Y-Tilt	Nachylenie Y
+	Tilt Direction	Kierunek nachylenia
+	Tilt Elevation	Elewacja nachylenia
+	Fuzzy Stroke	Losowo na pociągnięcie

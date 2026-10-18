@@ -4523,3 +4523,11 @@ curves	Smooth	Згладити
 	Code	Код
 	Cmd+Enter runs the code	Cmd+Enter виконує код
 	Clear Log	Очистити журнал
+	Length over which the value goes from 0 to 1	Довжина, на якій значення зростає від 0 до 1
+	Start over past the length instead of holding the end value	Після довжини починати знову, а не тримати кінцеве значення
+	Pressure In	Натиск (лише зростання)
+	X-Tilt	Нахил X
+	Y-Tilt	Нахил Y
+	Tilt Direction	Напрям нахилу
+	Tilt Elevation	Висота нахилу
+	Fuzzy Stroke	Випадково на штрих

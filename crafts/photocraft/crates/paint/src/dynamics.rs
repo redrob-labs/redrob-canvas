@@ -273,15 +273,66 @@ pub struct StepInput {
     /// Sequential step number (0 = first).
     pub step: u64,
     /// Pointer speed over the segment this step lies on, in pixels per millisecond of stroke
-    /// time; 0 when the input carries no timestamps.
+    /// time (smoothed and normalised so [`VELOCITY_FULL_PX_PER_MS`] is the brush's
+    /// [`BrushSettings::speed_max`]); 0 when the input carries no timestamps.
     pub speed: f32,
+    /// Path length drawn so far, in pixels ([`Control::Distance`]).
+    pub distance: f64,
+    /// Stroke time elapsed since the first point, in milliseconds ([`Control::Time`]; 0 without
+    /// timestamps).
+    pub elapsed_ms: f64,
+    /// The highest pressure seen so far in the stroke ([`Control::PressureIn`]).
+    pub pressure_in: f32,
+    /// The stroke's one random value ([`Control::FuzzyStroke`]).
+    pub stroke_rand: f32,
+    /// Depth on the perspective grid, 1 near .. 0 at the horizon ([`Control::Perspective`]).
+    pub perspective: f32,
 }
 
 impl StepInput {
     /// A step at `point` with no direction or speed (for spacing lookups before the path exists).
     pub fn at(point: StrokePoint) -> Self {
-        Self { point, direction: 0.0, initial_direction: 0.0, step: 0, speed: 0.0 }
+        Self {
+            point,
+            direction: 0.0,
+            initial_direction: 0.0,
+            step: 0,
+            speed: 0.0,
+            distance: 0.0,
+            elapsed_ms: 0.0,
+            pressure_in: point.pressure,
+            stroke_rand: 0.5,
+            perspective: 1.0,
+        }
     }
+}
+
+/// Depth of a point on a perspective grid (four corners, clockwise from the top left): 1 on the
+/// grid's near edge (the corner farthest from the horizon), 0 on the horizon line through the
+/// grid's two vanishing points, linear in between; 1 when the grid has no horizon (both pairs of
+/// sides parallel) or is degenerate.
+pub fn perspective_depth(corners: &[[f64; 2]; 4], p: [f64; 2]) -> f32 {
+    let grid = crate::assistants::Assistant::PerspectiveGrid { corners: *corners };
+    let Some(vps) = grid.vanishing() else { return 1.0 };
+    // The horizon: through two vanishing points, or through one along the parallel direction.
+    let (origin, dir) = match (vps[0], vps[1]) {
+        (Ok(a), Ok(b)) => (a, [b[0] - a[0], b[1] - a[1]]),
+        (Ok(a), Err(d)) | (Err(d), Ok(a)) => (a, d),
+        (Err(_), Err(_)) => return 1.0,
+    };
+    let len = dir[0].hypot(dir[1]);
+    if !len.is_finite() || len < 1e-9 {
+        return 1.0;
+    }
+    let n = [-dir[1] / len, dir[0] / len];
+    let signed = |q: [f64; 2]| (q[0] - origin[0]) * n[0] + (q[1] - origin[1]) * n[1];
+    // The near edge is the corner farthest from the horizon; depth scales against it.
+    let far = corners.iter().map(|c| signed(*c)).fold(0.0f64, |m, v| if v.abs() > m.abs() { v } else { m });
+    if !far.is_finite() || far.abs() < 1e-9 {
+        return 1.0;
+    }
+    let d = signed(p) / far;
+    if d.is_finite() { d.clamp(0.0, 1.0) as f32 } else { 1.0 }
 }
 
 /// Walks a polyline and emits steps every `step_len(point)` pixels, plus airbrush steps in time.
@@ -308,6 +359,21 @@ pub struct PathWalker {
     /// Pixel-grid stepping for small aliased tips: the dab-centre offset inside a pixel (see
     /// [`PathWalker::pixel_grid`]).
     grid: Option<f64>,
+    /// Path length up to `last`.
+    dist_base: f64,
+    /// Path length at the step being emitted.
+    emit_dist: f64,
+    /// Timestamp of the first point.
+    start_time: Option<f64>,
+    /// Highest pressure so far.
+    pressure_in: f32,
+    /// The stroke's one random value (Fuzzy Stroke).
+    stroke_rand: f32,
+    /// Perspective grid the Perspective sensor reads.
+    perspective: Option<[[f64; 2]; 4]>,
+    /// Speed normalisation (`VELOCITY_FULL_PX_PER_MS / speed_max`) and 0..1 smoothing.
+    speed_scale: f32,
+    speed_smoothing: f32,
 }
 
 impl PathWalker {
@@ -326,7 +392,25 @@ impl PathWalker {
             speed_interval: None,
             speed_acc: 0.0,
             grid: None,
+            dist_base: 0.0,
+            emit_dist: 0.0,
+            start_time: None,
+            pressure_in: 0.0,
+            stroke_rand: 0.5,
+            perspective: None,
+            speed_scale: 1.0,
+            speed_smoothing: 0.0,
         }
+    }
+
+    /// The stroke-level sensor inputs: the Fuzzy Stroke value, the perspective grid, and the
+    /// tablet speed settings (`speed_max` in px/ms reads as 1; `smoothing` 0..1 between points).
+    pub fn sensors(mut self, stroke_rand: f32, perspective: Option<[[f64; 2]; 4]>, speed_max: f32, smoothing: f32) -> Self {
+        self.stroke_rand = if stroke_rand.is_finite() { stroke_rand.clamp(0.0, 1.0) } else { 0.5 };
+        self.perspective = perspective;
+        self.speed_scale = if speed_max.is_finite() && speed_max > 0.0 { VELOCITY_FULL_PX_PER_MS / speed_max } else { 1.0 };
+        self.speed_smoothing = if smoothing.is_finite() { smoothing.clamp(0.0, 0.99) } else { 0.0 };
+        self
     }
 
     /// Step pixel by pixel instead of by distance: one step per pixel along the segment's major
@@ -350,11 +434,13 @@ impl PathWalker {
             return false;
         }
         let steps = n as u64;
+        let len = (p.x - a.x).hypot(p.y - a.y);
         for i in 1..=steps {
             let i = i as f64;
             let mut q = lerp_pt(a, p, i / n);
             q.x = x0 + (dx * i / n).round() + offset;
             q.y = y0 + (dy * i / n).round() + offset;
+            self.emit_dist = self.dist_base + len * i / n;
             self.emit(q, out);
         }
         true
@@ -374,7 +460,25 @@ impl PathWalker {
     }
 
     fn emit(&mut self, point: StrokePoint, out: &mut impl FnMut(StepInput)) {
-        let s = StepInput { point, direction: self.dir, initial_direction: self.initial_dir.unwrap_or(self.dir), step: self.step, speed: self.speed };
+        if point.pressure.is_finite() {
+            self.pressure_in = self.pressure_in.max(point.pressure.clamp(0.0, 1.0));
+        }
+        let elapsed = match self.start_time {
+            Some(t0) if point.time.is_finite() && point.time >= t0 => point.time - t0,
+            _ => 0.0,
+        };
+        let s = StepInput {
+            point,
+            direction: self.dir,
+            initial_direction: self.initial_dir.unwrap_or(self.dir),
+            step: self.step,
+            speed: self.speed,
+            distance: self.emit_dist,
+            elapsed_ms: elapsed,
+            pressure_in: self.pressure_in,
+            stroke_rand: self.stroke_rand,
+            perspective: self.perspective.as_ref().map_or(1.0, |g| perspective_depth(g, [point.x, point.y])),
+        };
         self.step += 1;
         out(s);
     }
@@ -384,6 +488,9 @@ impl PathWalker {
             self.last = Some(p);
             self.pending_first = Some(p);
             self.next_at = step_len(&p);
+            if p.time.is_finite() {
+                self.start_time = Some(p.time);
+            }
             return;
         };
         let (dx, dy) = (p.x - a.x, p.y - a.y);
@@ -394,9 +501,13 @@ impl PathWalker {
                 self.initial_dir = Some(self.dir);
             }
             let dt = p.time - a.time;
-            self.speed = if dt > 0.0 && dt.is_finite() { (len / dt) as f32 } else { 0.0 };
+            let raw = if dt > 0.0 && dt.is_finite() { (len / dt) as f32 * self.speed_scale } else { 0.0 };
+            // Tablet settings: smooth the speed reading between input points.
+            self.speed =
+                if self.speed_smoothing > 0.0 && self.speed.is_finite() { self.speed + (raw - self.speed) * (1.0 - self.speed_smoothing) } else { raw };
         }
         if let Some(f) = self.pending_first.take() {
+            self.emit_dist = self.dist_base;
             self.emit(f, out);
         }
         if len > 1e-9 {
@@ -408,6 +519,7 @@ impl PathWalker {
                     if !self.grid.is_some_and(|g| self.grid_steps(&a, &p, g, out)) {
                         while self.next_at <= len + 1e-9 {
                             let q = lerp_pt(&a, &p, (self.next_at / len).min(1.0));
+                            self.emit_dist = self.dist_base + self.next_at.min(len);
                             self.emit(q, out);
                             self.next_at += step_len(&q).max(0.25);
                         }
@@ -421,6 +533,7 @@ impl PathWalker {
                     while self.speed_acc >= iv && n < max_n {
                         self.speed_acc -= iv;
                         let f = ((dt - self.speed_acc) / dt).clamp(0.0, 1.0);
+                        self.emit_dist = self.dist_base + len * f;
                         self.emit(lerp_pt(&a, &p, f), out);
                         n += 1;
                     }
@@ -438,8 +551,10 @@ impl PathWalker {
                 if dt > iv * MAX_AIRBRUSH_DABS_PER_SEGMENT as f64 {
                     // A stalled or hostile timestamp must not replay an arbitrarily long backlog.
                     self.time_acc = 0.0;
+                    self.emit_dist = self.dist_base + len;
                     self.emit(p, out);
                     self.last = Some(p);
+                    self.dist_base += len;
                     return;
                 }
                 self.time_acc += dt;
@@ -447,16 +562,21 @@ impl PathWalker {
                 while self.time_acc >= iv && n < MAX_AIRBRUSH_DABS_PER_SEGMENT {
                     self.time_acc -= iv;
                     let f = ((dt - self.time_acc) / dt).clamp(0.0, 1.0);
+                    self.emit_dist = self.dist_base + len * f;
                     self.emit(lerp_pt(&a, &p, f), out);
                     n += 1;
                 }
             }
         }
         self.last = Some(p);
+        if len.is_finite() {
+            self.dist_base += len;
+        }
     }
 
     pub fn finish(&mut self, out: &mut impl FnMut(StepInput)) {
         if let Some(f) = self.pending_first.take() {
+            self.emit_dist = self.dist_base;
             self.emit(f, out);
         }
     }
@@ -469,17 +589,58 @@ impl PathWalker {
 /// Scalar control value in 0..1. The drawing-angle and Random controls need the dynamic's
 /// settings and a random value: see [`sensor_value`]; here they read 1.
 pub fn control_value(c: Control, fade_steps: u32, s: &StepInput) -> f32 {
+    control_value_len(c, fade_steps, crate::brush::DEFAULT_SENSOR_LENGTH, false, s)
+}
+
+/// [`control_value`] with the Distance (pixels) and Time (seconds) sensors' `length` and
+/// `repeat` (see [`Dynamic::length`]).
+pub fn control_value_len(c: Control, fade_steps: u32, length: f32, repeat: bool, s: &StepInput) -> f32 {
     let p = &s.point;
+    let ramp = |v: f64| -> f32 {
+        let len = if length.is_finite() && length > 0.0 { f64::from(length) } else { f64::from(crate::brush::DEFAULT_SENSOR_LENGTH) };
+        let t = v / len;
+        if !t.is_finite() {
+            return 0.0;
+        }
+        (if repeat { t.rem_euclid(1.0) } else { t.clamp(0.0, 1.0) }) as f32
+    };
     match c {
         Control::Off | Control::InitialDirection | Control::Direction | Control::DrawingAngle | Control::Random => 1.0,
         Control::Fade => 1.0 - (s.step as f32 / fade_steps.max(1) as f32).min(1.0),
         Control::PenPressure => p.pressure.clamp(0.0, 1.0),
         // Upright pen = 1, flat pen = 0 (a mouse reports no tilt, so paints at full value).
-        Control::PenTilt => 1.0 - (p.tilt_x.hypot(p.tilt_y) / 90.0).clamp(0.0, 1.0),
+        Control::PenTilt | Control::TiltElevation => 1.0 - (p.tilt_x.hypot(p.tilt_y) / 90.0).clamp(0.0, 1.0),
         Control::StylusWheel => p.wheel.clamp(0.0, 1.0),
         Control::Rotation => (p.rotation.rem_euclid(360.0)) / 360.0,
         Control::Velocity => velocity_value(s.speed),
+        Control::TiltX => (p.tilt_x / 180.0 + 0.5).clamp(0.0, 1.0),
+        Control::TiltY => (p.tilt_y / 180.0 + 0.5).clamp(0.0, 1.0),
+        Control::TiltDirection => (tilt_direction_deg(p) / 360.0 + 0.5).clamp(0.0, 1.0),
+        Control::Distance => ramp(s.distance),
+        Control::Time => ramp(s.elapsed_ms / 1000.0),
+        Control::PressureIn => s.pressure_in.clamp(0.0, 1.0),
+        Control::FuzzyStroke => s.stroke_rand.clamp(0.0, 1.0),
+        Control::Perspective => s.perspective.clamp(0.0, 1.0),
     }
+}
+
+/// The compass direction a stylus leans in, -180..180 degrees (0 = leaning right, counter-
+/// clockwise positive); 0 for an upright pen.
+pub fn tilt_direction_deg(p: &StrokePoint) -> f32 {
+    if p.tilt_x == 0.0 && p.tilt_y == 0.0 { 0.0 } else { (-p.tilt_y).atan2(p.tilt_x).to_degrees() }
+}
+
+/// Turn a point's tilt vector by `offset` degrees (the tablet settings' left-handed tilt
+/// direction offset), keeping its magnitude.
+pub fn offset_tilt(mut p: StrokePoint, offset: f32) -> StrokePoint {
+    if offset != 0.0 && offset.is_finite() && (p.tilt_x != 0.0 || p.tilt_y != 0.0) {
+        let (sn, cs) = offset.to_radians().sin_cos();
+        let (x, y) = (p.tilt_x, p.tilt_y);
+        // Visual angle is counter-clockwise with y up, so y turns the other way.
+        p.tilt_x = x * cs + y * sn;
+        p.tilt_y = -x * sn + y * cs;
+    }
+    p
 }
 
 /// Pointer speed as a 0..1 control value (see [`VELOCITY_FULL_PX_PER_MS`]).
@@ -506,7 +667,15 @@ fn sensor_value(d: &Dynamic, c: Control, fade_steps: u32, curve: &crate::curve::
     let v = match c {
         Control::DrawingAngle => drawing_angle_deg(d, s) / 360.0,
         Control::Random => rnd.clamp(0.0, 1.0),
-        _ => control_value(c, fade_steps, s),
+        _ => {
+            // The primary control takes the dynamic's length and repeat, an extra sensor its own.
+            let (length, repeat) = if c == d.control {
+                (d.length, d.repeat)
+            } else {
+                d.sensors.iter().find(|sen| sen.control == c).map_or((d.length, d.repeat), |sen| (sen.length, sen.repeat))
+            };
+            control_value_len(c, fade_steps, length, repeat, s)
+        }
     };
     if takes_curve(c) { curve.eval(v) } else { v }
 }
@@ -564,6 +733,17 @@ pub fn control_angle(c: Control, fade_steps: u32, s: &StepInput) -> f32 {
         Control::Direction => s.direction.to_degrees(),
         Control::DrawingAngle => s.direction.to_degrees(),
         Control::Random => 0.0,
+        // Tilt Direction turns the tip the way the pen leans; the other new sensors turn it by
+        // their share of a full turn.
+        Control::TiltDirection => tilt_direction_deg(p),
+        c @ (Control::TiltX
+        | Control::TiltY
+        | Control::TiltElevation
+        | Control::Distance
+        | Control::Time
+        | Control::PressureIn
+        | Control::FuzzyStroke
+        | Control::Perspective) => 360.0 * control_value(c, fade_steps, s),
     }
 }
 
@@ -573,6 +753,7 @@ pub fn dynamic_angle(d: &Dynamic, s: &StepInput, rnd: f32) -> f32 {
     match d.control {
         Control::DrawingAngle => drawing_angle_deg(d, s),
         Control::Random => 360.0 * rnd.clamp(0.0, 1.0),
+        c @ (Control::Distance | Control::Time) => 360.0 * control_value_len(c, d.fade_steps, d.length, d.repeat, s),
         c => control_angle(c, d.fade_steps, s),
     }
 }
@@ -908,11 +1089,9 @@ impl DabBuilder {
                     }
                 }
             }
-            // Precision: coarse levels snap the dab size to steps (cheaper tip caches upstream;
-            // here it keeps the look of a low-precision preset).
-            if matches!(b.tip, crate::brush::TipShape::Round) {
-                diameter = b.generated.snap_diameter(diameter);
-            }
+            // Precision below 5 is handled by the renderer, which rasterises a quantised tip
+            // mask once and stamps it for every dab of about that size and angle (a tip cache);
+            // the dab itself keeps its exact size.
             let radius = (diameter / 2.0).max(0.5);
             // Scatter.
             let mut c = Point::new(s.point.x, s.point.y);
@@ -1098,6 +1277,9 @@ impl DabGenerator {
         let dual_on = brush.dual_brush.enabled;
         let mut walker = if brush.spacing_enabled { PathWalker::new(interval) } else { PathWalker::new(interval).speed_spacing(SPEED_SPACING_MS) };
         walker = walker.motion_only(brush.build_up_motion_only);
+        // Stroke-level sensors: one random value per stroke, the perspective grid, tablet speed.
+        let stroke_rand = rand01(brush.seed, 0, stream::FUZZY_STROKE);
+        walker = walker.sensors(stroke_rand, brush.perspective_grid, brush.speed_max, brush.speed_smoothing);
         // A small aliased tip whose dabs are at most a pixel apart steps pixel by pixel (#2139).
         if brush.aliased && brush.size * brush.spacing.max(0.01) <= 1.0 {
             walker = walker.pixel_grid(f64::from(crate::render::grid_center(0.0, 0.0, brush.size).0));
@@ -1105,7 +1287,7 @@ impl DabGenerator {
         Self {
             smoother: Smoother::new(&brush.smoothing, zoom),
             walker,
-            dual_walker: dual_on.then(|| PathWalker::new(None)),
+            dual_walker: dual_on.then(|| PathWalker::new(None).sensors(stroke_rand, brush.perspective_grid, brush.speed_max, brush.speed_smoothing)),
             builder: DabBuilder::new(&brush),
             dual: dual_on.then(|| DualBuilder::new(&brush)),
             scratch: Vec::new(),
@@ -1114,7 +1296,7 @@ impl DabGenerator {
 
     fn walk(&mut self, pts: &[StrokePoint], dabs: &mut Vec<Dab>, dual: &mut Vec<Dab>) {
         for p in pts {
-            let p = apply_pose(&self.builder.brush, *p);
+            let p = offset_tilt(apply_pose(&self.builder.brush, *p), self.builder.brush.tilt_direction_offset);
             // Dynamics presets' Rate output: the airbrush rate follows the sensor at each point.
             if self.builder.brush.build_up && self.builder.brush.rate_dynamic.is_active() {
                 let b = &self.builder.brush;

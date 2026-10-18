@@ -5490,3 +5490,11 @@ shape	Appearance	Aspetto
 	Code	Codice
 	Cmd+Enter runs the code	Cmd+Invio esegue il codice
 	Clear Log	Cancella registro
+	Length over which the value goes from 0 to 1	Lunghezza su cui il valore passa da 0 a 1
+	Start over past the length instead of holding the end value	Ricominciare oltre la lunghezza invece di mantenere il valore finale
+	Pressure In	Pressione in aumento
+	X-Tilt	Inclinazione X
+	Y-Tilt	Inclinazione Y
+	Tilt Direction	Direzione inclinazione
+	Tilt Elevation	Elevazione inclinazione
+	Fuzzy Stroke	Casuale per tratto

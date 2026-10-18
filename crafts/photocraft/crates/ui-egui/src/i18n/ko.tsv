@@ -4580,3 +4580,12 @@ curves	Smooth	매끄럽게
 	Code	코드
 	Cmd+Enter runs the code	Cmd+Enter로 코드를 실행합니다
 	Clear Log	로그 지우기
+	Length over which the value goes from 0 to 1	값이 0에서 1로 변하는 길이
+	Start over past the length instead of holding the end value	길이를 넘으면 끝 값을 유지하지 않고 처음부터 반복
+	Pressure In	압력 (상승만)
+	X-Tilt	X 기울기
+	Y-Tilt	Y 기울기
+	Tilt Direction	기울기 방향
+	Tilt Elevation	기울기 고도
+	Time	시간
+	Fuzzy Stroke	스트로크 랜덤

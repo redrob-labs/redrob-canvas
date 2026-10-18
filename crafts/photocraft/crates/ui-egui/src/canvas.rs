@@ -4012,6 +4012,36 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
                                 }
                                 egui::CursorIcon::None
                             }
+                            // Align Outline to Pixel Grid (Sharpness on): the staircase of whole
+                            // pixels the aliased dab fills, on the pixel grid (pixel art).
+                            _ if brush.aliased && brush.align_outline => {
+                                let doc = xf.to_doc(p);
+                                let ppp = painter.ctx().pixels_per_point();
+                                let px = 1.0 / ppp;
+                                match redrob_photo_engine::paint::outline::pixel_aligned_outline(brush, doc[0], doc[1]) {
+                                    Some(ring) => {
+                                        let snap = |v: f32| (v * ppp).round() / ppp;
+                                        let pts: Vec<Pos2> = ring
+                                            .iter()
+                                            .map(|q| {
+                                                let s = xf.to_screen(q[0], q[1]);
+                                                pos2(snap(s.x), snap(s.y))
+                                            })
+                                            .collect();
+                                        painter.add(egui::Shape::closed_line(pts.clone(), Stroke::new(px * 2.0, Color32::from_black_alpha(160))));
+                                        painter.add(egui::Shape::closed_line(pts, Stroke::new(px, Color32::from_white_alpha(230))));
+                                    }
+                                    None => {
+                                        let sq = pencil_cursor_rect(&xf, doc, brush.size, ppp);
+                                        painter.rect_stroke(sq, 0.0, Stroke::new(px, Color32::from_black_alpha(160)), egui::StrokeKind::Outside);
+                                        painter.rect_stroke(sq, 0.0, Stroke::new(px, Color32::from_white_alpha(230)), egui::StrokeKind::Inside);
+                                    }
+                                }
+                                if cur.show_crosshair_in_brush_tip {
+                                    crate::tool_cursor::crosshair(&painter, p, 4.0, 0.0);
+                                }
+                                egui::CursorIcon::None
+                            }
                             // A shaped tip (sampled bitmap, or a rotated/flattened round tip)
                             // traces its outline, turned and flipped with the view; a plain round
                             // tip keeps the circle.

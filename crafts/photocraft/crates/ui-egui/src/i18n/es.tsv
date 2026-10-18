@@ -5334,3 +5334,11 @@ navigator	Zoom	Zoom
 	Code	Código
 	Cmd+Enter runs the code	Cmd+Intro ejecuta el código
 	Clear Log	Borrar registro
+	Length over which the value goes from 0 to 1	Longitud en la que el valor va de 0 a 1
+	Start over past the length instead of holding the end value	Volver a empezar al superar la longitud en vez de mantener el valor final
+	Pressure In	Presión creciente
+	X-Tilt	Inclinación X
+	Y-Tilt	Inclinación Y
+	Tilt Direction	Dirección de inclinación
+	Tilt Elevation	Elevación de inclinación
+	Fuzzy Stroke	Aleatorio por trazo

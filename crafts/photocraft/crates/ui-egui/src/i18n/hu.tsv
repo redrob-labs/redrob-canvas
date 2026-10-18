@@ -4736,3 +4736,11 @@ cameraRaw	Yellow	Sárga
 	Code	Kód
 	Cmd+Enter runs the code	A Cmd+Enter futtatja a kódot
 	Clear Log	Napló törlése
+	Length over which the value goes from 0 to 1	Hossz, amelyen az érték 0-ról 1-re nő
+	Start over past the length instead of holding the end value	A hossz után újrakezdés a végérték megtartása helyett
+	Pressure In	Nyomás (csak növekvő)
+	X-Tilt	X dőlés
+	Y-Tilt	Y dőlés
+	Tilt Direction	Dőlés iránya
+	Tilt Elevation	Dőlés magassága
+	Fuzzy Stroke	Véletlen vonásonként

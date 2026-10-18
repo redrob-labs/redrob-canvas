@@ -4523,3 +4523,11 @@ curves	Smooth	Εξομάλυνση
 	Code	Κώδικας
 	Cmd+Enter runs the code	Το Cmd+Enter εκτελεί τον κώδικα
 	Clear Log	Καθαρισμός καταγραφής
+	Length over which the value goes from 0 to 1	Μήκος στο οποίο η τιμή πηγαίνει από 0 σε 1
+	Start over past the length instead of holding the end value	Επανεκκίνηση μετά το μήκος αντί να διατηρείται η τελική τιμή
+	Pressure In	Πίεση (μόνο αύξηση)
+	X-Tilt	Κλίση X
+	Y-Tilt	Κλίση Y
+	Tilt Direction	Κατεύθυνση κλίσης
+	Tilt Elevation	Ανύψωση κλίσης
+	Fuzzy Stroke	Τυχαίο ανά πινελιά

@@ -8,17 +8,17 @@
 //! chunks and re-composited incrementally for interactive painting (see [`StrokeRenderer`]).
 
 use std::collections::{HashMap, HashSet};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use redrob_photo_color::{BlendMode, ColorMode, PixelFormat, SampleType};
 use redrob_photo_geom::Rect;
 use redrob_photo_raster::{Surface, from_rgba_into, to_rgba};
 
-use crate::brush::{BrushSettings, GeneratedTip, MaskMode, MaskType, Pattern, TipGeometry, TipShape};
+use crate::brush::{BrushSettings, GeneratedTip, MaskMode, MaskType, Pattern, TipGeometry, TipMode, TipShape};
 use crate::dynamics::DabGenerator;
 use crate::retouch::{Footprint, alpha_index, over_native};
 use crate::rng::hash2;
-use crate::tile::{Mips, PatternImage};
+use crate::tile::{ColorMips, Mips, PatternImage};
 use crate::{Dab, StrokePoint, dab_coverage, tip_falloff, tip_reach};
 
 /// Salt of the 8-bit dither's per-pixel noise.
@@ -75,11 +75,14 @@ fn generated_coverage(g: &GeneratedTip, u: f32, v: f32, ro: f32, rm: f32, hardne
     let rn = d.clamp(0.0, 1.0);
     let mut val = match g.mask {
         MaskType::Default => {
+            // The fade per axis softens the measured tip along that axis: the hardness in the
+            // pixel's direction is scaled by the fade radius there (1 = the full hardness).
+            let h = if g.fade_x < 1.0 || g.fade_v() < 1.0 { hardness * fade.clamp(0.0, 1.0) } else { hardness };
             let dd = d * rm;
-            if dd >= tip_reach(rm, hardness) + 0.5 {
+            if dd >= tip_reach(rm, h) + 0.5 {
                 return None;
             }
-            tip_falloff(dd, rm, hardness)
+            tip_falloff(dd, rm, h)
         }
         MaskType::Soft | MaskType::Gaussian => {
             if d >= 1.0 {
@@ -215,7 +218,24 @@ pub struct BrushContext {
     /// Image hose cells ([`BrushSettings::hose`]), indexed by [`Dab::cell`]; empty without a hose.
     cells: Vec<Arc<Mips>>,
     texture: Option<Arc<PatternImage>>,
+    /// The colours of a colour tip ([`BrushSettings::tip_color`]) for the Color Stamp, Lightness
+    /// and Gradient Map tip modes.
+    color_tip: Option<Arc<ColorMips>>,
+    /// Precision below 5: tip masks rasterised once at quantised size, angle and roundness and
+    /// stamped for every dab near those values (see [`GeneratedTip::precision`]).
+    mask_cache: Arc<Mutex<HashMap<u64, Arc<CachedMask>>>>,
 }
+
+/// One cached tip mask: the coverage of a dab centred on a pixel centre, over `rect` relative
+/// to the dab's pixel.
+#[derive(Debug)]
+struct CachedMask {
+    rect: Rect,
+    vals: Vec<f32>,
+}
+
+/// Most masks the precision cache keeps per brush context.
+const MAX_CACHED_MASKS: usize = 256;
 
 fn prepare_pattern(b: &BrushSettings) -> Option<Arc<PatternImage>> {
     let t = &b.texture;
@@ -255,13 +275,206 @@ impl BrushContext {
             Some(h) if h.is_active() => h.cells.iter().map(|g| Arc::new(Mips::new(g))).collect(),
             _ => Vec::new(),
         };
+        let color_tip = match (&brush.tip_color, brush.tip.bitmap()) {
+            (Some(c), Some(g)) if c.is_valid() && c.width == g.width && c.height == g.height && brush.tip_mode.is_colored() => {
+                Some(Arc::new(ColorMips::new(c)))
+            }
+            _ => None,
+        };
         Self {
             tip: mips(&brush.tip),
             dual_tip: if brush.dual_brush.enabled { mips(&brush.dual_brush.tip) } else { None },
             cells,
             texture: prepare_pattern(&brush),
+            color_tip,
+            mask_cache: Arc::new(Mutex::new(HashMap::new())),
             brush,
         }
+    }
+
+    /// Does this brush paint per-pixel colours from its tip (a colour tip mode on a sampled tip)?
+    pub fn paints_tip_colors(&self) -> bool {
+        self.brush.paints_tip_colors() && self.tip.is_some()
+    }
+
+    /// The straight display RGB of a dab's pixel for a colour tip mode, given the tip-space
+    /// sample position `(px, py)` in bitmap pixels, the sampled coverage `cov` there, and the
+    /// dab's own colour (Lightness and Gradient Map read the tip's lightness; without a colour
+    /// bitmap the mask's value stands in for it).
+    #[inline]
+    fn tip_pixel_color(&self, level: usize, u: f32, v: f32, cov: f32, d: &Dab) -> [f32; 3] {
+        let b = &self.brush;
+        let tip_rgb = self.color_tip.as_ref().map(|c| c.sample(level.min(c.levels.len() - 1), u, v));
+        match b.tip_mode {
+            TipMode::Mask => [d.color[0], d.color[1], d.color[2]],
+            TipMode::ColorStamp => tip_rgb.unwrap_or([d.color[0], d.color[1], d.color[2]]),
+            TipMode::Lightness => {
+                let l = tip_rgb.map_or(cov, |c| 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
+                let l = b.tip_adjust.lightness(l);
+                let n = b.tip_adjust.neutral_point.clamp(0.0, 1.0);
+                // Below the neutral point the colour darkens towards black, above it lightens
+                // towards white, in proportion.
+                let base = [d.color[0], d.color[1], d.color[2]];
+                if l <= n {
+                    let k = if n > 0.0 { l / n } else { 1.0 };
+                    [base[0] * k, base[1] * k, base[2] * k]
+                } else {
+                    let k = if n < 1.0 { (l - n) / (1.0 - n) } else { 0.0 };
+                    [base[0] + (1.0 - base[0]) * k, base[1] + (1.0 - base[1]) * k, base[2] + (1.0 - base[2]) * k]
+                }
+            }
+            TipMode::GradientMap => {
+                let l = tip_rgb.map_or(cov, |c| 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
+                let t = b.tip_adjust.lightness(l);
+                let c = if !b.color_gradient.is_empty() {
+                    let stops: Vec<crate::brush::GradientStop> =
+                        b.color_gradient.iter().map(|(p, c)| crate::brush::GradientStop { position: *p, color: *c }).collect();
+                    crate::brush::gradient_at(&stops, b.color, b.background, t)
+                } else {
+                    crate::brush::gradient_at(&b.color_dynamics.gradient, b.color, b.background, t)
+                };
+                [c[0], c[1], c[2]]
+            }
+        }
+    }
+
+    /// Rasterise a dab of a colour tip mode: the coverage into `out` as [`Self::rasterize`] does,
+    /// and each painted pixel's straight display RGB into `colors` (3 floats per pixel of `rect`,
+    /// the dab's colour where the tip isn't sampled).
+    pub fn rasterize_colored(&self, d: &Dab, rect: Rect, out: &mut Vec<f32>, colors: &mut Vec<f32>) {
+        self.rasterize_raw(d, false, rect, out, None);
+        let (w, h) = (rect.width() as usize, rect.height() as usize);
+        colors.clear();
+        colors.resize(w * h * 3, 0.0);
+        let Some(m) = self.primary_mips(d) else {
+            for (i, v) in out.iter().enumerate() {
+                if *v > 0.0 {
+                    colors[i * 3..i * 3 + 3].copy_from_slice(&d.color[..3]);
+                }
+            }
+            return;
+        };
+        // The same tip mapping as the mask pass.
+        let (cx, cy) = (d.center.x as f32, d.center.y as f32);
+        let (sn, cs) = d.angle.sin_cos();
+        let (fx, fy) = (if d.flip_x { -1.0 } else { 1.0 }, if d.flip_y { -1.0 } else { 1.0 });
+        let proj = (d.proj_scale < 0.999).then(|| {
+            let (ps, pc) = d.proj_angle.sin_cos();
+            (pc, ps, 1.0 / d.proj_scale.max(0.05) - 1.0)
+        });
+        let r = d.radius;
+        let ro = d.roundness.max(0.5 / r).min(1.0);
+        let (w0, h0, _) = &m.levels[0];
+        let big = *w0.max(h0) as f32;
+        let (level, inv_scale, tw, th) = (m.level_for(2.0 * r * ro.max(0.25)), big / (2.0 * r), *w0 as f32, *h0 as f32);
+        let to_tip = |dx: f32, dy: f32| {
+            let (mut ux, mut uy) = (dx, -dy);
+            if let Some((ax, ay, k)) = proj {
+                let t = (ux * ax + uy * ay) * k;
+                ux += t * ax;
+                uy += t * ay;
+            }
+            ((ux * cs + uy * sn) * fx, (-ux * sn + uy * cs) * fy)
+        };
+        for yy in 0..h {
+            let dy = (rect.y0 + yy as i32) as f32 + 0.5 - cy;
+            for xx in 0..w {
+                let i = yy * w + xx;
+                let cov = out[i];
+                if cov <= 0.0 {
+                    continue;
+                }
+                let dx = (rect.x0 + xx as i32) as f32 + 0.5 - cx;
+                let (u, v) = to_tip(dx, dy);
+                let (px, py) = (u * inv_scale + tw / 2.0, -(v / ro) * inv_scale + th / 2.0);
+                let mask = m.sample_clamped(level, px / tw, py / th);
+                let c = self.tip_pixel_color(level, (px / tw).clamp(0.0, 1.0), (py / th).clamp(0.0, 1.0), mask, d);
+                colors[i * 3..i * 3 + 3].copy_from_slice(&c);
+            }
+        }
+    }
+
+    /// The quantised dab the precision cache keys on, or `None` when this dab rasterises exactly
+    /// (precision 5, a sampled tip, an aliased tip, or any per-pixel stroke feature).
+    fn cache_key(&self, d: &Dab, dual: bool) -> Option<(u64, Dab)> {
+        let b = &self.brush;
+        if dual
+            || self.tip.is_some()
+            || !self.cells.is_empty()
+            || b.aliased
+            || b.noise
+            || b.wet_edges
+            || (b.texture.enabled && b.texture.each_tip)
+            || d.proj_scale < 0.999
+        {
+            return None;
+        }
+        let diameter = 2.0 * d.radius;
+        let step = b.generated.precision_step(diameter);
+        if step <= 0.0 || !diameter.is_finite() || diameter <= 0.0 {
+            return None;
+        }
+        // Geometric size steps (never to 0), angle steps of a few degrees, roundness steps.
+        let k = 1.0 + step;
+        let qr = (k.powf((diameter.ln() / k.ln()).floor()) / 2.0).max(0.5);
+        let angle_step = (std::f32::consts::TAU * step).max(1e-3);
+        let qa = (d.angle / angle_step).round() * angle_step;
+        let qro = ((d.roundness / step).round() * step).clamp(0.01, 1.0);
+        let qh = ((d.hardness / step).round() * step).clamp(0.0, 1.0);
+        let q = Dab { center: redrob_photo_geom::Point::new(0.5, 0.5), radius: qr, angle: qa, roundness: qro, alpha: 1.0, hardness: qh, ..*d };
+        let mut key = qr.to_bits() as u64;
+        key = key.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ u64::from(qa.to_bits());
+        key = key.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ u64::from(qro.to_bits());
+        key = key.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ u64::from(qh.to_bits());
+        key = key.wrapping_mul(0x9E37_79B9_7F4A_7C15) ^ ((d.flip_x as u64) | ((d.flip_y as u64) << 1));
+        Some((key, q))
+    }
+
+    /// Rasterise through the precision cache: the quantised mask is rasterised once (centred on a
+    /// pixel centre) and stamped at the dab's pixel. Returns false when the dab isn't cacheable.
+    fn rasterize_cached(&self, d: &Dab, rect: Rect, out: &mut Vec<f32>) -> bool {
+        let Some((key, q)) = self.cache_key(d, false) else { return false };
+        let mask = {
+            let found = self.mask_cache.lock().ok().and_then(|c| c.get(&key).cloned());
+            match found {
+                Some(m) => m,
+                None => {
+                    let qrect = self.dab_rect(&q, false);
+                    let mut vals = Vec::new();
+                    self.rasterize_raw(&q, false, qrect, &mut vals, None);
+                    let m = Arc::new(CachedMask { rect: qrect, vals });
+                    if let Ok(mut c) = self.mask_cache.lock() {
+                        if c.len() >= MAX_CACHED_MASKS {
+                            c.clear();
+                        }
+                        c.insert(key, m.clone());
+                    }
+                    m
+                }
+            }
+        };
+        let (w, h) = (rect.width() as usize, rect.height() as usize);
+        out.clear();
+        out.resize(w * h, 0.0);
+        let (ox, oy) = (d.center.x.floor() as i32, d.center.y.floor() as i32);
+        let mw = mask.rect.width() as usize;
+        for yy in 0..h {
+            let my = rect.y0 + yy as i32 - oy - mask.rect.y0;
+            if my < 0 || my >= mask.rect.height() {
+                continue;
+            }
+            for xx in 0..w {
+                let mx = rect.x0 + xx as i32 - ox - mask.rect.x0;
+                if mx < 0 || mx >= mask.rect.width() {
+                    continue;
+                }
+                let v = mask.vals[my as usize * mw + mx as usize];
+                if v > 0.0 {
+                    out[yy * w + xx] = v * d.alpha;
+                }
+            }
+        }
+        true
     }
 
     /// The sampled tip a primary dab paints with: its image hose cell, else the brush tip.
@@ -317,7 +530,15 @@ impl BrushContext {
 
     /// [`rasterize`](Self::rasterize); with `depth`, Wet Edges is left out of `out` and each
     /// painted pixel's depth inside the dab (`1 − rn`) goes to `depth`, for the stroke to apply it.
-    pub fn rasterize_into(&self, d: &Dab, dual: bool, rect: Rect, out: &mut Vec<f32>, mut depth: Option<&mut Vec<f32>>) {
+    pub fn rasterize_into(&self, d: &Dab, dual: bool, rect: Rect, out: &mut Vec<f32>, depth: Option<&mut Vec<f32>>) {
+        if depth.is_none() && !dual && self.brush.generated.caches_tips(2.0 * d.radius) && self.rasterize_cached(d, rect, out) {
+            return;
+        }
+        self.rasterize_raw(d, dual, rect, out, depth);
+    }
+
+    /// [`rasterize_into`](Self::rasterize_into) without the precision cache.
+    fn rasterize_raw(&self, d: &Dab, dual: bool, rect: Rect, out: &mut Vec<f32>, mut depth: Option<&mut Vec<f32>>) {
         let (w, h) = (rect.width() as usize, rect.height() as usize);
         out.clear();
         out.resize(w * h, 0.0);
@@ -623,6 +844,76 @@ impl CoverageMap {
         }
     }
 
+    /// [`accumulate`](Self::accumulate) with a colour per pixel of `rect` (`nc` native channels
+    /// each, straight) instead of one per dab: colour tip modes.
+    pub fn accumulate_px(&mut self, rect: Rect, vals: &[f32], ceil: f32, colors: &[f32], depth: Option<&[f32]>) {
+        if rect.is_empty() {
+            return;
+        }
+        self.bounds = self.bounds.union(&rect);
+        let w = rect.width() as usize;
+        let nc = self.nc;
+        let want_col = nc > 0 && colors.len() >= vals.len() * nc;
+        let (t0x, t0y) = (rect.x0.div_euclid(COV_TILE), rect.y0.div_euclid(COV_TILE));
+        let (t1x, t1y) = ((rect.x1 - 1).div_euclid(COV_TILE), (rect.y1 - 1).div_euclid(COV_TILE));
+        for ty in t0y..=t1y {
+            for tx in t0x..=t1x {
+                let tr = Rect::new(tx * COV_TILE, ty * COV_TILE, (tx + 1) * COV_TILE, (ty + 1) * COV_TILE).intersect(&rect);
+                if tr.is_empty() {
+                    continue;
+                }
+                let any = (tr.y0..tr.y1).any(|y| {
+                    let row = (y - rect.y0) as usize * w;
+                    vals[row + (tr.x0 - rect.x0) as usize..row + (tr.x1 - rect.x0) as usize].iter().any(|&v| v > 0.0)
+                });
+                if !any {
+                    continue;
+                }
+                let tile = self.tiles.entry((tx, ty)).or_insert_with(|| CovTile {
+                    cov: vec![0.0; (COV_TILE * COV_TILE) as usize],
+                    depth: Vec::new(),
+                    col: if want_col { vec![0.0; (COV_TILE * COV_TILE) as usize * nc] } else { Vec::new() },
+                });
+                if want_col && tile.col.is_empty() {
+                    tile.col = vec![0.0; (COV_TILE * COV_TILE) as usize * nc];
+                }
+                if depth.is_some() && tile.depth.is_empty() {
+                    tile.depth = vec![0.0; (COV_TILE * COV_TILE) as usize];
+                }
+                self.dirty.insert((tx, ty));
+                for y in tr.y0..tr.y1 {
+                    let row = (y - rect.y0) as usize * w;
+                    let trow = ((y - ty * COV_TILE) * COV_TILE) as usize;
+                    for x in tr.x0..tr.x1 {
+                        let pi = row + (x - rect.x0) as usize;
+                        let v = vals[pi];
+                        if v <= 0.0 {
+                            continue;
+                        }
+                        let ti = trow + (x - tx * COV_TILE) as usize;
+                        if let (Some(dv), Some(slot)) = (depth.and_then(|dp| dp.get(pi)), tile.depth.get_mut(ti)) {
+                            *slot = slot.max(*dv);
+                        }
+                        let c = tile.cov[ti];
+                        let nv = if ceil > c { c + v * (ceil - c) } else { c };
+                        if nv <= c {
+                            continue;
+                        }
+                        if want_col {
+                            let k = if c < 1.0 { (nv - c) / (1.0 - c) } else { 0.0 };
+                            let col = &colors[pi * nc..(pi + 1) * nc];
+                            let p = &mut tile.col[ti * nc..(ti + 1) * nc];
+                            for i in 0..nc {
+                                p[i] = col[i] * k + p[i] * (1.0 - k);
+                            }
+                        }
+                        tile.cov[ti] = nv;
+                    }
+                }
+            }
+        }
+    }
+
     fn take_dirty(&mut self) -> Vec<(i32, i32)> {
         let mut v: Vec<_> = self.dirty.drain().collect();
         v.sort_unstable();
@@ -833,7 +1124,7 @@ impl StrokeRenderer {
     }
     /// `fmt` = target pixel format (needed for per-dab colour); `zoom` for smoothing.
     pub fn new(brush: &BrushSettings, fmt: Option<PixelFormat>, zoom: f32) -> Self {
-        let per_dab_color = brush.color_dynamics.enabled && !brush.erase && fmt.is_some();
+        let per_dab_color = (brush.color_dynamics.enabled || brush.paints_tip_colors()) && !brush.erase && fmt.is_some();
         let nc = if per_dab_color { fmt.map_or(0, |f| f.mode.color_channels()) } else { 0 };
         Self {
             ctx: BrushContext::new(brush),
@@ -872,8 +1163,29 @@ impl StrokeRenderer {
         let mut duals = std::mem::take(&mut self.dual_buf);
         let wet = self.ctx.brush.wet_edges;
         let mut native = [0.0f32; 8];
+        let tip_colors = self.per_dab_color && self.ctx.paints_tip_colors();
+        let mut rgb_scratch: Vec<f32> = Vec::new();
+        let mut native_px: Vec<f32> = Vec::new();
         for d in &dabs {
             let rect = self.ctx.dab_rect(d, false);
+            if let (true, Some(f)) = (tip_colors, self.fmt) {
+                // Colour tip modes: the tip's own colours, pixel by pixel, in the target's channels.
+                self.ctx.rasterize_colored(d, rect, &mut self.scratch, &mut rgb_scratch);
+                let nc = f.mode.color_channels();
+                native_px.clear();
+                native_px.resize(self.scratch.len() * nc, 0.0);
+                for (i, v) in self.scratch.iter().enumerate() {
+                    if *v <= 0.0 {
+                        continue;
+                    }
+                    let rgba = [rgb_scratch[i * 3], rgb_scratch[i * 3 + 1], rgb_scratch[i * 3 + 2], d.color[3]];
+                    from_rgba_into(&f, rgba, &mut native);
+                    native_px[i * nc..(i + 1) * nc].copy_from_slice(&native[..nc]);
+                }
+                self.cov.accumulate_px(rect, &self.scratch, d.opacity, &native_px, None);
+                self.cov.bounds = self.cov.bounds.union(&rect);
+                continue;
+            }
             // Wet Edges acts on the whole stroke (#2088): the dab records how deep it reaches each
             // pixel and the stroke darkens its own rim when composited, not every dab's.
             self.ctx.rasterize_into(d, false, rect, &mut self.scratch, wet.then_some(&mut self.depth_scratch));

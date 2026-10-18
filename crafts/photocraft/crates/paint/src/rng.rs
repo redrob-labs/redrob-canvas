@@ -73,6 +73,8 @@ pub mod stream {
     pub const SENSOR_SAT: u64 = 52;
     pub const SENSOR_VALUE: u64 = 53;
     pub const DARKEN: u64 = 54;
+    /// The Fuzzy Stroke sensor: one value per stroke (index 0).
+    pub const FUZZY_STROKE: u64 = 55;
 }
 
 /// Seed derived from arbitrary bytes (FNV-1a then mixed), for commands without an explicit seed.

@@ -958,6 +958,8 @@ pub(crate) fn set_brush(s: &mut Session, p: &Value) -> Result<Value> {
     if reset {
         s.tools.current_preset = None;
     } else if let Some(name) = picked {
+        // The Brush Preset History docker lists every pick.
+        s.tools.preset_history.record(&name);
         s.tools.current_preset = Some(name);
         // A preset saved with Include Color brings its colour as the foreground (Photoshop).
         if let Some(c) = picked_color {

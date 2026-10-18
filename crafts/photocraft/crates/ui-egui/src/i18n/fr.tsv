@@ -3901,3 +3901,11 @@ curves	Smooth	Lisser
 	Code	Code
 	Cmd+Enter runs the code	Cmd+Entrée exécute le code
 	Clear Log	Effacer le journal
+	Length over which the value goes from 0 to 1	Longueur sur laquelle la valeur va de 0 à 1
+	Start over past the length instead of holding the end value	Recommencer au-delà de la longueur au lieu de garder la valeur finale
+	Pressure In	Pression montante
+	X-Tilt	Inclinaison X
+	Y-Tilt	Inclinaison Y
+	Tilt Direction	Direction d'inclinaison
+	Tilt Elevation	Élévation d'inclinaison
+	Fuzzy Stroke	Aléatoire par trait

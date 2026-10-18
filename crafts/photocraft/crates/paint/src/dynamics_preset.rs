@@ -345,8 +345,11 @@ impl DynamicsPreset {
                 Control::StylusWheel => DynInput::Wheel,
                 Control::Rotation => DynInput::Wheel,
                 Control::Velocity => DynInput::Velocity,
-                Control::InitialDirection | Control::Direction | Control::DrawingAngle => DynInput::Direction,
-                Control::Random => DynInput::Random,
+                Control::InitialDirection | Control::Direction | Control::DrawingAngle | Control::TiltDirection => DynInput::Direction,
+                Control::Random | Control::FuzzyStroke => DynInput::Random,
+                Control::TiltX | Control::TiltY | Control::TiltElevation | Control::Perspective => DynInput::Tilt,
+                Control::PressureIn => DynInput::Pressure,
+                Control::Distance | Control::Time => DynInput::Fade,
             })
         }
         let mut p = Self::new(name, Vec::new());

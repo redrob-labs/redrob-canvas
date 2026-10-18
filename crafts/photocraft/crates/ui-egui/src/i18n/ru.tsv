@@ -3809,3 +3809,12 @@ curves	Smooth	Сгладить
 	Cmd+Enter runs the code	Cmd+Enter выполняет код
 	Clear Log	Очистить журнал
 	Error	Ошибка
+	Length over which the value goes from 0 to 1	Длина, на которой значение растёт от 0 до 1
+	Start over past the length instead of holding the end value	После длины начинать заново, а не держать конечное значение
+	Pressure In	Нажим (только рост)
+	X-Tilt	Наклон X
+	Y-Tilt	Наклон Y
+	Tilt Direction	Направление наклона
+	Tilt Elevation	Высота наклона
+	Distance	Расстояние
+	Fuzzy Stroke	Случайно на штрих

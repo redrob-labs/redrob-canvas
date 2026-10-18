@@ -3826,3 +3826,11 @@ curves	Smooth	Haluskan
 	Code	Kode
 	Cmd+Enter runs the code	Cmd+Enter menjalankan kode
 	Clear Log	Bersihkan Log
+	Length over which the value goes from 0 to 1	Panjang sampai nilai berubah dari 0 ke 1
+	Start over past the length instead of holding the end value	Mulai lagi setelah panjang tercapai, bukan menahan nilai akhir
+	Pressure In	Tekanan naik
+	X-Tilt	Kemiringan X
+	Y-Tilt	Kemiringan Y
+	Tilt Direction	Arah kemiringan
+	Tilt Elevation	Elevasi kemiringan
+	Fuzzy Stroke	Acak per sapuan
