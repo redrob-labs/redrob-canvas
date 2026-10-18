@@ -119,9 +119,9 @@ pub fn list_images(dir: &str) -> Result<Vec<String>> {
 /// Extensions the batch commands pick up from a folder.
 #[cfg(not(target_arch = "wasm32"))]
 const OPENABLE: &[&str] = &[
-    "pdn", "ora", "kra", "krz", "psd", "psb", "rphoto", "png", "jpg", "jpeg", "tif", "tiff", "webp", "gif", "bmp", "tga", "exr", "hdr", "qoi", "ico", "pnm",
-    "ppm", "pgm", "fits", "fit", "fts", "dpx", "heic", "heif", "hif", "dng", "cr2", "nef", "nrw", "arw", "pef", "svg", "svgz", "af", "afdesign", "afphoto",
-    "afpub", "pcraft", // legacy: upstream Photo documents are still picked up
+    "pdn", "ora", "xcf", "kra", "krz", "psd", "psb", "rphoto", "png", "jpg", "jpeg", "tif", "tiff", "webp", "gif", "bmp", "tga", "exr", "hdr", "qoi", "ico",
+    "pnm", "ppm", "pgm", "fits", "fit", "fts", "dpx", "heic", "heif", "hif", "dng", "cr2", "nef", "nrw", "arw", "pef", "svg", "svgz", "af", "afdesign",
+    "afphoto", "afpub", "pcraft", // legacy: upstream Photo documents are still picked up
 ];
 
 /// Whether saving `doc` as a TIFF writes Photoshop layer data (anything beyond a lone
@@ -164,7 +164,7 @@ pub fn saves_in_place(path: &str) -> bool {
 /// .rphoto). A save to one becomes the document's file; any other format is a copy for automation
 /// saves, desktop and headless alike (#1547, #2579).
 pub fn layered_extension(ext: &str) -> bool {
-    matches!(ext, "psd" | "psb" | "rphoto" | "ora")
+    matches!(ext, "psd" | "psb" | "rphoto" | "ora" | "xcf")
 }
 
 /// Whether a file in format `ext` (lower-case) holds the whole of `doc`, so it can be the
@@ -176,6 +176,7 @@ pub fn holds(doc: &redrob_photo_doc::Document, ext: &str) -> bool {
     match ext {
         "psd" | "psb" | "rphoto" => true,
         "ora" => redrob_photo_io::ora_losses(doc).is_empty(),
+        "xcf" => redrob_photo_io::xcf_losses(doc).is_empty(),
         _ => false,
     }
 }
@@ -190,6 +191,7 @@ pub fn holds_at(doc: &redrob_photo_doc::Document, path: &str) -> bool {
 pub fn losses_at(doc: &redrob_photo_doc::Document, path: &str) -> Vec<String> {
     match extension(path).as_deref() {
         Some("ora") => redrob_photo_io::ora_losses(doc),
+        Some("xcf") => redrob_photo_io::xcf_losses(doc),
         _ => Vec::new(),
     }
 }

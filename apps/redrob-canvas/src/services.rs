@@ -188,12 +188,12 @@ pub mod photo {
 
     /// Everything File › Open reads (upstream `services::OPEN_EXTS`).
     const OPEN_EXTS: &[&str] = &[
-        "rphoto", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg", "jpeg", "tif",
-        "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr", "pbm", "pgm", "ppm",
-        "pam", "pfm", "pcx", "dds", "xpm", "fits", "fit", "fts", "dpx", "cin", "heic", "heif",
-        "hif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "pef", "orf", "rw2", "raf", "abr", "grd",
-        "svg", "svgz", "aco", "ase", "kys", "af", "afdesign", "afphoto", "afpub",
-        "pcraft", // legacy: upstream Photo documents still open
+        "rphoto", "xcf", "xcfgz", "pdn", "ora", "kra", "krz", "psd", "psb", "psdt", "png", "jpg",
+        "jpeg", "tif", "tiff", "webp", "gif", "bmp", "tga", "ico", "qoi", "exr", "hdr", "pbm",
+        "pgm", "ppm", "pam", "pfm", "pcx", "dds", "xpm", "fits", "fit", "fts", "dpx", "cin",
+        "heic", "heif", "hif", "dng", "cr2", "cr3", "nef", "nrw", "arw", "pef", "orf", "rw2",
+        "raf", "abr", "grd", "svg", "svgz", "aco", "ase", "kys", "af", "afdesign", "afphoto",
+        "afpub", "pcraft", // legacy: upstream Photo documents still open
         // Legacy and scientific formats (redrob_photo_io::legacy) and resource files.
         "xbm", "cur", "ani", "sgi", "rgb", "rgba", "bw", "pix", "als", "cel", "fli", "flc", "xwd",
         "dcm", "dicom", "wmf", "gih", "pat", "gpat",
@@ -204,6 +204,7 @@ pub mod photo {
         ("PDF", &["pdf"]),
         ("Redrob Canvas photo document", &["rphoto"]),
         ("OpenRaster", &["ora"]),
+        ("XCF", &["xcf"]),
         ("PNG", &["png"]),
         ("JPEG", &["jpg"]),
         ("WebP", &["webp"]),

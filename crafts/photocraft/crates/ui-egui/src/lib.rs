@@ -1410,7 +1410,7 @@ impl PhotocraftApp {
         let holds_ora = st.path.as_deref().is_some_and(|p| redrob_photo_engine::file_cmds::holds_at(&st.doc, p));
         let writable = ext.is_some_and(|e| {
             matches!(e.as_str(), redrob_photo_format::EXTENSION | "psd" | "psb" | "tif" | "tiff")
-                || (e == "ora" && holds_ora)
+                || (matches!(e.as_str(), "ora" | "xcf") && holds_ora)
                 || (flat && redrob_photo_codecs::from_extension(&e).is_some_and(|f| f.caps().write))
         });
         let suggested = match &st.path {

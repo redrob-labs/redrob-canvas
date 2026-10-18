@@ -4425,9 +4425,9 @@ name = "XCF (native project) open and save"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-using-fileformats-creating.html"
 behaviour = "Layered native format with masks, channels, paths, effects, metadata; optional compression; version 3 also opens 2.x files."
-ours = "none"
-ours_where = ""
-gap = "no XCF import; layered interchange via PSD/ORA/KRA"
+ours = "full"
+ours_where = "crafts/photocraft/crates/io/src/xcf.rs (read versions 0-12: RLE/zlib/raw tiles, 8/16/32-bit and float precision, groups, masks, channels, selection, colour map, guides, parasites, paths; write version 11), crafts/photocraft/crates/io/src/lib.rs (.xcf and .xcf.gz open, .xcf save), crafts/photocraft/crates/engine/src/file_cmds.rs (xcf is a layered save format), apps/redrob-canvas/src/services.rs"
+gap = ""
 priority = 2
 
 [[feature]]

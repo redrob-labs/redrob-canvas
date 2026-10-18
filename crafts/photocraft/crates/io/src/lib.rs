@@ -56,6 +56,7 @@ pub mod linked;
 mod multichannel_map;
 mod ora;
 pub use ora::losses as ora_losses;
+pub use xcf::losses as xcf_losses;
 pub mod pattern_map;
 pub mod pdf;
 mod pdn;
@@ -72,6 +73,7 @@ mod text_import;
 pub mod text_styles_map;
 pub mod tiff_layers;
 pub mod vector_map;
+pub mod xcf;
 
 pub use redrob_photo_codecs::DpxBits;
 use redrob_photo_codecs::{CodecError, EncodeOptions};
@@ -283,6 +285,16 @@ fn import_stages(name: &str, bytes: &[u8], ctl: &redrob_photo_raster::Interrupt,
     {
         return Ok(ImportResult { document: redrob_photo_format::load_from_bytes(bytes)?, warnings: Vec::new(), source_read_only: false, preview_only: false });
     }
+    // XCF (plain, or gzip-compressed `.xcf.gz` / `.xcfgz`).
+    if xcf::is_xcf(bytes) || has_extension(name, "xcf") {
+        return xcf::import(name, bytes);
+    }
+    if bytes.starts_with(&[0x1f, 0x8b]) && (name.to_ascii_lowercase().ends_with(".xcf.gz") || has_extension(name, "xcfgz")) {
+        use std::io::Read;
+        let mut inflated = Vec::new();
+        flate2::read::GzDecoder::new(bytes).take(1 << 30).read_to_end(&mut inflated).map_err(|e| IoError::Unsupported(format!("XCF: gzip: {e}")))?;
+        return xcf::import(name, &inflated);
+    }
     if is_psd(bytes) {
         // A merged image the import reads is decoded with the parse: a ZIP one is inflated once.
         let (file, merged) = PsdFile::from_bytes_and_merged(bytes, |f| psd_import::check_group_depth(f).is_ok() && psd_import::merged_needed(f))?;
@@ -408,6 +420,9 @@ fn export_stages(doc: &Document, name_or_ext: &str, opts: &ExportOptions, ctl: &
     }
     if ext == "ora" {
         return ora::export(doc);
+    }
+    if ext == "xcf" {
+        return xcf::export(doc);
     }
     if ext == "pdf" {
         return pdf::export(doc);
