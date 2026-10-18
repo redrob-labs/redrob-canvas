@@ -5020,3 +5020,32 @@ theme	Appearance	Apparence
 	Markers	Marqueurs
 	Markers:	Marqueurs :
 	Delete Marker	Supprimer le marqueur
+	SVG Font Editor	Éditeur de polices SVG
+	SVG Font Editor…	Éditeur de polices SVG…
+	New Font	Nouvelle police
+	Delete Font	Supprimer la police
+	No SVG font yet: make one, or turn glyph layers into one.	Aucune police SVG : créez-en une ou convertissez des calques de glyphes.
+	Glyph Layers to Font	Calques de glyphes en police
+	Glyph	Glyphe
+	Advance	Chasse
+	Curves	Courbes
+	Unicode:	Unicode :
+	Glyph name:	Nom du glyphe :
+	Advance:	Chasse :
+	Add Glyph	Ajouter un glyphe
+	Remove Glyph	Supprimer le glyphe
+	Get Curves from Selection	Prendre les courbes de la sélection
+	Glyph to Objects	Glyphe en objets
+	Kerning:	Crénage :
+	Set Pair	Définir la paire
+	Preview:	Aperçu :
+	Font to Glyph Layers	Police en calques de glyphes
+	New SVG Font	Nouvelle police SVG
+	SVG Fonts	Polices SVG
+	Delete SVG Font	Supprimer la police SVG
+	SVG Font Options	Options de police SVG
+	Set Glyph	Définir le glyphe
+	Set Kerning Pair	Définir la paire de crénage
+	Preview SVG Font	Aperçu de la police SVG
+	Glyph Layers to SVG Font	Calques de glyphes en police SVG
+	SVG Font to Glyph Layers	Police SVG en calques de glyphes

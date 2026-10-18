@@ -96,6 +96,7 @@ pub(crate) fn import(svg: &str, opts: &ImportOptions) -> Result<(Document, Vec<S
         link_extras: found.link_extras,
         properties: found.properties,
         meshes: found.meshes,
+        svg_fonts: found.svg_fonts,
         sublayers: found.sublayers,
         sublayer_groups: HashSet::new(),
         screen: k,
@@ -194,6 +195,7 @@ pub(crate) fn import(svg: &str, opts: &ImportOptions) -> Result<(Document, Vec<S
         }
     }
     im.doc.limit_depth_noting(&mut im.warnings);
+    im.doc.svg_fonts = im.svg_fonts;
     Ok((im.doc, im.warnings))
 }
 
@@ -386,6 +388,8 @@ struct Importer {
     properties: HashMap<String, (Vec<(String, String)>, Option<String>, Option<String>, Option<f64>)>,
     /// Mesh gradients by the id of the shape they filled ([`svg2`]).
     meshes: HashMap<String, redrob_vector_doc::GradientMesh>,
+    /// The `<font>` elements ([`svg2`]), kept as the document's SVG fonts.
+    svg_fonts: Vec<redrob_vector_doc::SvgFont>,
     /// Ids of the `<g>` elements marked as layers ([`marked_layer`]).
     sublayers: HashSet<String>,
     /// The groups made of them, made sublayers where they sit in a layer ([`promote_sublayers`]).
@@ -514,6 +518,8 @@ struct Found {
     /// The mesh gradient each shape was filled with, by the shape's id ([`svg2`]): the shape
     /// comes in as a gradient mesh object.
     meshes: HashMap<String, redrob_vector_doc::GradientMesh>,
+    /// The `<font>` elements, as SVG fonts.
+    svg_fonts: Vec<redrob_vector_doc::SvgFont>,
     warnings: Vec<String>,
 }
 

@@ -5005,3 +5005,32 @@ mark-style	Japanese	Japonské
 	Markers	Značky
 	Markers:	Značky:
 	Delete Marker	Odstranit značku
+	SVG Font Editor	Editor písem SVG
+	SVG Font Editor…	Editor písem SVG…
+	New Font	Nové písmo
+	Delete Font	Odstranit písmo
+	No SVG font yet: make one, or turn glyph layers into one.	Zatím žádné písmo SVG: vytvořte nové nebo převeďte vrstvy glyfů.
+	Glyph Layers to Font	Vrstvy glyfů na písmo
+	Glyph	Glyf
+	Advance	Šířka
+	Curves	Křivky
+	Unicode:	Unicode:
+	Glyph name:	Název glyfu:
+	Advance:	Šířka:
+	Add Glyph	Přidat glyf
+	Remove Glyph	Odebrat glyf
+	Get Curves from Selection	Získat křivky z výběru
+	Glyph to Objects	Glyf na objekty
+	Kerning:	Kerning:
+	Set Pair	Nastavit pár
+	Preview:	Náhled:
+	Font to Glyph Layers	Písmo na vrstvy glyfů
+	New SVG Font	Nové písmo SVG
+	SVG Fonts	Písma SVG
+	Delete SVG Font	Odstranit písmo SVG
+	SVG Font Options	Volby písma SVG
+	Set Glyph	Nastavit glyf
+	Set Kerning Pair	Nastavit kerningový pár
+	Preview SVG Font	Náhled písma SVG
+	Glyph Layers to SVG Font	Vrstvy glyfů na písmo SVG
+	SVG Font to Glyph Layers	Písmo SVG na vrstvy glyfů

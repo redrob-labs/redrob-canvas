@@ -4560,3 +4560,32 @@ lighting	Light	광원
 	Markers	마커
 	Markers:	마커:
 	Delete Marker	마커 삭제
+	SVG Font Editor	SVG 글꼴 편집기
+	SVG Font Editor…	SVG 글꼴 편집기…
+	New Font	새 글꼴
+	Delete Font	글꼴 삭제
+	No SVG font yet: make one, or turn glyph layers into one.	SVG 글꼴이 아직 없습니다. 새로 만들거나 글리프 레이어로 만드세요.
+	Glyph Layers to Font	글리프 레이어를 글꼴로
+	Glyph	글리프
+	Advance	전진 폭
+	Curves	곡선
+	Unicode:	유니코드:
+	Glyph name:	글리프 이름:
+	Advance:	전진 폭:
+	Add Glyph	글리프 추가
+	Remove Glyph	글리프 제거
+	Get Curves from Selection	선택 영역에서 곡선 가져오기
+	Glyph to Objects	글리프를 오브젝트로
+	Kerning:	커닝:
+	Set Pair	쌍 설정
+	Preview:	미리보기:
+	Font to Glyph Layers	글꼴을 글리프 레이어로
+	New SVG Font	새 SVG 글꼴
+	SVG Fonts	SVG 글꼴
+	Delete SVG Font	SVG 글꼴 삭제
+	SVG Font Options	SVG 글꼴 옵션
+	Set Glyph	글리프 설정
+	Set Kerning Pair	커닝 쌍 설정
+	Preview SVG Font	SVG 글꼴 미리보기
+	Glyph Layers to SVG Font	글리프 레이어를 SVG 글꼴로
+	SVG Font to Glyph Layers	SVG 글꼴을 글리프 레이어로

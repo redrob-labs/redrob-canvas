@@ -2497,8 +2497,8 @@ name = "SVG font editor"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/creating-custom-fonts.html"
 behaviour = "A dialog creates an SVG font inside the document: glyph list with unicode, name and advance, 'get curves from selection', kerning pairs, and a preview string; typography extensions turn glyph layers into a font and back."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/svgfont.rs (SvgFont/SvgGlyph/SvgKern, layout with ligatures and kerning), crafts/vectorcraft/crates/engine/src/cmd/svgfont.rs (svgFont.create/list/delete/set/setGlyph/removeGlyph/glyphFromSelection/glyphToSelection/setKerning/preview/fromLayers/toLayers), crafts/vectorcraft/crates/ui-egui/src/dialogs/svg_font.rs (Type › SVG Font Editor…), crafts/vectorcraft/crates/svg/src/export.rs (<font> in defs), crafts/vectorcraft/crates/svg/src/import/svg2.rs (<font> read back)"
 gap = ""
 priority = 3
 

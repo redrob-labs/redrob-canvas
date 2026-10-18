@@ -4596,3 +4596,32 @@ lighting	Light	Luce
 	Markers	Marcatori
 	Markers:	Marcatori:
 	Delete Marker	Elimina marcatore
+	SVG Font Editor	Editor di font SVG
+	SVG Font Editor…	Editor di font SVG…
+	New Font	Nuovo font
+	Delete Font	Elimina font
+	No SVG font yet: make one, or turn glyph layers into one.	Nessun font SVG: creane uno o trasforma i livelli di glifi in un font.
+	Glyph Layers to Font	Livelli glifi in font
+	Glyph	Glifo
+	Advance	Avanzamento
+	Curves	Curve
+	Unicode:	Unicode:
+	Glyph name:	Nome glifo:
+	Advance:	Avanzamento:
+	Add Glyph	Aggiungi glifo
+	Remove Glyph	Rimuovi glifo
+	Get Curves from Selection	Prendi curve dalla selezione
+	Glyph to Objects	Glifo in oggetti
+	Kerning:	Crenatura:
+	Set Pair	Imposta coppia
+	Preview:	Anteprima:
+	Font to Glyph Layers	Font in livelli glifi
+	New SVG Font	Nuovo font SVG
+	SVG Fonts	Font SVG
+	Delete SVG Font	Elimina font SVG
+	SVG Font Options	Opzioni font SVG
+	Set Glyph	Imposta glifo
+	Set Kerning Pair	Imposta coppia di crenatura
+	Preview SVG Font	Anteprima font SVG
+	Glyph Layers to SVG Font	Livelli glifi in font SVG
+	SVG Font to Glyph Layers	Font SVG in livelli glifi

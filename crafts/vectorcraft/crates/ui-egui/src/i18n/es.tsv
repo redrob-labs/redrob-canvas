@@ -4961,3 +4961,32 @@ mark-style	Japanese	Japonesas
 	Markers	Marcadores
 	Markers:	Marcadores:
 	Delete Marker	Eliminar marcador
+	SVG Font Editor	Editor de fuentes SVG
+	SVG Font Editor…	Editor de fuentes SVG…
+	New Font	Nueva fuente
+	Delete Font	Eliminar fuente
+	No SVG font yet: make one, or turn glyph layers into one.	Aún no hay fuente SVG: cree una o convierta capas de glifos en una.
+	Glyph Layers to Font	Capas de glifos a fuente
+	Glyph	Glifo
+	Advance	Avance
+	Curves	Curvas
+	Unicode:	Unicode:
+	Glyph name:	Nombre del glifo:
+	Advance:	Avance:
+	Add Glyph	Añadir glifo
+	Remove Glyph	Quitar glifo
+	Get Curves from Selection	Obtener curvas de la selección
+	Glyph to Objects	Glifo a objetos
+	Kerning:	Interletraje:
+	Set Pair	Establecer par
+	Preview:	Previsualización:
+	Font to Glyph Layers	Fuente a capas de glifos
+	New SVG Font	Nueva fuente SVG
+	SVG Fonts	Fuentes SVG
+	Delete SVG Font	Eliminar fuente SVG
+	SVG Font Options	Opciones de fuente SVG
+	Set Glyph	Establecer glifo
+	Set Kerning Pair	Establecer par de interletraje
+	Preview SVG Font	Previsualizar fuente SVG
+	Glyph Layers to SVG Font	Capas de glifos a fuente SVG
+	SVG Font to Glyph Layers	Fuente SVG a capas de glifos

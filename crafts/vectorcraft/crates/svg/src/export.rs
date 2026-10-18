@@ -87,6 +87,33 @@ fn write(doc: &Document, opts: &ExportOptions, native: Option<&[u8]>, id_prefix:
         w.depth -= 1;
         w.line("</g>");
     }
+    // SVG fonts made in the document (Type › SVG Font Editor).
+    for f in &doc.svg_fonts {
+        w.def(1, &format!("<font id=\"{}\" horiz-adv-x=\"{}\">", xml_escape(&f.id), fmt_num(f.advance, 3)));
+        let asc = f.ascent.unwrap_or(f.units_per_em * 0.8);
+        let desc = f.descent.unwrap_or(f.units_per_em * 0.2);
+        w.def(
+            2,
+            &format!(
+                "<font-face font-family=\"{}\" units-per-em=\"{}\" ascent=\"{}\" descent=\"{}\"/>",
+                xml_escape(&f.family),
+                fmt_num(f.units_per_em, 3),
+                fmt_num(asc, 3),
+                fmt_num(desc, 3)
+            ),
+        );
+        w.def(2, "<missing-glyph/>");
+        for g in &f.glyphs {
+            let name = if g.name.is_empty() { String::new() } else { format!(" glyph-name=\"{}\"", xml_escape(&g.name)) };
+            let adv = g.advance.map(|a| format!(" horiz-adv-x=\"{}\"", fmt_num(a, 3))).unwrap_or_default();
+            let d = if g.path.is_empty() { String::new() } else { format!(" d=\"{}\"", g.path.to_bezpath().to_svg()) };
+            w.def(2, &format!("<glyph unicode=\"{}\"{name}{adv}{d}/>", xml_escape(&g.unicode)));
+        }
+        for k in &f.kerning {
+            w.def(2, &format!("<hkern u1=\"{}\" u2=\"{}\" k=\"{}\"/>", xml_escape(&k.left), xml_escape(&k.right), fmt_num(k.k, 3)));
+        }
+        w.def(1, "</font>");
+    }
 
     // XML names cannot use character references. Preserve names that Latin-1 cannot encode.
     let encoding = if opts.encoding == Encoding::Latin1 && w.non_latin1_names {

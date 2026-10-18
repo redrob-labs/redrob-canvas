@@ -17,7 +17,7 @@ use super::{Edits, Found, OBJECT_ELEMENTS};
 /// The namespace of the editor whose 0.9x files are at 90 dpi.
 const LEGACY_NS: &str = "http://www.inkscape.org/namespaces/inkscape";
 
-pub(super) const TOKENS: [&str; 4] = ["meshgradient", "<hatch", ":hatch", LEGACY_NS];
+pub(super) const TOKENS: [&str; 6] = ["meshgradient", "<hatch", ":hatch", "<font", ":font", LEGACY_NS];
 
 /// Does `svg` need this pass?
 pub(super) fn wanted(svg: &str) -> bool {
@@ -58,6 +58,12 @@ pub(super) fn find(svg: &str, xml: &roxmltree::Document, edits: &mut Edits, foun
         edits.insert(h.range().start, pattern);
         edits.set(svg, h, "id", &format!("{id}-hatch"));
         found.warnings.push("hatches are read as patterns of their hatch paths (one pitch per tile)".into());
+    }
+    // SVG fonts, kept as the document's.
+    for font in elements().filter(|n| n.tag_name().name() == "font") {
+        if let Some(f) = parse_font(font) {
+            found.svg_fonts.push(f);
+        }
     }
     // Legacy 90-dpi files.
     let root = xml.root_element();
@@ -344,4 +350,53 @@ fn path_height(d: &str) -> Option<f64> {
     }
     let (min, max) = ys.iter().fold((f64::INFINITY, f64::NEG_INFINITY), |(a, b), y| (a.min(*y), b.max(*y)));
     (max > min).then_some(max - min)
+}
+
+/// A `<font>` element as an SVG font: its face, glyphs (with their `d` outlines) and kerning.
+fn parse_font(font: XNode) -> Option<redrob_vector_doc::SvgFont> {
+    use redrob_vector_doc::{SvgFont, SvgGlyph, SvgKern};
+    let num = |n: XNode, name: &str| n.attribute(name).and_then(|v| v.trim().parse::<f64>().ok()).filter(|v| v.is_finite());
+    let face = font.children().find(|c| c.is_element() && c.tag_name().name() == "font-face");
+    let family = face.and_then(|f| f.attribute("font-family")).map(|s| s.trim().trim_matches(['"', '\'']).to_string());
+    let id = font.attribute("id").map(str::to_string).or_else(|| family.clone()).filter(|s| !s.is_empty())?;
+    let mut f = SvgFont::new(&id, family.as_deref().unwrap_or(&id));
+    if let Some(u) = face.and_then(|fc| num(fc, "units-per-em")).filter(|u| *u > 0.0) {
+        f.units_per_em = u;
+    }
+    if let Some(a) = num(font, "horiz-adv-x") {
+        f.advance = a.max(0.0);
+    }
+    f.ascent = face.and_then(|fc| num(fc, "ascent"));
+    f.descent = face.and_then(|fc| num(fc, "descent"));
+    for g in font.children().filter(|c| c.is_element() && c.tag_name().name() == "glyph") {
+        let Some(unicode) = g.attribute("unicode").filter(|u| !u.is_empty()) else { continue };
+        let mut bp = kurbo::BezPath::new();
+        if let Some(d) = g.attribute("d") {
+            for seg in svgtypes::SimplifyingPathParser::from(d) {
+                let Ok(seg) = seg else { break };
+                match seg {
+                    svgtypes::SimplePathSegment::MoveTo { x, y } => bp.move_to((x, y)),
+                    svgtypes::SimplePathSegment::LineTo { x, y } => bp.line_to((x, y)),
+                    svgtypes::SimplePathSegment::Quadratic { x1, y1, x, y } => bp.quad_to((x1, y1), (x, y)),
+                    svgtypes::SimplePathSegment::CurveTo { x1, y1, x2, y2, x, y } => bp.curve_to((x1, y1), (x2, y2), (x, y)),
+                    svgtypes::SimplePathSegment::ClosePath => bp.close_path(),
+                }
+            }
+        }
+        f.glyphs.push(SvgGlyph {
+            unicode: unicode.to_string(),
+            name: g.attribute("glyph-name").unwrap_or("").to_string(),
+            advance: num(g, "horiz-adv-x"),
+            path: redrob_vector_geom::PathData::from_bezpath(&bp),
+        });
+        if f.glyphs.len() > 20_000 {
+            break;
+        }
+    }
+    for k in font.children().filter(|c| c.is_element() && c.tag_name().name() == "hkern") {
+        if let (Some(u1), Some(u2), Some(kv)) = (k.attribute("u1"), k.attribute("u2"), num(k, "k")) {
+            f.kerning.push(SvgKern { left: u1.to_string(), right: u2.to_string(), k: kv });
+        }
+    }
+    Some(f)
 }

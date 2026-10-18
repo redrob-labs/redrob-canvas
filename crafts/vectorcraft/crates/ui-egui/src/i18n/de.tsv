@@ -4551,3 +4551,32 @@ theme	Appearance	Erscheinungsbild
 	Markers	Marker
 	Markers:	Marker:
 	Delete Marker	Marker löschen
+	SVG Font Editor	SVG-Schriften-Editor
+	SVG Font Editor…	SVG-Schriften-Editor…
+	New Font	Neue Schrift
+	Delete Font	Schrift löschen
+	No SVG font yet: make one, or turn glyph layers into one.	Noch keine SVG-Schrift: eine anlegen oder Glyphenebenen in eine umwandeln.
+	Glyph Layers to Font	Glyphenebenen zu Schrift
+	Glyph	Glyphe
+	Advance	Dickte
+	Curves	Kurven
+	Unicode:	Unicode:
+	Glyph name:	Glyphenname:
+	Advance:	Dickte:
+	Add Glyph	Glyphe hinzufügen
+	Remove Glyph	Glyphe entfernen
+	Get Curves from Selection	Kurven aus Auswahl übernehmen
+	Glyph to Objects	Glyphe zu Objekten
+	Kerning:	Unterschneidung:
+	Set Pair	Paar setzen
+	Preview:	Vorschau:
+	Font to Glyph Layers	Schrift zu Glyphenebenen
+	New SVG Font	Neue SVG-Schrift
+	SVG Fonts	SVG-Schriften
+	Delete SVG Font	SVG-Schrift löschen
+	SVG Font Options	SVG-Schriftoptionen
+	Set Glyph	Glyphe setzen
+	Set Kerning Pair	Unterschneidungspaar setzen
+	Preview SVG Font	SVG-Schrift-Vorschau
+	Glyph Layers to SVG Font	Glyphenebenen zu SVG-Schrift
+	SVG Font to Glyph Layers	SVG-Schrift zu Glyphenebenen

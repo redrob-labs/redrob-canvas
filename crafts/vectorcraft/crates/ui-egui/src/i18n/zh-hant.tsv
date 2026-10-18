@@ -3950,3 +3950,32 @@ lighting	Light	光源
 	Markers	標記
 	Markers:	標記:
 	Delete Marker	刪除標記
+	SVG Font Editor	SVG 字型編輯器
+	SVG Font Editor…	SVG 字型編輯器…
+	New Font	新字型
+	Delete Font	刪除字型
+	No SVG font yet: make one, or turn glyph layers into one.	尚無 SVG 字型：請建立一個，或將字符圖層轉為字型。
+	Glyph Layers to Font	字符圖層轉為字型
+	Glyph	字符
+	Advance	字寬
+	Curves	曲線
+	Unicode:	Unicode:
+	Glyph name:	字符名稱:
+	Advance:	字寬:
+	Add Glyph	加入字符
+	Remove Glyph	移除字符
+	Get Curves from Selection	從選取範圍取得曲線
+	Glyph to Objects	字符轉為物件
+	Kerning:	字距微調:
+	Set Pair	設定字偶
+	Preview:	預覽:
+	Font to Glyph Layers	字型轉為字符圖層
+	New SVG Font	新 SVG 字型
+	SVG Fonts	SVG 字型
+	Delete SVG Font	刪除 SVG 字型
+	SVG Font Options	SVG 字型選項
+	Set Glyph	設定字符
+	Set Kerning Pair	設定字距微調字偶
+	Preview SVG Font	預覽 SVG 字型
+	Glyph Layers to SVG Font	字符圖層轉為 SVG 字型
+	SVG Font to Glyph Layers	SVG 字型轉為字符圖層

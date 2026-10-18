@@ -81,6 +81,7 @@ pub mod spell;
 mod stroke;
 mod style;
 pub mod stylelib;
+pub mod svgfont;
 mod swatch;
 pub mod swatchlib;
 pub(crate) mod tabs;
@@ -246,6 +247,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(xmlattrs::specs());
         v.extend(pixelart::specs());
         v.extend(markers::specs());
+        v.extend(svgfont::specs());
         v.extend(inline::specs());
         v.extend(textstyles::specs());
         v.extend(fonts::specs());

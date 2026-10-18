@@ -942,6 +942,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{language?: a dictionary code (default: the first English one installed)} run text.spellCheck over the document's type and open Check Spelling (dialog `checkSpelling`: Ignore, Ignore All, Add, Change, Change All over the misspellings found)",
     ),
     (
+        "ui.svgFontEditor",
+        "SVG Font Editor…",
+        "",
+        "{font?: id|family} open the SVG Font Editor (dialog `svgFontEditor`: the document's SVG fonts, their glyphs with unicode, name and advance, Get Curves from Selection, Glyph to Objects, kerning pairs, a preview string, and the glyph layers round trip; svgFont.*)",
+    ),
+    (
         "ui.customDictionary",
         "Edit Custom Dictionary…",
         "",
@@ -1352,6 +1358,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         "ui.objectAttributes" => crate::dialogs::object_attributes::open(app, p),
         "ui.checkSpelling" => crate::dialogs::spelling::open(app, p),
         "ui.customDictionary" => crate::dialogs::spelling::open_dictionary(app, p),
+        "ui.svgFontEditor" => crate::dialogs::svg_font::open(app, p),
         "ui.importWebImage" => {
             let url = s("url").unwrap_or_default().trim().to_string();
             if !(url.starts_with("http://") || url.starts_with("https://")) {
@@ -2143,6 +2150,7 @@ pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
         "ui.checkSpelling" => app.session.active().is_some(),
         "ui.objectAttributes" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
         "ui.customDictionary" => true,
+        "ui.svgFontEditor" => app.session.active().is_some(),
         "ui.followLink" => app.session.active().is_some_and(|st| {
             st.selection.objects.iter().any(|id| {
                 let mut cur = Some(*id);
@@ -2293,6 +2301,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 ),
                 cp("Find Next", "edit.findNext", json!({"find": ""})),
                 sub("Spelling", vec![c("Check Spelling…", "ui.checkSpelling"), c("Edit Custom Dictionary…", "ui.customDictionary")]),
+                c("SVG Font Editor…", "ui.svgFontEditor"),
                 Sep,
                 sub(
                     "Edit Colors",

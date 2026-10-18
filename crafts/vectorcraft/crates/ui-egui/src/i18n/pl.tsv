@@ -4850,3 +4850,32 @@ mark-style	Japanese	Japońskie
 	Markers	Znaczniki
 	Markers:	Znaczniki:
 	Delete Marker	Usuń znacznik
+	SVG Font Editor	Edytor czcionek SVG
+	SVG Font Editor…	Edytor czcionek SVG…
+	New Font	Nowa czcionka
+	Delete Font	Usuń czcionkę
+	No SVG font yet: make one, or turn glyph layers into one.	Brak czcionki SVG: utwórz ją lub zamień warstwy glifów w czcionkę.
+	Glyph Layers to Font	Warstwy glifów na czcionkę
+	Glyph	Glif
+	Advance	Szerokość
+	Curves	Krzywe
+	Unicode:	Unicode:
+	Glyph name:	Nazwa glifu:
+	Advance:	Szerokość:
+	Add Glyph	Dodaj glif
+	Remove Glyph	Usuń glif
+	Get Curves from Selection	Pobierz krzywe z zaznaczenia
+	Glyph to Objects	Glif na obiekty
+	Kerning:	Kerning:
+	Set Pair	Ustaw parę
+	Preview:	Podgląd:
+	Font to Glyph Layers	Czcionka na warstwy glifów
+	New SVG Font	Nowa czcionka SVG
+	SVG Fonts	Czcionki SVG
+	Delete SVG Font	Usuń czcionkę SVG
+	SVG Font Options	Opcje czcionki SVG
+	Set Glyph	Ustaw glif
+	Set Kerning Pair	Ustaw parę kerningu
+	Preview SVG Font	Podgląd czcionki SVG
+	Glyph Layers to SVG Font	Warstwy glifów na czcionkę SVG
+	SVG Font to Glyph Layers	Czcionka SVG na warstwy glifów

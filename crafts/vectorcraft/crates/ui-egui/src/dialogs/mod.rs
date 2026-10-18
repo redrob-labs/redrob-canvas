@@ -86,6 +86,7 @@ pub mod shortcut_import;
 pub mod slices;
 pub mod spelling;
 pub mod spot_colors;
+pub mod svg_font;
 pub(crate) mod svg_options;
 pub mod swatch_conflict;
 pub mod swatch_options;
@@ -256,6 +257,7 @@ registry! {
     SpotColors: [spot_colors::KIND] => spot_colors::SPEC,
     CheckSpelling: [spelling::KIND] => spelling::SPEC,
     ObjectAttributes: [object_attributes::KIND] => object_attributes::SPEC,
+    SvgFontEditor: [svg_font::KIND] => svg_font::SPEC,
     CustomDictionary: [spelling::DICTIONARY_KIND] => spelling::DICTIONARY_SPEC,
     TransformEach: [transform_each::KIND] => transform_each::SPEC,
     WidthPoint: [width_point::KIND] => width_point::SPEC,

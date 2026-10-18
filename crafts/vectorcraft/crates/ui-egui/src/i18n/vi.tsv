@@ -4563,3 +4563,32 @@ theme	Appearance	Giao diện
 	Markers	Điểm đánh dấu
 	Markers:	Điểm đánh dấu:
 	Delete Marker	Xóa điểm đánh dấu
+	SVG Font Editor	Trình sửa phông SVG
+	SVG Font Editor…	Trình sửa phông SVG…
+	New Font	Phông mới
+	Delete Font	Xóa phông
+	No SVG font yet: make one, or turn glyph layers into one.	Chưa có phông SVG: hãy tạo một phông hoặc chuyển các lớp ký tự thành phông.
+	Glyph Layers to Font	Lớp ký tự thành phông
+	Glyph	Ký tự
+	Advance	Khoảng tiến
+	Curves	Đường cong
+	Unicode:	Unicode:
+	Glyph name:	Tên ký tự:
+	Advance:	Khoảng tiến:
+	Add Glyph	Thêm ký tự
+	Remove Glyph	Xóa ký tự
+	Get Curves from Selection	Lấy đường cong từ vùng chọn
+	Glyph to Objects	Ký tự thành đối tượng
+	Kerning:	Khoảng cách chữ:
+	Set Pair	Đặt cặp
+	Preview:	Xem trước:
+	Font to Glyph Layers	Phông thành lớp ký tự
+	New SVG Font	Phông SVG mới
+	SVG Fonts	Phông SVG
+	Delete SVG Font	Xóa phông SVG
+	SVG Font Options	Tùy chọn phông SVG
+	Set Glyph	Đặt ký tự
+	Set Kerning Pair	Đặt cặp khoảng cách
+	Preview SVG Font	Xem trước phông SVG
+	Glyph Layers to SVG Font	Lớp ký tự thành phông SVG
+	SVG Font to Glyph Layers	Phông SVG thành lớp ký tự

@@ -4590,3 +4590,32 @@ lighting	Light	ライト
 	Markers	マーカー
 	Markers:	マーカー:
 	Delete Marker	マーカーを削除
+	SVG Font Editor	SVG フォントエディター
+	SVG Font Editor…	SVG フォントエディター…
+	New Font	新規フォント
+	Delete Font	フォントを削除
+	No SVG font yet: make one, or turn glyph layers into one.	SVG フォントがまだありません。新しく作るか、グリフレイヤーから作成してください。
+	Glyph Layers to Font	グリフレイヤーをフォントに
+	Glyph	グリフ
+	Advance	送り幅
+	Curves	曲線
+	Unicode:	Unicode:
+	Glyph name:	グリフ名:
+	Advance:	送り幅:
+	Add Glyph	グリフを追加
+	Remove Glyph	グリフを削除
+	Get Curves from Selection	選択範囲から曲線を取得
+	Glyph to Objects	グリフをオブジェクトに
+	Kerning:	カーニング:
+	Set Pair	ペアを設定
+	Preview:	プレビュー:
+	Font to Glyph Layers	フォントをグリフレイヤーに
+	New SVG Font	新規 SVG フォント
+	SVG Fonts	SVG フォント
+	Delete SVG Font	SVG フォントを削除
+	SVG Font Options	SVG フォントオプション
+	Set Glyph	グリフを設定
+	Set Kerning Pair	カーニングペアを設定
+	Preview SVG Font	SVG フォントをプレビュー
+	Glyph Layers to SVG Font	グリフレイヤーを SVG フォントに
+	SVG Font to Glyph Layers	SVG フォントをグリフレイヤーに

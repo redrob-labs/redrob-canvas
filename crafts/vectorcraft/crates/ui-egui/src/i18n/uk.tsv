@@ -4561,3 +4561,32 @@ lighting	Light	Світло
 	Markers	Маркери
 	Markers:	Маркери:
 	Delete Marker	Видалити маркер
+	SVG Font Editor	Редактор шрифтів SVG
+	SVG Font Editor…	Редактор шрифтів SVG…
+	New Font	Новий шрифт
+	Delete Font	Видалити шрифт
+	No SVG font yet: make one, or turn glyph layers into one.	Шрифтів SVG ще немає: створіть шрифт або зберіть його з шарів гліфів.
+	Glyph Layers to Font	Шари гліфів у шрифт
+	Glyph	Гліф
+	Advance	Ширина
+	Curves	Контури
+	Unicode:	Unicode:
+	Glyph name:	Назва гліфа:
+	Advance:	Ширина:
+	Add Glyph	Додати гліф
+	Remove Glyph	Видалити гліф
+	Get Curves from Selection	Узяти контури з виділення
+	Glyph to Objects	Гліф в об'єкти
+	Kerning:	Кернінг:
+	Set Pair	Задати пару
+	Preview:	Перегляд:
+	Font to Glyph Layers	Шрифт у шари гліфів
+	New SVG Font	Новий шрифт SVG
+	SVG Fonts	Шрифти SVG
+	Delete SVG Font	Видалити шрифт SVG
+	SVG Font Options	Параметри шрифту SVG
+	Set Glyph	Задати гліф
+	Set Kerning Pair	Задати пару кернінгу
+	Preview SVG Font	Перегляд шрифту SVG
+	Glyph Layers to SVG Font	Шари гліфів у шрифт SVG
+	SVG Font to Glyph Layers	Шрифт SVG у шари гліфів

@@ -4972,3 +4972,32 @@ imageTrace	Outline	Körvonal
 	Markers	Jelölők
 	Markers:	Jelölők:
 	Delete Marker	Jelölő törlése
+	SVG Font Editor	SVG-betűkészlet-szerkesztő
+	SVG Font Editor…	SVG-betűkészlet-szerkesztő…
+	New Font	Új betűkészlet
+	Delete Font	Betűkészlet törlése
+	No SVG font yet: make one, or turn glyph layers into one.	Még nincs SVG-betűkészlet: hozzon létre egyet, vagy alakítsa át a glifarétegeket.
+	Glyph Layers to Font	Glifarétegek betűkészletté
+	Glyph	Glifa
+	Advance	Előtolás
+	Curves	Görbék
+	Unicode:	Unicode:
+	Glyph name:	Glifa neve:
+	Advance:	Előtolás:
+	Add Glyph	Glifa hozzáadása
+	Remove Glyph	Glifa eltávolítása
+	Get Curves from Selection	Görbék a kijelölésből
+	Glyph to Objects	Glifa objektumokká
+	Kerning:	Alávágás:
+	Set Pair	Pár beállítása
+	Preview:	Előnézet:
+	Font to Glyph Layers	Betűkészlet glifarétegekké
+	New SVG Font	Új SVG-betűkészlet
+	SVG Fonts	SVG-betűkészletek
+	Delete SVG Font	SVG-betűkészlet törlése
+	SVG Font Options	SVG-betűkészlet beállításai
+	Set Glyph	Glifa beállítása
+	Set Kerning Pair	Alávágási pár beállítása
+	Preview SVG Font	SVG-betűkészlet előnézete
+	Glyph Layers to SVG Font	Glifarétegek SVG-betűkészletté
+	SVG Font to Glyph Layers	SVG-betűkészlet glifarétegekké
