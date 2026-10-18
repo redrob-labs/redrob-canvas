@@ -689,13 +689,14 @@ fn curve_key(s: &mut Session, p: &Value, remove: bool) -> Result<Value> {
             None if name == "opacity" => f64::from(l.opacity) * 100.0,
             None => return Err(bad(cmd, "needs `value`")),
         };
-        let ch = match c.channels.iter().position(|ch| ch.name == name) {
-            Some(i) => &mut c.channels[i],
+        let idx = match c.channels.iter().position(|ch| ch.name == name) {
+            Some(i) => i,
             None => {
                 c.channels.push(Channel { name: name.clone(), keys: Vec::new() });
-                c.channels.last_mut().expect("just pushed")
+                c.channels.len() - 1
             }
         };
+        let ch = &mut c.channels[idx];
         let n = ch.keys.len();
         ch.keys.retain(|k| k.frame != frame);
         if remove {

@@ -675,7 +675,6 @@ fn clear_text(st: &mut State, text: &str) {
                             let q = |v: f64| v.clamp(0.0, 255.0).round() as u8;
                             st.table[i] = [q(c[0]), q(c[1]), q(c[2])];
                         }
-                        i += 1;
                     }
                 }
             }
