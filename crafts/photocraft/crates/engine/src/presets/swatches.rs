@@ -79,11 +79,15 @@ pub struct Swatch {
     pub color: SwatchColor,
     #[serde(default, skip_serializing_if = "SwatchKind::is_process")]
     pub kind: SwatchKind,
+    /// An identifier besides the name (a palette's own code, e.g. a paint number), kept with
+    /// the swatch and shown by the Edit Swatch dialog; empty for none.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub id: String,
 }
 
 impl Swatch {
     pub fn new(name: &str, color: SwatchColor) -> Self {
-        Swatch { name: name.into(), color, kind: SwatchKind::Process }
+        Swatch { name: name.into(), color, kind: SwatchKind::Process, id: String::new() }
     }
 }
 
@@ -445,7 +449,7 @@ mod tests {
     #[test]
     fn serde_round_trip() {
         let sw = vec![
-            Swatch { name: "a".into(), color: SwatchColor::Lab([50.0, -1.5, 2.25]), kind: SwatchKind::Spot },
+            Swatch { name: "a".into(), color: SwatchColor::Lab([50.0, -1.5, 2.25]), kind: SwatchKind::Spot, id: String::new() },
             Swatch::new("b", SwatchColor::Book { space: 3, values: [1, 2, 3, 4] }),
             Swatch::new("c", SwatchColor::Gray(0.5)),
         ];

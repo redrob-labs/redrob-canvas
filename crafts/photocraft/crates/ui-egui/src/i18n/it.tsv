@@ -5343,3 +5343,69 @@ shape	Appearance	Aspetto
 	Replace the segment with two copies of itself	Sostituisce il segmento con due copie di se stesso
 	Flip the whole gradient end to end	Capovolge l'intero gradiente
 	Save as POV-Ray…	Salva come POV-Ray…
+	Alt-click a bottom patch to set it to the foreground colour	Alt+clic su un campione in basso per impostarlo al colore di primo piano
+	Apply:	Applica:
+	Brushes this large preview coarsely while painting	I pennelli di questa dimensione vengono visualizzati in anteprima grossolana
+	Click the disc to add shape points	Fai clic sul disco per aggiungere punti alla forma
+	Close Shape	Chiudi forma
+	Color Space:	Spazio colore:
+	Common Colors	Colori comuni
+	Components:	Componenti:
+	Continuous Mode	Modalità continua
+	Current pattern	Motivo corrente
+	Depth:	Profondità:
+	Display:	Visualizzazione:
+	Dynamic Hue Ring	Anello tonalità dinamico
+	Enable Pen Settings	Attiva impostazioni penna
+	Erase mode keeps its own opacity on this preset	La modalità gomma mantiene la propria opacità in questo predefinito
+	Erase mode keeps its own size on this preset	La modalità gomma mantiene la propria dimensione in questo predefinito
+	Eraser Opacity	Opacità gomma
+	Eraser Size	Dimensione gomma
+	Fit Panel Width	Adatta alla larghezza del pannello
+	Gamut Mask	Maschera gamut
+	Gradient Steps	Passi sfumatura
+	Gradient ends: Alt-click to set from the foreground	Estremi sfumatura: Alt+clic per usare il primo piano
+	Hue Steps	Passi tonalità
+	Instant Preview	Anteprima istantanea
+	LUT Management (OCIO)	Gestione LUT (OCIO)
+	Lightness Strength	Intensità luminosità
+	Lock Color	Blocca colore
+	Luma:	Luma:
+	Minimum Hardness	Durezza minima
+	Minimum Strength	Intensità minima
+	Model:	Modello:
+	Off: every sensor is ignored; the curves are kept	Disattivo: tutti i sensori sono ignorati, le curve restano
+	Out of gamut	Fuori gamut
+	Panel colours are not shown through the display transform	I colori del pannello non passano per la trasformazione di visualizzazione
+	Patch Count	Numero campioni
+	Patch Size	Dimensione campione
+	Patches:	Campioni:
+	Pattern Scale	Scala motivo
+	Pop-up Size	Dimensione pop-up
+	Proof to Painting Space	Prova nello spazio di pittura
+	Recent Colors	Colori recenti
+	Remove Last Shape	Rimuovi ultima forma
+	Rotate Mask	Ruota maschera
+	Saturation Steps	Passi saturazione
+	Scroll	Scorri
+	Selector settings	Impostazioni selettore
+	Selector:	Selettore:
+	Shade Count	Numero sfumature
+	Shade Ring by Value	Ombreggia anello per valore
+	Shade Selector	Selettore sfumature
+	Shade Size	Dimensione sfumatura
+	Shade Spread	Ampiezza sfumature
+	Shade Strip	Striscia sfumature
+	Shades	Sfumature
+	Share Curve Across Settings	Condividi curva tra le impostazioni
+	Show as Fractions	Mostra come frazioni
+	Soften Edge	Ammorbidisci bordo
+	Source:	Sorgente:
+	Style:	Stile:
+	The tip's grey levels are painted into the colour as lightness	I livelli di grigio della punta sono dipinti nel colore come luminosità
+	Threshold the tip mask for crisp pixel strokes	Soglia sulla maschera della punta per tratti pixel netti
+	Tip as Lightness Map	Punta come mappa di luminosità
+	Update:	Aggiornamento:
+	Value Steps	Passi valore
+	Value on the Ring	Valore sull'anello
+	Zoom Pop-up	Pop-up zoom

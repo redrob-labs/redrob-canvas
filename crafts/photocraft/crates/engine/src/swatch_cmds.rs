@@ -114,6 +114,9 @@ fn swatch_json(conv: &SwatchConv, sw: &Swatch) -> Value {
     if sw.kind != SwatchKind::Process {
         v["kind"] = json!(sw.kind.id());
     }
+    if !sw.id.is_empty() {
+        v["id"] = json!(sw.id);
+    }
     v
 }
 
@@ -128,7 +131,7 @@ fn doc_swatch(sw: &Swatch) -> redrob_photo_doc::DocSwatch {
 
 fn library_swatch(sw: &redrob_photo_doc::DocSwatch) -> Option<Swatch> {
     let color: SwatchColor = serde_json::from_value(sw.color.clone()).ok()?;
-    Some(Swatch { name: sw.name.clone(), color, kind: if sw.spot { SwatchKind::Spot } else { SwatchKind::Process } })
+    Some(Swatch { name: sw.name.clone(), color, kind: if sw.spot { SwatchKind::Spot } else { SwatchKind::Process }, id: String::new() })
 }
 
 /// `swatches.saveToDocument`: copy a library group into the active document as a palette (one
@@ -241,7 +244,65 @@ fn list(s: &mut Session, _: &Value) -> Result<Value> {
     let conv = SwatchConv::new(s);
     let groups: Vec<Value> =
         s.presets.swatches.iter().map(|g| json!({"name": g.name, "swatches": g.items.iter().map(|sw| swatch_json(&conv, sw)).collect::<Vec<_>>()})).collect();
-    Ok(json!({"groups": groups, "count": total(&s.presets.swatches)}))
+    Ok(json!({"groups": groups, "count": total(&s.presets.swatches), "columns": s.presets.swatch_columns}))
+}
+
+/// `swatches.edit`: the Edit Swatch dialog: colour, name, id and spot flag of one swatch.
+fn edit(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "swatches.edit";
+    let (gi, ii) = locate(s, p, CMD)?;
+    let new_name = name_param(p, "name", CMD)?;
+    let color = match p.get("color") {
+        None | Some(Value::Null) => None,
+        Some(v) => Some(SwatchColor::from_param(v).map_err(|e| bad(CMD, e))?),
+    };
+    let kind = match (p.get("spot").and_then(Value::as_bool), str_param(p, "kind")) {
+        (_, Some(k)) => Some(SwatchKind::parse(k).ok_or_else(|| bad(CMD, format!("unknown kind `{k}` (process|global|spot)")))?),
+        (Some(true), None) => Some(SwatchKind::Spot),
+        (Some(false), None) => Some(SwatchKind::Process),
+        (None, None) => None,
+    };
+    let id = match p.get("id") {
+        None => None,
+        Some(Value::Null) => Some(String::new()),
+        Some(Value::String(i)) => Some(clip(i.trim())),
+        Some(_) => return Err(bad(CMD, "`id` must be a string or null")),
+    };
+    let groups = &mut s.presets.swatches;
+    if let Some(n) = &new_name
+        && groups[gi].items[ii].name != *n
+        && find(groups, n, None).is_some()
+    {
+        return Err(bad(CMD, format!("a swatch named \"{n}\" already exists")));
+    }
+    let sw = &mut groups[gi].items[ii];
+    if let Some(n) = new_name {
+        sw.name = n;
+    }
+    if let Some(c) = color {
+        sw.color = c;
+    }
+    if let Some(k) = kind {
+        sw.kind = k;
+    }
+    if let Some(i) = id {
+        sw.id = i;
+    }
+    let conv = SwatchConv::new(s);
+    let out = swatch_json(&conv, &s.presets.swatches[gi].items[ii]);
+    s.presets_changed();
+    Ok(out)
+}
+
+/// `swatches.setColumns`: how many swatches a row of the panel holds (0 = fit the width).
+fn set_columns(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "swatches.setColumns";
+    let n = p.get("columns").and_then(Value::as_u64).filter(|n| *n <= 64).ok_or_else(|| bad(CMD, "`columns` must be 0 (fit) .. 64"))? as u32;
+    if s.presets.swatch_columns != n {
+        s.presets.swatch_columns = n;
+        s.presets_changed();
+    }
+    Ok(json!({"columns": n}))
 }
 
 fn add(s: &mut Session, p: &Value) -> Result<Value> {
@@ -294,7 +355,8 @@ fn add(s: &mut Session, p: &Value) -> Result<Value> {
         None | Some(Value::Null) => items.len(),
         Some(v) => usize::try_from(v.as_u64().ok_or_else(|| bad(CMD, "`index` must be a non-negative integer"))?).unwrap_or(usize::MAX).min(items.len()),
     };
-    items.insert(at, Swatch { name: name.clone(), color, kind });
+    let id = str_param(p, "id").map(|i| clip(i.trim())).unwrap_or_default();
+    items.insert(at, Swatch { name: name.clone(), color, kind, id });
     let gname = groups[gi].name.clone();
     s.presets_changed();
     Ok(json!({"name": name, "group": gname, "index": at}))
@@ -656,7 +718,7 @@ pub fn read_file(bytes: &[u8], format: Format, group: &str) -> std::result::Resu
                 .swatches
                 .iter()
                 .enumerate()
-                .map(|(i, s)| Swatch { name: fallback(i, &s.name), color: from_aco(s.color), kind: SwatchKind::Process })
+                .map(|(i, s)| Swatch { name: fallback(i, &s.name), color: from_aco(s.color), kind: SwatchKind::Process, id: String::new() })
                 .collect();
             out.push(Group::new(group, items));
         }
@@ -667,7 +729,7 @@ pub fn read_file(bytes: &[u8], format: Format, group: &str) -> std::result::Resu
             let mut conv = |s: &AseSwatch| -> Option<Swatch> {
                 n += 1;
                 match from_ase(&s.color) {
-                    Some(color) => Some(Swatch { name: fallback(n - 1, &s.name), color, kind: kind_from_ase(s.kind) }),
+                    Some(color) => Some(Swatch { name: fallback(n - 1, &s.name), color, kind: kind_from_ase(s.kind), id: String::new() }),
                     None => {
                         skipped += 1;
                         None
@@ -983,6 +1045,26 @@ pub fn specs() -> Vec<CommandSpec> {
             params: leak(format!(r##"{{{target}; "swatch" may be a list of names}} → {{deleted:[names]}}"##)),
             enabled: has_swatches,
             run: delete,
+            journal: true,
+        },
+        CommandSpec {
+            id: "swatches.edit",
+            label: "Edit Swatch",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"swatch":name|"index":i,"group":name?,"name":string?,"color":{model, values}|"#rrggbb"?,"id":string|null?,"spot":bool?|"kind":"process|global|spot"?} → the swatch"##,
+            enabled: has_swatches,
+            run: edit,
+            journal: true,
+        },
+        CommandSpec {
+            id: "swatches.setColumns",
+            label: "Swatch Columns",
+            menu: &[],
+            shortcut: None,
+            params: r##"{"columns":0..64 (0 = fit the panel width)} → {columns}"##,
+            enabled: always,
+            run: set_columns,
             journal: true,
         },
         CommandSpec {

@@ -4409,3 +4409,70 @@ curves	Smooth	スムーズ
 	Replace the segment with two copies of itself	セグメントを自身の 2 つのコピーに置き換えます
 	Flip the whole gradient end to end	グラデーション全体を反転します
 	Save as POV-Ray…	POV-Ray 形式で保存…
+	Alt-click a bottom patch to set it to the foreground colour	下のパッチをAlt+クリックで描画色に設定
+	Apply:	適用:
+	Brushes this large preview coarsely while painting	この大きさ以上のブラシは描画中に粗くプレビューします
+	Click the disc to add shape points	円盤をクリックして形状の点を追加
+	Close Shape	形状を閉じる
+	Color Space:	カラースペース:
+	Common Colors	画像の主な色
+	Components:	コンポーネント:
+	Continuous Mode	連続モード
+	Current pattern	現在のパターン
+	Depth:	深度:
+	Display:	表示:
+	Dynamic Hue Ring	動的な色相リング
+	Enable Pen Settings	ペン設定を有効化
+	Erase mode keeps its own opacity on this preset	消去モードはこのプリセットで独自の不透明度を保持します
+	Erase mode keeps its own size on this preset	消去モードはこのプリセットで独自のサイズを保持します
+	Eraser Opacity	消しゴムの不透明度
+	Eraser Size	消しゴムのサイズ
+	Fit Panel Width	パネル幅に合わせる
+	Gamut Mask	色域マスク
+	Gradient Steps	グラデーションの段階数
+	Gradient ends: Alt-click to set from the foreground	グラデーション端: Alt+クリックで描画色から設定
+	Hue Steps	色相の段階数
+	Instant Preview	インスタントプレビュー
+	LUT Management (OCIO)	LUT管理 (OCIO)
+	Lightness Strength	明度の強さ
+	Lock Color	色をロック
+	Luma:	ルマ:
+	Minimum Hardness	最小硬さ
+	Minimum Strength	最小強度
+	Model:	モデル:
+	Off: every sensor is ignored; the curves are kept	オフ: すべてのセンサーを無視し、カーブは保持します
+	Out of gamut	色域外
+	Panel colours are not shown through the display transform	パネルの色は表示変換を通さずに表示します
+	Patch Count	パッチ数
+	Patch Size	パッチサイズ
+	Patches:	パッチ:
+	Pattern Scale	パターンの拡大率
+	Pop-up Size	ポップアップのサイズ
+	Proof to Painting Space	描画スペースへ校正
+	Recent Colors	最近の色
+	Remove Last Shape	最後の形状を削除
+	Rotate Mask	マスクを回転
+	Saturation Steps	彩度の段階数
+	Scroll	スクロール
+	Selector settings	セレクターの設定
+	Selector:	セレクター:
+	Shade Count	シェードの数
+	Shade Ring by Value	明度でリングを陰影付け
+	Shade Selector	シェードセレクター
+	Shade Size	シェードのサイズ
+	Shade Spread	シェードの広がり
+	Shade Strip	シェードストリップ
+	Shades	シェード
+	Share Curve Across Settings	すべての設定でカーブを共有
+	Show as Fractions	小数で表示
+	Soften Edge	エッジを柔らかく
+	Source:	ソース:
+	Style:	スタイル:
+	The tip's grey levels are painted into the colour as lightness	先端のグレー階調を明度として色に描き込みます
+	Threshold the tip mask for crisp pixel strokes	くっきりしたピクセルストロークのために先端マスクを二値化
+	Tip as Lightness Map	先端を明度マップとして使用
+	Update	更新
+	Update:	更新:
+	Value Steps	明度の段階数
+	Value on the Ring	リングに明度
+	Zoom Pop-up	ズームポップアップ

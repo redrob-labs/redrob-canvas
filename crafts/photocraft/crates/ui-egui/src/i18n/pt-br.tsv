@@ -4460,3 +4460,69 @@ layerLabel	No Color	Sem cor
 	Replace the segment with two copies of itself	Substitui o segmento por duas cópias dele
 	Flip the whole gradient end to end	Inverte todo o degradê
 	Save as POV-Ray…	Salvar como POV-Ray…
+	Alt-click a bottom patch to set it to the foreground colour	Alt+clique num quadrado inferior para defini-lo com a cor de frente
+	Apply:	Aplicar:
+	Brushes this large preview coarsely while painting	Pincéis deste tamanho são pré-visualizados de forma grosseira ao pintar
+	Click the disc to add shape points	Clique no disco para adicionar pontos da forma
+	Close Shape	Fechar forma
+	Color Space:	Espaço de cor:
+	Common Colors	Cores comuns
+	Components:	Componentes:
+	Continuous Mode	Modo contínuo
+	Current pattern	Padrão atual
+	Depth:	Profundidade:
+	Display:	Exibição:
+	Dynamic Hue Ring	Anel de matiz dinâmico
+	Enable Pen Settings	Ativar ajustes da caneta
+	Erase mode keeps its own opacity on this preset	O modo apagar mantém sua própria opacidade nesta predefinição
+	Erase mode keeps its own size on this preset	O modo apagar mantém seu próprio tamanho nesta predefinição
+	Eraser Opacity	Opacidade da borracha
+	Eraser Size	Tamanho da borracha
+	Fit Panel Width	Ajustar à largura do painel
+	Gamut Mask	Máscara de gama
+	Gradient Steps	Passos do degradê
+	Gradient ends: Alt-click to set from the foreground	Extremos do degradê: Alt+clique para usar a cor de frente
+	Hue Steps	Passos de matiz
+	Instant Preview	Pré-visualização instantânea
+	LUT Management (OCIO)	Gerenciamento de LUT (OCIO)
+	Lightness Strength	Intensidade da luminosidade
+	Lock Color	Bloquear cor
+	Luma:	Luma:
+	Minimum Hardness	Dureza mínima
+	Minimum Strength	Intensidade mínima
+	Model:	Modelo:
+	Off: every sensor is ignored; the curves are kept	Desligado: todos os sensores são ignorados; as curvas são mantidas
+	Out of gamut	Fora da gama
+	Panel colours are not shown through the display transform	As cores do painel não passam pela transformação de exibição
+	Patch Count	Número de quadrados
+	Patch Size	Tamanho do quadrado
+	Patches:	Quadrados:
+	Pattern Scale	Escala do padrão
+	Pop-up Size	Tamanho do pop-up
+	Proof to Painting Space	Prova no espaço de pintura
+	Recent Colors	Cores recentes
+	Remove Last Shape	Remover última forma
+	Rotate Mask	Girar máscara
+	Saturation Steps	Passos de saturação
+	Scroll	Rolar
+	Selector settings	Ajustes do seletor
+	Selector:	Seletor:
+	Shade Count	Número de tons
+	Shade Ring by Value	Sombrear anel pelo valor
+	Shade Selector	Seletor de tons
+	Shade Size	Tamanho do tom
+	Shade Spread	Dispersão de tons
+	Shade Strip	Faixa de tons
+	Shades	Tons
+	Share Curve Across Settings	Compartilhar curva entre ajustes
+	Show as Fractions	Mostrar como frações
+	Soften Edge	Suavizar borda
+	Source:	Origem:
+	Style:	Estilo:
+	The tip's grey levels are painted into the colour as lightness	Os níveis de cinza da ponta são pintados na cor como luminosidade
+	Threshold the tip mask for crisp pixel strokes	Limiarizar a máscara da ponta para traços de pixel nítidos
+	Tip as Lightness Map	Ponta como mapa de luminosidade
+	Update:	Atualização:
+	Value Steps	Passos de valor
+	Value on the Ring	Valor no anel
+	Zoom Pop-up	Pop-up de zoom

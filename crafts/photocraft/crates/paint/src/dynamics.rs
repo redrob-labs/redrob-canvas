@@ -648,6 +648,8 @@ pub fn dynamic_color(b: &BrushSettings, s: &StepInput, seed: u64, index: u64) ->
         }
         // Total random is a colour per pixel (see the renderer); per dab it starts from a random
         // colour too, so the dab's own tint is noise as well.
+        // A pattern source paints per pixel (see the renderer); the dab's colour is the foreground.
+        ColorSource::Pattern | ColorSource::LockedPattern => (b.color, b.background),
         ColorSource::Random | ColorSource::TotalRandom => {
             let o = hsv_to_rgb(r(stream::RANDOM_COLOR), 1.0, 1.0);
             ([o[0], o[1], o[2], b.color[3]], b.background)

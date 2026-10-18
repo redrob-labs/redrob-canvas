@@ -4400,3 +4400,69 @@ cameraData	Lens	Lens
 	Replace the segment with two copies of itself	Parçayı kendisinin iki kopyasıyla değiştir
 	Flip the whole gradient end to end	Tüm gradyanı uçtan uca çevir
 	Save as POV-Ray…	POV-Ray olarak kaydet…
+	Alt-click a bottom patch to set it to the foreground colour	Alt+tıklama alttaki kareyi ön plan rengine ayarlar
+	Apply:	Uygula:
+	Brushes this large preview coarsely while painting	Bu boyuttaki fırçalar boyarken kaba önizlenir
+	Click the disc to add shape points	Şekil noktaları eklemek için diske tıklayın
+	Close Shape	Şekli kapat
+	Color Space:	Renk uzayı:
+	Common Colors	Yaygın renkler
+	Components:	Bileşenler:
+	Continuous Mode	Sürekli kip
+	Current pattern	Geçerli desen
+	Depth:	Derinlik:
+	Display:	Görüntü:
+	Dynamic Hue Ring	Dinamik renk tonu halkası
+	Enable Pen Settings	Kalem ayarlarını etkinleştir
+	Erase mode keeps its own opacity on this preset	Silme kipi bu ön ayarda kendi opaklığını korur
+	Erase mode keeps its own size on this preset	Silme kipi bu ön ayarda kendi boyutunu korur
+	Eraser Opacity	Silgi opaklığı
+	Eraser Size	Silgi boyutu
+	Fit Panel Width	Panel genişliğine sığdır
+	Gamut Mask	Gam maskesi
+	Gradient Steps	Gradyan adımları
+	Gradient ends: Alt-click to set from the foreground	Gradyan uçları: Ön plandan almak için Alt+tıklayın
+	Hue Steps	Renk tonu adımları
+	Instant Preview	Anlık önizleme
+	LUT Management (OCIO)	LUT yönetimi (OCIO)
+	Lightness Strength	Açıklık gücü
+	Lock Color	Rengi kilitle
+	Luma:	Luma:
+	Minimum Hardness	En az sertlik
+	Minimum Strength	En az güç
+	Model:	Model:
+	Off: every sensor is ignored; the curves are kept	Kapalı: tüm algılayıcılar yok sayılır, eğriler korunur
+	Out of gamut	Gam dışı
+	Panel colours are not shown through the display transform	Panel renkleri görüntü dönüşümünden geçirilmez
+	Patch Count	Kare sayısı
+	Patch Size	Kare boyutu
+	Patches:	Kareler:
+	Pattern Scale	Desen ölçeği
+	Pop-up Size	Açılır pencere boyutu
+	Proof to Painting Space	Boyama uzayına prova
+	Recent Colors	Son renkler
+	Remove Last Shape	Son şekli kaldır
+	Rotate Mask	Maskeyi döndür
+	Saturation Steps	Doygunluk adımları
+	Scroll	Kaydır
+	Selector settings	Seçici ayarları
+	Selector:	Seçici:
+	Shade Count	Ton sayısı
+	Shade Ring by Value	Halkayı değere göre gölgele
+	Shade Selector	Ton seçici
+	Shade Size	Ton boyutu
+	Shade Spread	Ton yayılımı
+	Shade Strip	Ton şeridi
+	Shades	Tonlar
+	Share Curve Across Settings	Eğriyi ayarlar arasında paylaş
+	Show as Fractions	Kesir olarak göster
+	Soften Edge	Kenarı yumuşat
+	Source:	Kaynak:
+	Style:	Stil:
+	The tip's grey levels are painted into the colour as lightness	Ucun gri düzeyleri renge açıklık olarak boyanır
+	Threshold the tip mask for crisp pixel strokes	Keskin piksel darbeleri için uç maskesini eşikle
+	Tip as Lightness Map	Uç açıklık haritası olarak
+	Update:	Güncelleme:
+	Value Steps	Değer adımları
+	Value on the Ring	Değer halkada
+	Zoom Pop-up	Yaklaştırma açılır penceresi

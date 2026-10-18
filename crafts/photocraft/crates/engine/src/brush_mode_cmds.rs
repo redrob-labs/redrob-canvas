@@ -57,6 +57,28 @@ fn instant_preview(s: &mut Session, p: &Value) -> Result<Value> {
     )
 }
 
+/// Load the colour pattern a Pattern / Locked Pattern colour source paints (`patternKey`, else
+/// the Patterns panel's current pattern) into the brush, so the stroke renderer can read its
+/// pixels. Brushes with another source are left alone. A missing pattern is an error naming it.
+pub fn load_color_pattern(s: &Session, b: &mut redrob_photo_paint::BrushSettings, cmd: &str) -> Result<()> {
+    let cd = &mut b.color_dynamics;
+    if !(cd.enabled && cd.source.uses_pattern()) {
+        return Ok(());
+    }
+    let key = cd.pattern_key.clone();
+    let pat =
+        crate::pattern_cmds::resolve(s, &key).ok_or_else(|| bad(cmd, format!("no pattern \"{key}\" for the brush's colour source (see pattern.list)")))?;
+    let (w, h) = (pat.width.clamp(1, 4096), pat.height.clamp(1, 4096));
+    let mut data = Vec::with_capacity((w * h) as usize * 4);
+    for y in 0..h as i32 {
+        for x in 0..w as i32 {
+            data.extend_from_slice(&pat.surface.rgba(x, y));
+        }
+    }
+    cd.pattern = Some(std::sync::Arc::new(redrob_photo_paint::brush::ColorTile { width: w, height: h, data }));
+    Ok(())
+}
+
 /// Keep the current preset's tweaked brush aside when another preset is about to be picked
 /// (called by `tools.setBrush`), so picking it again in this session brings the tweaks back.
 pub(crate) fn park_tweaks(s: &mut Session, next: &str) {

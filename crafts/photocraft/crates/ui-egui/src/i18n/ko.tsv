@@ -4428,3 +4428,70 @@ curves	Smooth	매끄럽게
 	Replace the segment with two copies of itself	세그먼트를 자신의 복사본 2개로 바꿉니다
 	Flip the whole gradient end to end	그레이디언트 전체를 뒤집습니다
 	Save as POV-Ray…	POV-Ray로 저장…
+	Alt-click a bottom patch to set it to the foreground colour	아래 패치를 Alt+클릭하면 전경색으로 설정합니다
+	Apply:	적용:
+	Brushes this large preview coarsely while painting	이 크기 이상의 브러시는 칠하는 동안 거칠게 미리 봅니다
+	Click the disc to add shape points	원판을 클릭하여 도형 점을 추가합니다
+	Close Shape	도형 닫기
+	Color Space:	색 공간:
+	Common Colors	공통 색상
+	Components:	성분:
+	Continuous Mode	연속 모드
+	Current pattern	현재 패턴
+	Depth:	심도:
+	Display:	표시:
+	Dynamic Hue Ring	동적 색조 링
+	Enable Pen Settings	펜 설정 사용
+	Erase mode keeps its own opacity on this preset	지우기 모드는 이 사전 설정에서 자체 불투명도를 유지합니다
+	Erase mode keeps its own size on this preset	지우기 모드는 이 사전 설정에서 자체 크기를 유지합니다
+	Eraser Opacity	지우개 불투명도
+	Eraser Size	지우개 크기
+	Fit Panel Width	패널 너비에 맞춤
+	Gamut Mask	색역 마스크
+	Gradient Steps	그레이디언트 단계
+	Gradient ends: Alt-click to set from the foreground	그레이디언트 양끝: Alt+클릭하면 전경색으로 설정
+	Hue Steps	색조 단계
+	Instant Preview	즉시 미리 보기
+	LUT Management (OCIO)	LUT 관리 (OCIO)
+	Lightness Strength	명도 강도
+	Lock Color	색상 잠금
+	Luma:	루마:
+	Minimum Hardness	최소 경도
+	Minimum Strength	최소 강도
+	Model:	모델:
+	Off: every sensor is ignored; the curves are kept	끄면 모든 센서를 무시하고 커브는 유지합니다
+	Out of gamut	색역 밖
+	Panel colours are not shown through the display transform	패널 색상은 표시 변환을 거치지 않습니다
+	Patch Count	패치 수
+	Patch Size	패치 크기
+	Patches:	패치:
+	Pattern Scale	패턴 비율
+	Pop-up Size	팝업 크기
+	Proof to Painting Space	페인팅 공간으로 교정
+	Recent Colors	최근 색상
+	Remove Last Shape	마지막 도형 제거
+	Rotate Mask	마스크 회전
+	Saturation Steps	채도 단계
+	Scroll	스크롤
+	Selector settings	선택기 설정
+	Selector:	선택기:
+	Shade Count	음영 수
+	Shade Ring by Value	명도로 링 음영
+	Shade Selector	음영 선택기
+	Shade Size	음영 크기
+	Shade Spread	음영 범위
+	Shade Strip	음영 띠
+	Shades	음영
+	Share Curve Across Settings	모든 설정에서 커브 공유
+	Show as Fractions	소수로 표시
+	Soften Edge	가장자리 부드럽게
+	Source:	소스:
+	Style:	스타일:
+	The tip's grey levels are painted into the colour as lightness	팁의 회색 단계가 명도로 색상에 칠해집니다
+	Threshold the tip mask for crisp pixel strokes	선명한 픽셀 스트로크를 위해 팁 마스크에 임계값 적용
+	Tip as Lightness Map	팁을 명도 맵으로
+	Update	업데이트
+	Update:	업데이트:
+	Value Steps	명도 단계
+	Value on the Ring	링에 명도 표시
+	Zoom Pop-up	확대 팝업

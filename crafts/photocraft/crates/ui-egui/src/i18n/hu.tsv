@@ -4585,3 +4585,69 @@ cameraRaw	Yellow	Sárga
 	Replace the segment with two copies of itself	A szakaszt két másolatával helyettesíti
 	Flip the whole gradient end to end	Az egész színátmenetet megfordítja
 	Save as POV-Ray…	Mentés POV-Ray-ként…
+	Alt-click a bottom patch to set it to the foreground colour	Alt+kattintás egy alsó mintára az előtérszín beállításához
+	Apply:	Alkalmazás:
+	Brushes this large preview coarsely while painting	Az ekkora ecsetek festés közben durván jelennek meg
+	Click the disc to add shape points	Kattints a korongra alakzatpontok hozzáadásához
+	Close Shape	Alakzat zárása
+	Color Space:	Színtér:
+	Common Colors	Gyakori színek
+	Components:	Összetevők:
+	Continuous Mode	Folyamatos mód
+	Current pattern	Aktuális minta
+	Depth:	Mélység:
+	Display:	Megjelenítés:
+	Dynamic Hue Ring	Dinamikus árnyalatgyűrű
+	Enable Pen Settings	Tollbeállítások engedélyezése
+	Erase mode keeps its own opacity on this preset	A radír mód saját átlátszatlanságot tart ebben a beállításban
+	Erase mode keeps its own size on this preset	A radír mód saját méretet tart ebben a beállításban
+	Eraser Opacity	Radír átlátszatlansága
+	Eraser Size	Radír mérete
+	Fit Panel Width	Panelszélességhez igazítás
+	Gamut Mask	Színskálamaszk
+	Gradient Steps	Színátmenet lépései
+	Gradient ends: Alt-click to set from the foreground	Színátmenet végei: Alt+kattintás az előtérszín átvételéhez
+	Hue Steps	Árnyalatlépések
+	Instant Preview	Azonnali előnézet
+	LUT Management (OCIO)	LUT-kezelés (OCIO)
+	Lightness Strength	Világosság erőssége
+	Lock Color	Szín zárolása
+	Luma:	Luma:
+	Minimum Hardness	Minimális keménység
+	Minimum Strength	Minimális erősség
+	Model:	Modell:
+	Off: every sensor is ignored; the curves are kept	Ki: minden érzékelő figyelmen kívül marad, a görbék megmaradnak
+	Out of gamut	Színskálán kívül
+	Panel colours are not shown through the display transform	A panelszínek nem a megjelenítési átalakításon keresztül látszanak
+	Patch Count	Minták száma
+	Patch Size	Minta mérete
+	Patches:	Minták:
+	Pattern Scale	Minta léptéke
+	Pop-up Size	Felugró mérete
+	Proof to Painting Space	Próba a festési színtérben
+	Recent Colors	Legutóbbi színek
+	Remove Last Shape	Utolsó alakzat eltávolítása
+	Rotate Mask	Maszk forgatása
+	Saturation Steps	Telítettséglépések
+	Scroll	Görgetés
+	Selector settings	Választó beállításai
+	Selector:	Választó:
+	Shade Count	Árnyalatok száma
+	Shade Ring by Value	Gyűrű árnyalása érték szerint
+	Shade Selector	Árnyalatválasztó
+	Shade Size	Árnyalat mérete
+	Shade Spread	Árnyalatok szórása
+	Shade Strip	Árnyalatsáv
+	Shades	Árnyalatok
+	Share Curve Across Settings	Görbe megosztása a beállítások között
+	Show as Fractions	Törtként mutatás
+	Soften Edge	Él lágyítása
+	Source:	Forrás:
+	Style:	Stílus:
+	The tip's grey levels are painted into the colour as lightness	A hegy szürkeárnyalatai világosságként kerülnek a színbe
+	Threshold the tip mask for crisp pixel strokes	Hegymaszk küszöbölése éles pixelvonásokhoz
+	Tip as Lightness Map	Hegy világosságtérképként
+	Update:	Frissítés:
+	Value Steps	Értéklépések
+	Value on the Ring	Érték a gyűrűn
+	Zoom Pop-up	Nagyító felugró

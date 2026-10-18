@@ -5187,3 +5187,69 @@ navigator	Zoom	Zoom
 	Replace the segment with two copies of itself	Sustituye el segmento por dos copias de sí mismo
 	Flip the whole gradient end to end	Invierte todo el degradado de extremo a extremo
 	Save as POV-Ray…	Guardar como POV-Ray…
+	Alt-click a bottom patch to set it to the foreground colour	Alt+clic en un parche inferior para asignarle el color frontal
+	Apply:	Aplicar:
+	Brushes this large preview coarsely while painting	Los pinceles de este tamaño se previsualizan de forma tosca al pintar
+	Click the disc to add shape points	Haga clic en el disco para añadir puntos de la forma
+	Close Shape	Cerrar forma
+	Color Space:	Espacio de color:
+	Common Colors	Colores comunes
+	Components:	Componentes:
+	Continuous Mode	Modo continuo
+	Current pattern	Motivo actual
+	Depth:	Profundidad:
+	Display:	Pantalla:
+	Dynamic Hue Ring	Anillo de tono dinámico
+	Enable Pen Settings	Activar ajustes del lápiz
+	Erase mode keeps its own opacity on this preset	El modo de borrado conserva su propia opacidad en este ajuste preestablecido
+	Erase mode keeps its own size on this preset	El modo de borrado conserva su propio tamaño en este ajuste preestablecido
+	Eraser Opacity	Opacidad del borrador
+	Eraser Size	Tamaño del borrador
+	Fit Panel Width	Ajustar al ancho del panel
+	Gamut Mask	Máscara de gama
+	Gradient Steps	Pasos del degradado
+	Gradient ends: Alt-click to set from the foreground	Extremos del degradado: Alt+clic para tomar el color frontal
+	Hue Steps	Pasos de tono
+	Instant Preview	Vista previa instantánea
+	LUT Management (OCIO)	Gestión de LUT (OCIO)
+	Lightness Strength	Intensidad de luminosidad
+	Lock Color	Bloquear color
+	Luma:	Luma:
+	Minimum Hardness	Dureza mínima
+	Minimum Strength	Intensidad mínima
+	Model:	Modelo:
+	Off: every sensor is ignored; the curves are kept	Desactivado: se ignoran todos los sensores; las curvas se conservan
+	Out of gamut	Fuera de gama
+	Panel colours are not shown through the display transform	Los colores del panel no se muestran a través de la transformación de pantalla
+	Patch Count	Número de parches
+	Patch Size	Tamaño de parche
+	Patches:	Parches:
+	Pattern Scale	Escala del motivo
+	Pop-up Size	Tamaño del panel emergente
+	Proof to Painting Space	Simular en el espacio de pintura
+	Recent Colors	Colores recientes
+	Remove Last Shape	Quitar la última forma
+	Rotate Mask	Rotar máscara
+	Saturation Steps	Pasos de saturación
+	Scroll	Desplazar
+	Selector settings	Ajustes del selector
+	Selector:	Selector:
+	Shade Count	Número de tonos
+	Shade Ring by Value	Sombrear el anillo según el valor
+	Shade Selector	Selector de tonos
+	Shade Size	Tamaño de tono
+	Shade Spread	Dispersión de tonos
+	Shade Strip	Franja de tonos
+	Shades	Tonos
+	Share Curve Across Settings	Compartir curva entre ajustes
+	Show as Fractions	Mostrar como fracciones
+	Soften Edge	Suavizar borde
+	Source:	Origen:
+	Style:	Estilo:
+	The tip's grey levels are painted into the colour as lightness	Los niveles de gris de la punta se pintan en el color como luminosidad
+	Threshold the tip mask for crisp pixel strokes	Umbralizar la máscara de la punta para trazos de píxel nítidos
+	Tip as Lightness Map	Punta como mapa de luminosidad
+	Update:	Actualizar:
+	Value Steps	Pasos de valor
+	Value on the Ring	Valor en el anillo
+	Zoom Pop-up	Panel emergente de zoom

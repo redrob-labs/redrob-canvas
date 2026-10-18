@@ -516,7 +516,23 @@ impl BrushContext {
     pub fn pixel_color(&self, d: &Dab, x: i32, y: i32, tip_level: Option<f32>) -> [f32; 4] {
         let b = &self.brush;
         let mut c = d.color;
-        if b.color_dynamics.enabled && b.color_dynamics.source == crate::brush::ColorSource::TotalRandom {
+        let cd = &b.color_dynamics;
+        if cd.enabled
+            && cd.source.uses_pattern()
+            && let Some(p) = cd.pattern.as_ref().filter(|p| p.is_valid())
+        {
+            let sc = if cd.pattern_scale.is_finite() && cd.pattern_scale > 0.01 { cd.pattern_scale } else { 1.0 };
+            let (px, py) = match cd.source {
+                crate::brush::ColorSource::LockedPattern => (
+                    ((x as f32 + 0.5 - d.center.x as f32) / sc + p.width as f32 / 2.0).floor() as i32,
+                    ((y as f32 + 0.5 - d.center.y as f32) / sc + p.height as f32 / 2.0).floor() as i32,
+                ),
+                _ => ((x as f32 / sc).floor() as i32, (y as f32 / sc).floor() as i32),
+            };
+            let s = p.at(px, py);
+            c = [s[0], s[1], s[2], c[3] * s[3]];
+        }
+        if cd.enabled && cd.source == crate::brush::ColorSource::TotalRandom {
             let h = hash2(x, y, crate::rng::stream::PIXEL_NOISE ^ b.seed);
             let rgb = hue_rgb(h);
             c = [rgb[0], rgb[1], rgb[2], c[3]];

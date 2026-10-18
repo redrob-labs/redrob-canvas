@@ -192,6 +192,8 @@ pub fn resolve_brush(s: &Session, p: &Value, cmd: &str) -> Result<BrushSettings>
     }
     // A library preset's tips stay on disk until a stroke uses them (#1843).
     s.load_brush_tips(&mut b).map_err(|e| bad(cmd, e))?;
+    // A Pattern colour source reads the library pattern's pixels.
+    crate::brush_mode_cmds::load_color_pattern(s, &mut b, cmd)?;
     if let Some(v) = num(p, "size") {
         b.resize_with_dual_brush(v.max(0.5));
     }

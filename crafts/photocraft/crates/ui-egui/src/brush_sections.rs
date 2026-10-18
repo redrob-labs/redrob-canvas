@@ -60,12 +60,14 @@ const PATTERNS: [(PatternStyle, &str); 4] =
     [(PatternStyle::Paper, "Paper"), (PatternStyle::Canvas, "Canvas"), (PatternStyle::Noise, "Noise"), (PatternStyle::Dots, "Dots")];
 
 /// Color Dynamics › Source.
-pub const COLOR_SOURCES: [(ColorSource, &str); 5] = [
+pub const COLOR_SOURCES: [(ColorSource, &str); 7] = [
     (ColorSource::Foreground, "Foreground"),
     (ColorSource::Background, "Background"),
     (ColorSource::Gradient, "Gradient"),
     (ColorSource::Random, "Uniform Random"),
     (ColorSource::TotalRandom, "Total Random"),
+    (ColorSource::Pattern, "Pattern"),
+    (ColorSource::LockedPattern, "Locked Pattern"),
 ];
 
 /// Texture › Apply.
@@ -828,6 +830,16 @@ fn color_dynamics(ui: &mut egui::Ui, b: &mut BrushSettings) {
         if num(ui, tl!("Gradient Steps"), &mut steps, 2.0..=10000.0, "") {
             c.gradient_steps = steps as u32;
         }
+    }
+    if c.source.uses_pattern() {
+        ui.horizontal(|ui| {
+            dim(ui, tl!("Pattern:"));
+            let mut key = c.pattern_key.clone();
+            if ui.add(egui::TextEdit::singleline(&mut key).desired_width(130.0).hint_text(tl!("Current pattern"))).changed() {
+                c.pattern_key = key;
+            }
+        });
+        pct(ui, tl!("Pattern Scale"), &mut c.pattern_scale, 10.0);
     }
     ui.add_space(4.0);
     dynamic(ui, "brush-fgbg-ctl", tl!("Foreground/Background Jitter"), &mut c.fg_bg, 1.0, None, false);

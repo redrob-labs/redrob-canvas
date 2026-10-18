@@ -1608,6 +1608,10 @@ pub struct UiState {
     pub camera_raw_scope: CameraRawScopeState,
     #[serde(default)]
     pub camera_raw_preview: CameraRawPreviewState,
+    /// The Color panel's selectors (advanced, artistic, wide gamut, specific, mixer), shade strip,
+    /// common colours and gamut masks (`color_selectors`).
+    #[serde(default)]
+    pub color_selectors: crate::color_selectors::ColorSelectorSettings,
 }
 
 impl Default for UiState {
@@ -1705,6 +1709,7 @@ impl Default for UiState {
             chrome: Default::default(),
             camera_raw_scope: Default::default(),
             camera_raw_preview: Default::default(),
+            color_selectors: Default::default(),
         }
     }
 }

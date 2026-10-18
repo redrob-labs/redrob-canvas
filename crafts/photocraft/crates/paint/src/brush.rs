@@ -883,6 +883,17 @@ pub struct ColorDynamics {
     /// background's share (added to `fg_bg`).
     #[serde(skip_serializing_if = "is_default_dynamic")]
     pub mix: Dynamic,
+    /// The library pattern (id or name; empty = the Patterns panel's current one) a
+    /// [`ColorSource::Pattern`] / [`ColorSource::LockedPattern`] paints. The engine loads its
+    /// pixels into `pattern` when a stroke starts.
+    #[serde(skip_serializing_if = "String::is_empty")]
+    pub pattern_key: String,
+    /// The colour pattern's pixels, loaded by the engine from `pattern_key` (not saved with the
+    /// brush: the key is).
+    #[serde(skip)]
+    pub pattern: Option<std::sync::Arc<ColorTile>>,
+    /// Pattern scale (1 = 100 %).
+    pub pattern_scale: f32,
 }
 
 impl Default for ColorDynamics {
@@ -908,6 +919,9 @@ impl Default for ColorDynamics {
             darken: Dynamic::default(),
             darken_amount: 1.0,
             mix: Dynamic::default(),
+            pattern_key: String::new(),
+            pattern: None,
+            pattern_scale: 1.0,
         }
     }
 }
@@ -1387,7 +1401,8 @@ impl BrushSettings {
     /// Does the stroke buffer need a colour per pixel (not just per dab): total random noise, a
     /// lightness or gradient-map texture, or a lightness-map tip?
     pub fn per_pixel_color(&self) -> bool {
-        (self.color_dynamics.enabled && self.color_dynamics.source == ColorSource::TotalRandom)
+        let cd = &self.color_dynamics;
+        (cd.enabled && (cd.source == ColorSource::TotalRandom || (cd.source.uses_pattern() && cd.pattern.as_ref().is_some_and(|p| p.is_valid()))))
             || (self.texture.enabled && self.texture.apply.colors())
             || (self.tip_lightness && self.tip.bitmap().is_some())
     }
@@ -1490,6 +1505,51 @@ pub enum ColorSource {
     Random,
     /// A random colour per pixel: the dab paints coloured noise ("total random").
     TotalRandom,
+    /// The colour pattern ([`ColorDynamics::pattern`]) tiled over the canvas: every dab paints the
+    /// part of the pattern under it, so a stroke reveals the pattern in place.
+    Pattern,
+    /// The colour pattern locked to the dab: its centre sits on the dab's centre, so every dab
+    /// stamps the same part of the pattern.
+    LockedPattern,
+}
+
+impl ColorSource {
+    /// Does this source read [`ColorDynamics::pattern`]?
+    pub fn uses_pattern(&self) -> bool {
+        matches!(self, ColorSource::Pattern | ColorSource::LockedPattern)
+    }
+}
+
+/// A straight-RGBA colour tile (the colour pattern a [`ColorSource::Pattern`] paints). Pixels are
+/// row-major, four floats each.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct ColorTile {
+    pub width: u32,
+    pub height: u32,
+    pub data: Vec<f32>,
+}
+
+impl Default for ColorTile {
+    fn default() -> Self {
+        Self { width: 0, height: 0, data: Vec::new() }
+    }
+}
+
+impl ColorTile {
+    pub fn is_valid(&self) -> bool {
+        self.width > 0 && self.height > 0 && self.data.len() == (self.width as usize) * (self.height as usize) * 4
+    }
+    /// The pixel at `(x, y)`, wrapping (the tile repeats).
+    pub fn at(&self, x: i32, y: i32) -> [f32; 4] {
+        if !self.is_valid() {
+            return [0.0, 0.0, 0.0, 1.0];
+        }
+        let xi = x.rem_euclid(self.width as i32) as usize;
+        let yi = y.rem_euclid(self.height as i32) as usize;
+        let i = (yi * self.width as usize + xi) * 4;
+        [self.data[i], self.data[i + 1], self.data[i + 2], self.data[i + 3]]
+    }
 }
 
 impl ColorSource {
