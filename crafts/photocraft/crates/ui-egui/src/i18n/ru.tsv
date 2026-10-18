@@ -3461,3 +3461,9 @@ curves	Smooth	Сгладить
 	Xtilt	Наклон X
 	Ytilt	Наклон Y
 	Mng	MNG
+	Export as PostScript (.eps)…	Экспортировать как PostScript (.eps)…
+	Encapsulated	Инкапсулированный
+	Encoding	Кодирование
+	Hex	Шестнадцатеричный
+	Ascii85	ASCII85
+	Binary	Двоичный

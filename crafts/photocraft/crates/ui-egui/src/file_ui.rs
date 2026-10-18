@@ -149,6 +149,13 @@ pub fn invoke(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &V
             json!({"selection": redrob_photo_io::gbr_export::GIH_SELECTIONS}),
         ),
         "file.export.pattern" => form(app, id, "Export as Pattern (.pat)", json!({"path": format!("{dir}/{stem}.pat")}), json!({})),
+        "file.export.postScript" => form(
+            app,
+            id,
+            "Export as PostScript (.eps)",
+            json!({"path": format!("{dir}/{stem}.eps"), "encapsulated": true, "encoding": "ascii85", "preview": false, "level": 2}),
+            json!({"encoding": ["hex", "ascii85", "binary"]}),
+        ),
         "layer.animationTags" => {
             let (delay, disposal) = app
                 .session

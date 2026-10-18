@@ -43,6 +43,7 @@ pub mod camera_raw_xmp;
 mod channel_map;
 pub mod comps_map;
 pub mod effects_map;
+pub mod eps;
 pub mod exr_parts;
 mod flat;
 pub mod gbr;
@@ -53,6 +54,7 @@ pub use gradient_bake::{Method as GradientMethod, bake as bake_gradient};
 mod kra;
 pub mod legacy;
 pub mod linked;
+pub mod modern;
 mod multichannel_map;
 mod ora;
 pub use ora::losses as ora_losses;
@@ -328,6 +330,14 @@ fn import_stages(name: &str, bytes: &[u8], ctl: &redrob_photo_raster::Interrupt,
     if is_svg_input(name, bytes) {
         return svg::import_svg_with_group_depth(name, bytes, max_group_depth);
     }
+    // PostScript / EPS (raster EPS and DOS EPS previews).
+    if eps::is_postscript(bytes) || ["eps", "epsf", "epsi", "ps"].iter().any(|e| has_extension(name, e)) {
+        return eps::import(name, bytes);
+    }
+    // JPEG XL and JPEG 2000 (signature, else extension).
+    if redrob_photo_codecs::detect(bytes).is_none() && modern::detect(name, bytes).is_some() {
+        return modern::import(name, bytes);
+    }
     // The legacy and scientific formats (XBM, CUR/ANI, SGI, PIX, CEL, FLI, XWD, DICOM, WMF): a
     // codec signature still wins over their extensions.
     if redrob_photo_codecs::detect(bytes).is_none()
@@ -464,6 +474,12 @@ fn export_stages(doc: &Document, name_or_ext: &str, opts: &ExportOptions, ctl: &
     }
     if let Some(r) = legacy::export(doc, &ext, opts) {
         return r;
+    }
+    if modern::EXTS.contains(&ext.as_str()) {
+        return modern::export(doc, &ext, opts);
+    }
+    if matches!(ext.as_str(), "eps" | "epsf" | "epsi" | "ps") {
+        return eps::export(doc, eps::EpsOptions { encapsulated: ext != "ps", ..eps::EpsOptions::default() });
     }
     // Resource files: the image as a brush or pattern, the layers as an image hose.
     match ext.as_str() {

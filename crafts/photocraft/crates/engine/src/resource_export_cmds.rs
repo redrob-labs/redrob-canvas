@@ -91,6 +91,27 @@ fn export_pattern(s: &mut Session, p: &Value) -> Result<Value> {
     Ok(json!({ "path": path, "bytes": r.bytes.len(), "warnings": r.warnings }))
 }
 
+/// `file.export.postScript`: the flattened image as EPS or PostScript with encoding, preview,
+/// level and encapsulation options.
+fn export_postscript(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "file.export.postScript";
+    use redrob_photo_io::eps::{EpsEncoding, EpsOptions};
+    let path = path_param(p, CMD, "the .eps or .ps to write")?;
+    let encoding = match p.get("encoding").and_then(Value::as_str).unwrap_or("ascii85") {
+        "hex" => EpsEncoding::Hex,
+        "ascii85" => EpsEncoding::Ascii85,
+        "binary" => EpsEncoding::Binary,
+        other => return Err(bad(CMD, format!("`encoding` must be hex, ascii85 or binary (got `{other}`)"))),
+    };
+    let encapsulated = p.get("encapsulated").and_then(Value::as_bool).unwrap_or_else(|| ext_of(path) != "ps");
+    let tiff_preview = p.get("preview").and_then(Value::as_bool).unwrap_or(false);
+    let level = p.get("level").and_then(Value::as_u64).map_or(2, |l| l.clamp(1, 3) as u8);
+    let d = s.active().ok_or(EngineError::NoDocument)?;
+    let r = redrob_photo_io::eps::export(&d.doc, EpsOptions { encapsulated, encoding, tiff_preview, level }).map_err(|e| EngineError::Other(e.to_string()))?;
+    crate::file_cmds::write_file(path, &r.bytes)?;
+    Ok(json!({ "path": path, "encapsulated": encapsulated, "level": level, "bytes": r.bytes.len(), "warnings": r.warnings }))
+}
+
 /// `pattern.importGpat`: a `GPAT` pattern file into the Patterns panel.
 fn import_gpat(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "pattern.importGpat";
@@ -183,6 +204,16 @@ pub fn specs() -> Vec<CommandSpec> {
             params: r##"{"path":".pat or .gpat to write"} → {path, bytes, warnings}"##,
             enabled: has_doc,
             run: export_pattern,
+            journal: true,
+        },
+        CommandSpec {
+            id: "file.export.postScript",
+            label: "Export as PostScript (.eps)…",
+            menu: &["File", "Export"],
+            shortcut: None,
+            params: r##"{"path":".eps or .ps to write","encapsulated":bool? (default: not for .ps),"encoding":"hex|ascii85|binary"="ascii85","preview":bool=false (TIFF preview in a DOS EPS header),"level":1|2|3=2} → {path, encapsulated, level, bytes, warnings}"##,
+            enabled: has_doc,
+            run: export_postscript,
             journal: true,
         },
         CommandSpec {

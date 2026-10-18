@@ -4399,3 +4399,9 @@ cameraRaw	Yellow	Sárga
 	Xtilt	X dőlés
 	Ytilt	Y dőlés
 	Mng	MNG
+	Export as PostScript (.eps)…	Exportálás PostScriptként (.eps)…
+	Encapsulated	Beágyazott (EPS)
+	Encoding	Kódolás
+	Hex	Hexadecimális
+	Ascii85	ASCII85
+	Binary	Bináris

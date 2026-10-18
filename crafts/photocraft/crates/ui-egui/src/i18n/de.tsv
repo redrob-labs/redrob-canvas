@@ -3488,3 +3488,9 @@ curves	Smooth	Glätten
 	Xtilt	Neigung X
 	Ytilt	Neigung Y
 	Mng	MNG
+	Export as PostScript (.eps)…	Als PostScript exportieren (.eps)…
+	Encapsulated	Gekapselt
+	Encoding	Kodierung
+	Hex	Hexadezimal
+	Ascii85	ASCII85
+	Binary	Binär

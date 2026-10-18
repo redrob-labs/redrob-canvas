@@ -4158,3 +4158,9 @@ curves	Smooth	スムーズ
 	Xtilt	X傾き
 	Ytilt	Y傾き
 	Mng	MNG
+	Export as PostScript (.eps)…	PostScriptとして書き出し (.eps)…
+	Encapsulated	カプセル化 (EPS)
+	Encoding	エンコーディング
+	Hex	16進
+	Ascii85	ASCII85
+	Binary	バイナリ

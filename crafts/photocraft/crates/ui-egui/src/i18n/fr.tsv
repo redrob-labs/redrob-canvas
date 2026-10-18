@@ -3493,3 +3493,9 @@ curves	Smooth	Lisser
 	Xtilt	Inclinaison X
 	Ytilt	Inclinaison Y
 	Mng	MNG
+	Export as PostScript (.eps)…	Exporter en PostScript (.eps)…
+	Encapsulated	Encapsulé
+	Encoding	Encodage
+	Hex	Hexadécimal
+	Ascii85	ASCII85
+	Binary	Binaire

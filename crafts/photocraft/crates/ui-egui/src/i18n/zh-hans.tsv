@@ -3109,3 +3109,9 @@ curves	Smooth	平滑
 	Xtilt	X 倾斜
 	Ytilt	Y 倾斜
 	Mng	MNG
+	Export as PostScript (.eps)…	导出为 PostScript (.eps)…
+	Encapsulated	封装 (EPS)
+	Encoding	编码
+	Hex	十六进制
+	Ascii85	ASCII85
+	Binary	二进制

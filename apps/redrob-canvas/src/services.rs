@@ -196,7 +196,8 @@ pub mod photo {
         "afpub", "pcraft", // legacy: upstream Photo documents still open
         // Legacy and scientific formats (redrob_photo_io::legacy) and resource files.
         "xbm", "cur", "ani", "sgi", "rgb", "rgba", "bw", "pix", "als", "cel", "fli", "flc", "xwd",
-        "dcm", "dicom", "wmf", "gih", "pat", "gpat",
+        "dcm", "dicom", "wmf", "gih", "pat", "gpat", "jxl", "jp2", "j2k", "j2c", "jpf", "jpx",
+        "jph", "eps", "ps", "epsf",
     ];
 
     const SAVE_FILTERS: &[(&str, &[&str])] = &[
@@ -205,6 +206,9 @@ pub mod photo {
         ("Redrob Canvas photo document", &["rphoto"]),
         ("OpenRaster", &["ora"]),
         ("XCF", &["xcf"]),
+        ("JPEG XL", &["jxl"]),
+        ("JPEG 2000", &["jp2", "j2k", "jph"]),
+        ("Encapsulated PostScript", &["eps", "ps"]),
         ("PNG", &["png"]),
         ("JPEG", &["jpg"]),
         ("WebP", &["webp"]),

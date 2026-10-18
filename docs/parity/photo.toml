@@ -4689,9 +4689,9 @@ name = "PostScript / EPS import and export"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/import-file-formats.html"
 behaviour = "Rasterise PS/EPS at a resolution with page selection, bounding box, antialias; export EPS with preview and encapsulation options."
-ours = "none"
-ours_where = ""
-gap = ""
+ours = "partial"
+ours_where = "crafts/photocraft/crates/io/src/eps.rs (import: %%BoundingBox resolution, %ImageData and image/colorimage operands, hex/ASCII85/binary and RunLength data at 1-16 bits grey/RGB/CMYK, DOS EPS TIFF and WMF previews; export: EPSF-3.0 or PostScript page, Level 1-3, hex/ASCII85/binary, TIFF preview), crafts/photocraft/crates/engine/src/resource_export_cmds.rs (file.export.postScript), crafts/photocraft/crates/ui-egui/src/file_ui.rs, crafts/photocraft/crates/io/src/lib.rs"
+gap = "general PostScript programs (vector drawings, text) are not rasterised; only raster EPS and the DOS EPS preview open, and page selection and antialias options do not apply"
 priority = 3
 
 [[feature]]
@@ -4785,9 +4785,9 @@ name = "JPEG XL and JPEG 2000 import/export"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/export-file-formats.html"
 behaviour = "Modern JPEG successors, lossless and lossy, with bit depth and effort."
-ours = "none"
-ours_where = ""
-gap = "neither JPEG XL nor JPEG 2000"
+ours = "partial"
+ours_where = "crafts/photocraft/crates/io/src/modern.rs (JPEG XL decode via jxl-oxide 0.12.6, lossless encode via zune-jpegxl 0.5.2; JPEG 2000 / HTJ2K decode and lossless or quality-factor lossy encode via j2k 0.12.0; .jp2/.j2k/.jph containers), crafts/photocraft/crates/io/Cargo.toml, crafts/photocraft/crates/io/src/lib.rs, apps/redrob-canvas/src/services.rs"
+gap = "JPEG XL export is lossless only (no pure-Rust lossy JPEG XL encoder); JPEG 2000 opens at 8 bits per sample"
 priority = 3
 
 [[feature]]

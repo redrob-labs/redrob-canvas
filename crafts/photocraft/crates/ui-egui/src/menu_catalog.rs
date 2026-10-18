@@ -38,6 +38,7 @@ pub static CATALOG: &[(&[&str], &str, Option<&str>, &str)] = &[
     (&["File", "Export"], "Export as Brush (.gbr)…", None, "file.export.brush"),
     (&["File", "Export"], "Export Layers as Image Hose (.gih)…", None, "file.export.imageHose"),
     (&["File", "Export"], "Export as Pattern (.pat)…", None, "file.export.pattern"),
+    (&["File", "Export"], "Export as PostScript (.eps)…", None, "file.export.postScript"),
     (&["File", "Generate"], "Image Assets", None, "file.generate.imageAssets"),
     (&["File"], "---", None, "---"),
     (&["File"], "Place Embedded…", None, "file.placeEmbedded"),
