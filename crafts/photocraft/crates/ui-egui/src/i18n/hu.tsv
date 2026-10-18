@@ -4453,3 +4453,22 @@ cameraRaw	Yellow	Sárga
 	That identifier is already a unit	Ez az azonosító már egy egység
 	Custom units	Egyéni egységek
 	Disabled modules	Letiltott modulok
+	Input Devices…	Beviteli eszközök…
+	Input Controllers…	Beviteli vezérlők…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	A toll a platform által jelentett tábla-ceruza. Letiltva egérként viselkedik.
+	Device	Eszköz
+	Invert tilt X	X dőlés megfordítása
+	Invert tilt Y	Y dőlés megfordítása
+	Swap tilt	Dőlés felcserélése
+	Pressure scale	Nyomásskála
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	A görgőesemények up, down, left vagy right, választható Shift+, Ctrl+ és Alt+ előtaggal; a billentyűesemények gyorsbillentyűk, például Ctrl+Alt+Up. A művelet egy parancsazonosító, választhatóan JSON-paraméterekkel.
+	Controller	Vezérlő
+	Event	Esemény
+	Remove mapping	Leképezés eltávolítása
+	New mapping	Új leképezés
+	Add Mapping	Leképezés hozzáadása
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} bejegyzés; kattintás beállítja az előtérszínt, dupla kattintás szerkeszti
+	Entry	Bejegyzés
+	Add an entry with the foreground colour	Bejegyzés hozzáadása az előtérszínnel
+	Delete the last entry	Az utolsó bejegyzés törlése
+	Use selected	Kijelölt használata

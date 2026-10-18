@@ -4843,3 +4843,22 @@ navigator	Zoom	Zoom
 	That identifier is already a unit	Ese identificador ya es una unidad
 	Custom units	Unidades personalizadas
 	Disabled modules	Módulos desactivados
+	Input Devices…	Dispositivos de entrada…
+	Input Controllers…	Controladores de entrada…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	El lápiz es el estilete de la tableta que informa la plataforma. Desactivado actúa como un ratón.
+	Device	Dispositivo
+	Invert tilt X	Invertir inclinación X
+	Invert tilt Y	Invertir inclinación Y
+	Swap tilt	Intercambiar inclinación
+	Pressure scale	Escala de presión
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Los eventos de rueda son up, down, left o right con Shift+, Ctrl+ y Alt+ opcionales; los de teclado son atajos como Ctrl+Alt+Up. La acción es un id de comando, opcionalmente seguido de parámetros JSON.
+	Controller	Controlador
+	Event	Evento
+	Remove mapping	Quitar asignación
+	New mapping	Nueva asignación
+	Add Mapping	Añadir asignación
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} entradas; pulse una para fijar el color frontal, doble clic para editarla
+	Entry	Entrada
+	Add an entry with the foreground colour	Añadir una entrada con el color frontal
+	Delete the last entry	Eliminar la última entrada
+	Use selected	Usar seleccionada

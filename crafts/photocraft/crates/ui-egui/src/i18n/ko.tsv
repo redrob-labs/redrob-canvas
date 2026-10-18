@@ -4068,3 +4068,24 @@ curves	Smooth	매끄럽게
 	That identifier is already a unit	그 식별자는 이미 단위입니다
 	Custom units	사용자 정의 단위
 	Disabled modules	꺼진 모듈
+	Input Devices…	입력 장치…
+	Input Controllers…	입력 컨트롤러…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	펜은 플랫폼이 보고하는 태블릿 스타일러스입니다. 사용 안 함으로 두면 마우스처럼 동작합니다.
+	Device	장치
+	Invert tilt X	기울기 X 반전
+	Invert tilt Y	기울기 Y 반전
+	Swap tilt	기울기 축 교환
+	Pressure scale	압력 배율
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	휠 이벤트는 up, down, left, right에 선택적 Shift+, Ctrl+, Alt+를 붙입니다. 키보드 이벤트는 Ctrl+Alt+Up 같은 단축키입니다. 동작은 명령 ID이며 뒤에 JSON 매개변수를 붙일 수 있습니다.
+	Keyboard	키보드
+	Controller	컨트롤러
+	Event	이벤트
+	Remove mapping	매핑 제거
+	New mapping	새 매핑
+	Add Mapping	매핑 추가
+	Disabled	사용 안 함
+	{n} entries; click one to set the foreground colour, double-click to edit it	항목 {n}개. 클릭하면 전경색으로 설정되고, 두 번 클릭하면 편집합니다
+	Entry	항목
+	Add an entry with the foreground colour	전경색으로 항목을 추가합니다
+	Delete the last entry	마지막 항목을 삭제합니다
+	Use selected	선택 항목 사용

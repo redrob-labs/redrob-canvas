@@ -4025,3 +4025,24 @@ curves	Smooth	Làm mượt
 	That identifier is already a unit	Định danh đó đã là một đơn vị
 	Custom units	Đơn vị tùy chỉnh
 	Disabled modules	Mô-đun đã tắt
+	Input Devices…	Thiết bị nhập…
+	Input Controllers…	Bộ điều khiển nhập…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Bút là bút cảm ứng của bảng vẽ mà nền tảng báo. Khi tắt, nó hoạt động như chuột.
+	Device	Thiết bị
+	Invert tilt X	Đảo nghiêng X
+	Invert tilt Y	Đảo nghiêng Y
+	Swap tilt	Hoán đổi nghiêng
+	Pressure scale	Tỷ lệ áp lực
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Sự kiện con lăn là up, down, left hoặc right với Shift+, Ctrl+ và Alt+ tùy chọn; sự kiện bàn phím là phím tắt như Ctrl+Alt+Up. Hành động là ID lệnh, có thể kèm tham số JSON.
+	Keyboard	Bàn phím
+	Controller	Bộ điều khiển
+	Event	Sự kiện
+	Remove mapping	Xóa ánh xạ
+	New mapping	Ánh xạ mới
+	Add Mapping	Thêm ánh xạ
+	Disabled	Đã tắt
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} mục; nhấp để đặt màu nền trước, nhấp đôi để sửa
+	Entry	Mục
+	Add an entry with the foreground colour	Thêm một mục với màu nền trước
+	Delete the last entry	Xóa mục cuối
+	Use selected	Dùng mục đã chọn

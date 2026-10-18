@@ -231,6 +231,17 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
     if let Some(r) = crate::modules_ui::menu(app, id, &params) {
         return r;
     }
+    // Edit > Input Devices… and Edit > Input Controllers… dialogs.
+    if let Some(r) = crate::input_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Image > Mode > Color Table…: the swatch grid editor (the generic form stays for scripts).
+    if id == "image.mode.colorTable"
+        && params.as_object().is_none_or(|o| o.is_empty())
+        && let Some(r) = crate::colormap_ui::open(app)
+    {
+        return r;
+    }
     // Filter › Plug-ins (installed WebAssembly plug-ins, Install Plug-in…).
     if let Some(r) = crate::plugin_ui::menu(app, id, &params) {
         return r;
@@ -765,6 +776,7 @@ pub fn is_enabled(app: &PhotocraftApp, id: &str) -> bool {
         || crate::timeline_ui::handles(id)
         || crate::buffers_ui::handles(id)
         || crate::modules_ui::handles(id)
+        || crate::input_ui::handles(id)
     {
         return true;
     }

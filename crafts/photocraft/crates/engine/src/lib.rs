@@ -137,6 +137,7 @@ pub mod web_cmds;
 pub mod create_cmds;
 pub mod buffers_cmds;
 pub mod modules_cmds;
+pub mod input_cmds;
 pub mod dynamics_extra_cmds;
 pub mod path_svg_cmds;
 pub mod perspective_clone_cmds;

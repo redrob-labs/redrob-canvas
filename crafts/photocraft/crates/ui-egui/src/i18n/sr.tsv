@@ -4607,3 +4607,22 @@ shape	Appearance	Izgled
 	That identifier is already a unit	Taj identifikator je već jedinica
 	Custom units	Prilagođene jedinice
 	Disabled modules	Isključeni moduli
+	Input Devices…	Ulazni uređaji…
+	Input Controllers…	Ulazni kontroleri…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Olovka je stilus tableta koji platforma prijavljuje. Isključena radi kao miš.
+	Device	Uređaj
+	Invert tilt X	Obrni nagib X
+	Invert tilt Y	Obrni nagib Y
+	Swap tilt	Zameni nagib
+	Pressure scale	Razmera pritiska
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Događaji točkića su up, down, left ili right sa opcionim Shift+, Ctrl+ i Alt+; događaji tastature su prečice kao Ctrl+Alt+Up. Radnja je id komande, opciono praćen JSON parametrima.
+	Controller	Kontroler
+	Event	Događaj
+	Remove mapping	Ukloni mapiranje
+	New mapping	Novo mapiranje
+	Add Mapping	Dodaj mapiranje
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} stavki; klik postavlja boju četkice, dvoklik uređuje
+	Entry	Stavka
+	Add an entry with the foreground colour	Dodaj stavku sa bojom četkice
+	Delete the last entry	Obriši poslednju stavku
+	Use selected	Koristi izabranu

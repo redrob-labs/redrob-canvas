@@ -4017,9 +4017,9 @@ name = "Colormap dialog (indexed images)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-indexed-palette-dialog.html"
 behaviour = "Shows the palette entries of an indexed image; click sets FG, edit an entry's colour or add new entries."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/mode_cmds.rs (image.mode.colorTable), crafts/photocraft/crates/ui-egui/src/dialogs.rs"
-gap = "colour table viewer/loader; editing individual entries not supported"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/mode_cmds.rs (image.mode.colorTable: entries, colors, transparent), crafts/photocraft/crates/ui-egui/src/colormap_ui.rs (Color Table dialog: swatch grid, click sets the foreground, double-click edits hex/RGB, add and delete entries, transparent entry)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4869,9 +4869,9 @@ name = "Input Devices and Input Controllers"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-edit-input-devices.html"
 behaviour = "Configure tablets and other devices (mode, axes, keys) and map wheel/keyboard controllers to actions."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/stylus.rs, crafts/photocraft/crates/engine/src/prefs (edit.preferences.tools), crafts/photocraft/crates/tablet"
-gap = "tablet pressure/tilt supported; no per-device configuration or controller mapping dialog"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/input_cmds.rs (input.list, input.devices.set, input.controllers.set), crafts/photocraft/crates/engine/src/prefs.rs (Tools::input_devices, Tools::input_controllers), crafts/photocraft/crates/ui-egui/src/input_ui.rs (Edit > Input Devices… and Input Controllers… dialogs; wheel and keyboard mappings run commands), crafts/photocraft/crates/ui-egui/src/stylus.rs (DeviceAdjust: tilt, rotation, invert, swap, pressure scale), crafts/photocraft/crates/ui-egui/src/canvas.rs"
+gap = ""
 priority = 3
 
 [[feature]]

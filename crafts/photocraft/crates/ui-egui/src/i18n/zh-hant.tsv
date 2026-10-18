@@ -3150,3 +3150,24 @@ curves	Smooth	平滑
 	That identifier is already a unit	該識別碼已是一個單位
 	Custom units	自訂單位
 	Disabled modules	已停用的模組
+	Input Devices…	輸入裝置…
+	Input Controllers…	輸入控制器…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	筆是平台回報的繪圖板觸控筆。停用後它像滑鼠一樣運作。
+	Device	裝置
+	Invert tilt X	反轉傾斜 X
+	Invert tilt Y	反轉傾斜 Y
+	Swap tilt	交換傾斜軸
+	Pressure scale	壓力縮放
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	滾輪事件為 up、down、left 或 right，可加 Shift+、Ctrl+、Alt+ 前綴；鍵盤事件是如 Ctrl+Alt+Up 的快速鍵。動作是命令 ID，可後接 JSON 參數。
+	Keyboard	鍵盤
+	Controller	控制器
+	Event	事件
+	Remove mapping	移除對應
+	New mapping	新對應
+	Add Mapping	新增對應
+	Disabled	已停用
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} 個項目；按一下設為前景色，按兩下編輯
+	Entry	項目
+	Add an entry with the foreground colour	以前景色新增一個項目
+	Delete the last entry	刪除最後一個項目
+	Use selected	使用所選項目

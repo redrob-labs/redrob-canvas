@@ -4134,3 +4134,24 @@ curves	Smooth	Wygładź
 	That identifier is already a unit	Ten identyfikator jest już jednostką
 	Custom units	Jednostki własne
 	Disabled modules	Wyłączone moduły
+	Input Devices…	Urządzenia wejściowe…
+	Input Controllers…	Kontrolery wejściowe…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Pióro to rysik tabletu zgłaszany przez platformę. Wyłączone działa jak mysz.
+	Device	Urządzenie
+	Invert tilt X	Odwróć nachylenie X
+	Invert tilt Y	Odwróć nachylenie Y
+	Swap tilt	Zamień nachylenie
+	Pressure scale	Skala nacisku
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Zdarzenia kółka to up, down, left lub right z opcjonalnymi Shift+, Ctrl+ i Alt+; zdarzenia klawiatury to skróty takie jak Ctrl+Alt+Up. Akcja to id polecenia, opcjonalnie z parametrami JSON.
+	Keyboard	Klawiatura
+	Controller	Kontroler
+	Event	Zdarzenie
+	Remove mapping	Usuń mapowanie
+	New mapping	Nowe mapowanie
+	Add Mapping	Dodaj mapowanie
+	Disabled	Wyłączone
+	{n} entries; click one to set the foreground colour, double-click to edit it	Wpisów: {n}; kliknięcie ustawia kolor pierwszego planu, dwuklik edytuje
+	Entry	Wpis
+	Add an entry with the foreground colour	Dodaj wpis z kolorem pierwszego planu
+	Delete the last entry	Usuń ostatni wpis
+	Use selected	Użyj zaznaczonego

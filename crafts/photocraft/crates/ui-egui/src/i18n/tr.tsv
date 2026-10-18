@@ -4265,3 +4265,22 @@ cameraData	Lens	Lens
 	That identifier is already a unit	Bu tanımlayıcı zaten bir birim
 	Custom units	Özel birimler
 	Disabled modules	Devre dışı modüller
+	Input Devices…	Giriş Aygıtları…
+	Input Controllers…	Giriş Denetleyicileri…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Kalem, platformun bildirdiği tablet kalemidir. Devre dışı bırakılırsa fare gibi çalışır.
+	Device	Aygıt
+	Invert tilt X	X eğimini ters çevir
+	Invert tilt Y	Y eğimini ters çevir
+	Swap tilt	Eğimi değiştir
+	Pressure scale	Basınç ölçeği
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Tekerlek olayları isteğe bağlı Shift+, Ctrl+ ve Alt+ ile up, down, left veya right; klavye olayları Ctrl+Alt+Up gibi kısayollardır. Eylem bir komut kimliğidir, isteğe bağlı JSON parametreleri izleyebilir.
+	Controller	Denetleyici
+	Event	Olay
+	Remove mapping	Eşlemeyi kaldır
+	New mapping	Yeni eşleme
+	Add Mapping	Eşleme Ekle
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} girdi; tıklama ön plan rengini ayarlar, çift tıklama düzenler
+	Entry	Girdi
+	Add an entry with the foreground colour	Ön plan rengiyle bir girdi ekle
+	Delete the last entry	Son girdiyi sil
+	Use selected	Seçileni kullan

@@ -3165,3 +3165,24 @@ curves	Smooth	平滑
 	That identifier is already a unit	该标识符已是一个单位
 	Custom units	自定义单位
 	Disabled modules	已禁用的模块
+	Input Devices…	输入设备…
+	Input Controllers…	输入控制器…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	笔是平台报告的数位板触控笔。禁用后它像鼠标一样工作。
+	Device	设备
+	Invert tilt X	反转倾斜 X
+	Invert tilt Y	反转倾斜 Y
+	Swap tilt	交换倾斜轴
+	Pressure scale	压力缩放
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	滚轮事件为 up、down、left 或 right，可加 Shift+、Ctrl+、Alt+ 前缀；键盘事件是如 Ctrl+Alt+Up 的快捷键。动作是命令 ID，可后跟 JSON 参数。
+	Keyboard	键盘
+	Controller	控制器
+	Event	事件
+	Remove mapping	移除映射
+	New mapping	新映射
+	Add Mapping	添加映射
+	Disabled	已禁用
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} 个条目；单击设置为前景色，双击编辑
+	Entry	条目
+	Add an entry with the foreground colour	以前景色添加一个条目
+	Delete the last entry	删除最后一个条目
+	Use selected	使用所选项

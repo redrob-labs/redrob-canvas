@@ -3547,3 +3547,24 @@ curves	Smooth	Lisser
 	That identifier is already a unit	Cet identifiant est déjà une unité
 	Custom units	Unités personnalisées
 	Disabled modules	Modules désactivés
+	Input Devices…	Périphériques d'entrée…
+	Input Controllers…	Contrôleurs d'entrée…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Le stylet est celui de la tablette signalé par la plateforme. Désactivé, il agit comme une souris.
+	Device	Périphérique
+	Invert tilt X	Inverser l'inclinaison X
+	Invert tilt Y	Inverser l'inclinaison Y
+	Swap tilt	Permuter l'inclinaison
+	Pressure scale	Échelle de pression
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Les événements de molette sont up, down, left ou right avec Shift+, Ctrl+ et Alt+ facultatifs ; les événements clavier sont des raccourcis comme Ctrl+Alt+Up. L'action est un identifiant de commande, éventuellement suivi de paramètres JSON.
+	Keyboard	Clavier
+	Controller	Contrôleur
+	Event	Événement
+	Remove mapping	Supprimer l'association
+	New mapping	Nouvelle association
+	Add Mapping	Ajouter l'association
+	Disabled	Désactivé
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} entrées ; cliquez pour définir la couleur de premier plan, double-cliquez pour modifier
+	Entry	Entrée
+	Add an entry with the foreground colour	Ajouter une entrée avec la couleur de premier plan
+	Delete the last entry	Supprimer la dernière entrée
+	Use selected	Utiliser la sélection

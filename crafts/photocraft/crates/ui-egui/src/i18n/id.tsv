@@ -3534,3 +3534,24 @@ curves	Smooth	Haluskan
 	That identifier is already a unit	Pengenal itu sudah menjadi satuan
 	Custom units	Satuan khusus
 	Disabled modules	Modul dimatikan
+	Input Devices…	Perangkat Masukan…
+	Input Controllers…	Pengontrol Masukan…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Pena adalah stilus tablet yang dilaporkan platform. Dinonaktifkan membuatnya bertindak seperti mouse.
+	Device	Perangkat
+	Invert tilt X	Balik kemiringan X
+	Invert tilt Y	Balik kemiringan Y
+	Swap tilt	Tukar kemiringan
+	Pressure scale	Skala tekanan
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Peristiwa roda adalah up, down, left, atau right dengan Shift+, Ctrl+, dan Alt+ opsional; peristiwa papan ketik adalah pintasan seperti Ctrl+Alt+Up. Aksi adalah id perintah, bisa diikuti parameter JSON.
+	Keyboard	Papan ketik
+	Controller	Pengontrol
+	Event	Peristiwa
+	Remove mapping	Hapus pemetaan
+	New mapping	Pemetaan baru
+	Add Mapping	Tambah Pemetaan
+	Disabled	Dinonaktifkan
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} entri; klik untuk menetapkan warna depan, klik dua kali untuk mengedit
+	Entry	Entri
+	Add an entry with the foreground colour	Tambahkan entri dengan warna depan
+	Delete the last entry	Hapus entri terakhir
+	Use selected	Gunakan yang dipilih

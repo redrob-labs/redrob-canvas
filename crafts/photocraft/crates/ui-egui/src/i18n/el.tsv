@@ -4235,3 +4235,22 @@ curves	Smooth	Εξομάλυνση
 	That identifier is already a unit	Αυτό το αναγνωριστικό είναι ήδη μονάδα
 	Custom units	Προσαρμοσμένες μονάδες
 	Disabled modules	Απενεργοποιημένες μονάδες
+	Input Devices…	Συσκευές εισόδου…
+	Input Controllers…	Ελεγκτές εισόδου…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Η γραφίδα είναι αυτή της ταμπλέτας που αναφέρει η πλατφόρμα. Απενεργοποιημένη λειτουργεί ως ποντίκι.
+	Device	Συσκευή
+	Invert tilt X	Αντιστροφή κλίσης X
+	Invert tilt Y	Αντιστροφή κλίσης Y
+	Swap tilt	Εναλλαγή κλίσης
+	Pressure scale	Κλίμακα πίεσης
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Τα συμβάντα ροδέλας είναι up, down, left ή right με προαιρετικά Shift+, Ctrl+ και Alt+· τα συμβάντα πληκτρολογίου είναι συντομεύσεις όπως Ctrl+Alt+Up. Η ενέργεια είναι αναγνωριστικό εντολής, προαιρετικά με παραμέτρους JSON.
+	Controller	Ελεγκτής
+	Event	Συμβάν
+	Remove mapping	Αφαίρεση αντιστοίχισης
+	New mapping	Νέα αντιστοίχιση
+	Add Mapping	Προσθήκη αντιστοίχισης
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} καταχωρίσεις· κλικ ορίζει το χρώμα προσκηνίου, διπλό κλικ επεξεργάζεται
+	Entry	Καταχώριση
+	Add an entry with the foreground colour	Προσθήκη καταχώρισης με το χρώμα προσκηνίου
+	Delete the last entry	Διαγραφή της τελευταίας καταχώρισης
+	Use selected	Χρήση επιλεγμένης

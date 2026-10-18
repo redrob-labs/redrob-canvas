@@ -4295,3 +4295,22 @@ curves	Smooth	Vloeiend maken
 	That identifier is already a unit	Die identificatie is al een eenheid
 	Custom units	Aangepaste eenheden
 	Disabled modules	Uitgeschakelde modules
+	Input Devices…	Invoerapparaten…
+	Input Controllers…	Invoercontrollers…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	De pen is de tabletstylus die het platform meldt. Uitgeschakeld werkt hij als een muis.
+	Device	Apparaat
+	Invert tilt X	Kanteling X omkeren
+	Invert tilt Y	Kanteling Y omkeren
+	Swap tilt	Kanteling wisselen
+	Pressure scale	Drukschaal
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Wielgebeurtenissen zijn up, down, left of right met optioneel Shift+, Ctrl+ en Alt+; toetsenbordgebeurtenissen zijn sneltoetsen zoals Ctrl+Alt+Up. De actie is een opdracht-id, optioneel gevolgd door JSON-parameters.
+	Controller	Controller
+	Event	Gebeurtenis
+	Remove mapping	Toewijzing verwijderen
+	New mapping	Nieuwe toewijzing
+	Add Mapping	Toewijzing toevoegen
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} items; klik om de voorgrondkleur in te stellen, dubbelklik om te bewerken
+	Entry	Item
+	Add an entry with the foreground colour	Een item met de voorgrondkleur toevoegen
+	Delete the last entry	Het laatste item verwijderen
+	Use selected	Geselecteerde gebruiken

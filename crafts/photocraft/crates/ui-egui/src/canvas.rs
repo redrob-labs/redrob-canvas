@@ -3245,6 +3245,8 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     let bars_id = egui::Id::new(("pc-canvas-bars-hover", idx));
     let over_bars = ctx.data(|d| d.get_temp::<bool>(bars_id)).unwrap_or(false);
     let nav_hovered = response.hovered() || free_hover || over_bars;
+    // Edit > Input Controllers: bound wheel notches and shortcuts run their commands first.
+    crate::input_ui::take_events(app, &ctx, nav_hovered);
     // Interface › Enable Animations off: the wheel moves the canvas without a glide (#5721).
     let wheel = crate::wheel_nav::read_with(
         &ctx,
@@ -3296,6 +3298,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     // Pen pressure/tilt for this frame's tool events (mouse = 1.0), unless Preferences › Tools ›
     // Use Tablet Pressure is off; the pen's eraser end selects the Eraser.
     app.stylus.use_pressure = app.session.prefs().tools.use_tablet_pressure;
+    crate::input_ui::apply_device(app);
     let curve = app.session.prefs().tools.pressure_curve.clone();
     app.stylus.set_pressure_curve(&curve);
     app.stylus.update_for_frame(ui.ctx().cumulative_frame_nr(), &ui.input(|i| i.events.clone()));

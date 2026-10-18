@@ -392,6 +392,66 @@ pub struct Tools {
     /// The longest pause, in milliseconds, between two nudges that still bundle into one state.
     /// Longer than a key's auto-repeat delay (about half a second), so a held key is one state.
     pub nudge_bundle_pause_ms: u32,
+    /// Edit › Input Devices: per-device configuration (`input_cmds`). The entry named `pen`
+    /// configures the tablet pen the platform reports.
+    pub input_devices: Vec<InputDevice>,
+    /// Edit › Input Controllers: wheel and keyboard events mapped to commands (`input_cmds`).
+    pub input_controllers: Vec<ControllerMapping>,
+}
+
+/// One input device's configuration (Edit › Input Devices…).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct InputDevice {
+    /// `pen` for the tablet pen; other names are kept for devices the platform may report later.
+    pub name: String,
+    /// `disabled` (the device acts as a mouse), `screen` (absolute, the default) or `window`.
+    pub mode: String,
+    /// Report tilt (off: tilt reads 0).
+    pub tilt: bool,
+    /// Report barrel rotation (off: rotation reads 0).
+    pub rotation: bool,
+    pub invert_tilt_x: bool,
+    pub invert_tilt_y: bool,
+    /// Swap the tilt axes (a pen mounted sideways).
+    pub swap_tilt: bool,
+    /// Pressure scale 0.1..=4 applied before the pressure curve.
+    pub pressure_scale: f32,
+}
+
+impl Default for InputDevice {
+    fn default() -> Self {
+        Self {
+            name: "pen".into(),
+            mode: "screen".into(),
+            tilt: true,
+            rotation: true,
+            invert_tilt_x: false,
+            invert_tilt_y: false,
+            swap_tilt: false,
+            pressure_scale: 1.0,
+        }
+    }
+}
+
+/// A controller event bound to a command (Edit › Input Controllers…).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct ControllerMapping {
+    /// `wheel` or `keyboard`.
+    pub controller: String,
+    /// Wheel: `up` / `down` / `left` / `right` with optional `Shift+`, `Ctrl+`, `Alt+` prefixes
+    /// (`Shift+up`); keyboard: a shortcut in the `Cmd+Shift+N` notation.
+    pub event: String,
+    /// The command id to run (`view.zoomIn`, `brush.size.increase`, ...), with optional
+    /// `{"k":v}` JSON params after a space.
+    pub action: String,
+}
+
+impl Default for ControllerMapping {
+    fn default() -> Self {
+        Self { controller: "wheel".into(), event: "Alt+up".into(), action: "view.zoomIn".into() }
+    }
 }
 
 impl Default for Tools {
@@ -412,6 +472,8 @@ impl Default for Tools {
             pressure_curve: vec![[0.0, 0.0], [1.0, 1.0]],
             bundle_nudges: true,
             nudge_bundle_pause_ms: 1000,
+            input_devices: Vec::new(),
+            input_controllers: Vec::new(),
         }
     }
 }

@@ -3515,3 +3515,24 @@ curves	Smooth	Сгладить
 	That identifier is already a unit	Этот идентификатор уже занят единицей
 	Custom units	Пользовательские единицы
 	Disabled modules	Отключённые модули
+	Input Devices…	Устройства ввода…
+	Input Controllers…	Контроллеры ввода…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Перо - это стилус планшета, о котором сообщает платформа. Отключённое перо работает как мышь.
+	Device	Устройство
+	Invert tilt X	Инвертировать наклон X
+	Invert tilt Y	Инвертировать наклон Y
+	Swap tilt	Поменять оси наклона
+	Pressure scale	Масштаб нажима
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	События колеса: up, down, left или right с необязательными Shift+, Ctrl+ и Alt+; события клавиатуры - сочетания вида Ctrl+Alt+Up. Действие - идентификатор команды, за которым могут идти параметры JSON.
+	Keyboard	Клавиатура
+	Controller	Контроллер
+	Event	Событие
+	Remove mapping	Удалить привязку
+	New mapping	Новая привязка
+	Add Mapping	Добавить привязку
+	Disabled	Отключено
+	{n} entries; click one to set the foreground colour, double-click to edit it	Записей: {n}; щелчок задаёт цвет переднего плана, двойной щелчок редактирует
+	Entry	Запись
+	Add an entry with the foreground colour	Добавить запись с цветом переднего плана
+	Delete the last entry	Удалить последнюю запись
+	Use selected	Выбранная

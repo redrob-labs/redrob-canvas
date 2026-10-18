@@ -4325,3 +4325,22 @@ layerLabel	No Color	Sem cor
 	That identifier is already a unit	Esse identificador já é uma unidade
 	Custom units	Unidades personalizadas
 	Disabled modules	Módulos desativados
+	Input Devices…	Dispositivos de entrada…
+	Input Controllers…	Controladores de entrada…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	A caneta é o estilete do tablet informado pela plataforma. Desativada, age como um mouse.
+	Device	Dispositivo
+	Invert tilt X	Inverter inclinação X
+	Invert tilt Y	Inverter inclinação Y
+	Swap tilt	Trocar inclinação
+	Pressure scale	Escala de pressão
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Eventos de roda são up, down, left ou right com Shift+, Ctrl+ e Alt+ opcionais; eventos de teclado são atalhos como Ctrl+Alt+Up. A ação é um id de comando, opcionalmente seguido de parâmetros JSON.
+	Controller	Controlador
+	Event	Evento
+	Remove mapping	Remover mapeamento
+	New mapping	Novo mapeamento
+	Add Mapping	Adicionar mapeamento
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} entradas; clique para definir a cor do primeiro plano, clique duas vezes para editar
+	Entry	Entrada
+	Add an entry with the foreground colour	Adicionar uma entrada com a cor do primeiro plano
+	Delete the last entry	Excluir a última entrada
+	Use selected	Usar selecionada

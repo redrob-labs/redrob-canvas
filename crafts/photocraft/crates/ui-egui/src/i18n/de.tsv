@@ -3544,3 +3544,24 @@ curves	Smooth	Glätten
 	That identifier is already a unit	Diese Kennung ist bereits eine Einheit
 	Custom units	Eigene Einheiten
 	Disabled modules	Deaktivierte Module
+	Input Devices…	Eingabegeräte…
+	Input Controllers…	Eingabesteuerungen…
+	The pen is the tablet stylus the platform reports. Disabled makes it act as a mouse.	Der Stift ist der Tablettstift, den die Plattform meldet. Deaktiviert verhält er sich wie eine Maus.
+	Device	Gerät
+	Invert tilt X	Neigung X umkehren
+	Invert tilt Y	Neigung Y umkehren
+	Swap tilt	Neigung tauschen
+	Pressure scale	Druckskalierung
+	Wheel events are up, down, left or right with optional Shift+, Ctrl+ and Alt+; keyboard events are shortcuts such as Ctrl+Alt+Up. The action is a command id, optionally followed by JSON parameters.	Radereignisse sind up, down, left oder right mit optionalem Shift+, Ctrl+ und Alt+; Tastaturereignisse sind Kürzel wie Ctrl+Alt+Up. Die Aktion ist eine Befehls-ID, optional gefolgt von JSON-Parametern.
+	Keyboard	Tastatur
+	Controller	Steuerung
+	Event	Ereignis
+	Remove mapping	Zuordnung entfernen
+	New mapping	Neue Zuordnung
+	Add Mapping	Zuordnung hinzufügen
+	Disabled	Deaktiviert
+	{n} entries; click one to set the foreground colour, double-click to edit it	{n} Einträge; Klick setzt die Vordergrundfarbe, Doppelklick bearbeitet
+	Entry	Eintrag
+	Add an entry with the foreground colour	Einen Eintrag mit der Vordergrundfarbe hinzufügen
+	Delete the last entry	Den letzten Eintrag löschen
+	Use selected	Ausgewählten verwenden
