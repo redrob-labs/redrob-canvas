@@ -27,6 +27,7 @@ mod blur2;
 pub mod cage;
 pub mod camera_raw;
 pub mod color_to_alpha;
+pub mod color_tools;
 pub mod content_aware;
 mod decor;
 mod denoise;

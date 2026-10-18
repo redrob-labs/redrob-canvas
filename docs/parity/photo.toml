@@ -897,9 +897,9 @@ name = "Linear Invert and Value Invert"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-invert-linear.html"
 behaviour = "Inverts colours in linear light, or inverts only the HSV value keeping hue and saturation."
-ours = "none"
-ours_where = ""
-gap = "only the perceptual invert"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.linearInvert, image.adjustments.valueInvert)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -945,8 +945,8 @@ name = "Stretch Contrast HSV"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-stretch-contrast-hsv.html"
 behaviour = "Stretches saturation and value while preserving hue."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.stretchContrastHsv)"
 gap = ""
 priority = 3
 
@@ -957,8 +957,8 @@ name = "Colour Enhance"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-color-enhance.html"
 behaviour = "Maximises chroma range without changing hue or lightness."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.colorEnhance: CIE LCh chroma stretched to the gamut)"
 gap = ""
 priority = 3
 
@@ -981,9 +981,9 @@ name = "Extract Component"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-component-extract.html"
 behaviour = "Turns one component (RGB, HSV, HSL, CMYK, Lab, LCh, YCbCr, alpha...) into a grayscale image, optionally inverted or linear."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/channel_cmds.rs (channel.split, channel.target)"
-gap = "channel split into documents for the image's own model; no HSV/LCh/YCbCr component extraction"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.extractComponent: RGB, alpha, HSV, HSL, CMYK, Lab, LCh, Y'CbCr 470/709 studio and full range; invert, linear)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1005,9 +1005,9 @@ name = "Compose"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-compose.html"
 behaviour = "Builds a new colour image from separate grayscale images or layers as channels of a chosen model (RGB, RGBA, HSV, HSL, CMYK, Lab, LCh, YCbCr variants)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/channel_cmds.rs (channel.merge)"
-gap = "merge of grayscale documents into RGB/CMYK/Lab only"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.mode.compose: rgb, rgba, hsv, hsl, cmy, cmyk, lab, lch, ycbcr470/709/470f/709f from open documents or the active document's layers)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1017,9 +1017,9 @@ name = "Decompose and Recompose"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-decompose.html"
 behaviour = "Splits an image into grayscale layers or images per channel of a chosen model, with options to decompose to layers and colour them; Recompose reverses it using stored source information."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/channel_cmds.rs (channel.split)"
-gap = "no HSV/LCh/YCbCr models and no decompose-to-layers"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.mode.decompose to layers or documents, colorize; image.mode.recompose from the stored model and source)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1029,8 +1029,8 @@ name = "Colour to Gray (c2g)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-c2g.html"
 behaviour = "Spatial colour-to-grayscale that preserves local contrast using radius, samples and iterations."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.colorToGray: radius, samples, iterations, enhance shadows)"
 gap = ""
 priority = 3
 
@@ -1041,9 +1041,9 @@ name = "Desaturate"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-desaturate.html"
 behaviour = "Convert to gray by luminance, luma, lightness (HSL), average or value."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs (image.adjustments.desaturate)"
-gap = "single method"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/filters.rs (filter.adjust.desaturate: luminance, luma, lightness, average, value), crafts/photocraft/crates/algo/src/stylize.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -1065,9 +1065,9 @@ name = "Rearrange Colormap and Set Colormap"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-colormap-remap.html"
 behaviour = "Drag entries of an indexed image's colormap to reorder them, or replace the whole colormap with a palette."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/mode_cmds.rs (image.mode.colorTable)"
-gap = "colour table is viewable and loadable from .act; no reordering or palette source"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.mode.colorTable.rearrange: order, move, sort, reverse; image.mode.colorTable.fromPalette: a Swatches group, remap by index or nearest)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1077,8 +1077,8 @@ name = "Alien Map"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-alien-map.html"
 behaviour = "Sinusoidal remapping of RGB or HSL components with frequency and phase per component."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.alienMap: RGB or HSL, frequency and phase per component, keep)"
 gap = ""
 priority = 3
 
@@ -1101,8 +1101,8 @@ name = "Rotate Colours"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-color-rotate.html"
 behaviour = "Map a source hue arc onto a destination arc on a colour wheel, with gray handling."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.rotateColors: source and destination arcs, gray threshold, treat as / change to)"
 gap = ""
 priority = 3
 
@@ -1125,8 +1125,8 @@ name = "Palette Map"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-palettemap.html"
 behaviour = "Maps luminosity onto the active palette's colours in order."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.paletteMap: luminosity onto a Swatches group in order)"
 gap = ""
 priority = 3
 
@@ -1137,9 +1137,9 @@ name = "Sample Colorize"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-sample-colorize.html"
 behaviour = "Colourise a grayscale image using the colours of a sample image or gradient, with level mapping."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs (image.adjustments.matchColor)"
-gap = "match colour statistics from another document; no luminance-to-sample mapping"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.sampleColorize: sample document or layer, or the foreground to background gradient; level mapping, hold/original intensity, smooth samples)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1149,9 +1149,9 @@ name = "Tone mapping: Fattal et al. 2002"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-fattal-2002.html"
 behaviour = "Gradient-domain HDR to LDR compression with alpha, beta, saturation and noise parameters."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs (image.adjustments.hdrToning), crafts/photocraft/crates/algo/src/hdr.rs"
-gap = "one HDR toning dialog with several methods; not this specific operator"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.toneMapFattal: alpha, beta, saturation, noise; pyramid gradient attenuation + Poisson solve)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1161,8 +1161,8 @@ name = "Tone mapping: Mantiuk 2006"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-mantiuk-2006.html"
 behaviour = "Contrast-domain tone mapping with contrast, saturation and detail parameters."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs (image.adjustments.hdrToning)"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.toneMapMantiuk: contrast, saturation, detail)"
 gap = ""
 priority = 3
 
@@ -1173,8 +1173,8 @@ name = "Tone mapping: Reinhard 2005"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-reinhard-2005.html"
 behaviour = "Photoreceptor-model tone mapping with brightness, chromatic and light adaptation."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs (image.adjustments.hdrToning)"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.toneMapReinhard: brightness, chromatic and light adaptation)"
 gap = ""
 priority = 3
 
@@ -1185,8 +1185,8 @@ name = "Stress"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-stress.html"
 behaviour = "Spatio-temporal retinex-like envelope enhancement with radius, samples, iterations, enhance shadows."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.stress: radius, samples, iterations, enhance shadows)"
 gap = ""
 priority = 3
 
@@ -1197,8 +1197,8 @@ name = "Destripe"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-destripe.html"
 behaviour = "Removes vertical stripes from scans by averaging columns; width parameter and histogram option."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.destripe: width, create histogram)"
 gap = ""
 priority = 3
 
@@ -1209,8 +1209,8 @@ name = "Retinex"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-retinex.html"
 behaviour = "Multi-scale retinex: level, scale, scale division, dynamic."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.retinex: level, scale, scale division, dynamic; MSRCR)"
 gap = ""
 priority = 3
 
@@ -1221,9 +1221,9 @@ name = "Export Histogram"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/python-fu-histogram-export.html"
 behaviour = "Writes the histogram of the drawable (or selection) to a CSV file with configurable bucket count and sample-average option."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/analysis_cmds.rs (image.analysis.recordMeasurements)"
-gap = "measurement log records histogram statistics, not a bucketed CSV export"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.analysis.exportHistogram: buckets, sample average, pixel count / normalized / percent, CSV to a path or returned)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1233,8 +1233,8 @@ name = "Border Average and Smooth Palette"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-borderaverage.html"
 behaviour = "Border Average sets the foreground to the mean colour of a strip around the selection; Smooth Palette renders a smooth palette image from the image's colours."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.analysis.borderAverage: thickness, bucket size, sets the foreground; image.adjustments.smoothPalette: width, height, search depth, new document)"
 gap = ""
 priority = 3
 
@@ -1293,9 +1293,9 @@ name = "Dither"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-dither.html"
 behaviour = "Reduce the number of levels per channel with a dithering method (none, Floyd-Steinberg, Bayer, random, random covariant, arithmetic add/xor variants, blue noise) and a seed."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/mode_cmds.rs (image.mode.indexedColor dither options)"
-gap = "dithering only as part of indexed conversion"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.dither: levels per channel, none / Floyd-Steinberg / Bayer / random (covariant) / arithmetic add and xor (covariant) / blue noise, seed)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -1305,8 +1305,8 @@ name = "RGB Clip"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-filter-rgb-clip.html"
 behaviour = "Clamp values below a low and above a high bound."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.rgbClip: clip low/high with limits)"
 gap = ""
 priority = 3
 
@@ -1329,8 +1329,8 @@ name = "Local Threshold"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gegl-local-threshold.html"
 behaviour = "Adaptive threshold using a neighbourhood radius, low/high cutoffs and antialias."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/color_tools.rs, crafts/photocraft/crates/engine/src/color_tools_cmds.rs (image.adjustments.localThreshold: radius, low, high, antialias)"
 gap = ""
 priority = 3
 
