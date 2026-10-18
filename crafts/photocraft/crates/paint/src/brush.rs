@@ -706,11 +706,66 @@ pub struct ColorDynamics {
     pub brightness_jitter: f32,
     /// -1 (fully desaturated) .. 1 (fully saturated).
     pub purity: f32,
+    /// Where the base colour comes from before the jitters: the foreground (mixed towards the
+    /// background by `fg_bg`), the background, a gradient, or a random colour per dab.
+    #[serde(skip_serializing_if = "ColorSource::is_default")]
+    pub source: ColorSource,
+    /// The gradient a [`ColorSource::Gradient`] reads (position 0..1, straight RGBA); empty = the
+    /// foreground to the background.
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub gradient: Vec<GradientStop>,
+    /// What picks the gradient position: the control's value, or (Off) the dab's progress over
+    /// `gradient_steps` dabs, repeating.
+    #[serde(skip_serializing_if = "is_default_dynamic")]
+    pub gradient_dynamic: Dynamic,
+    pub gradient_steps: u32,
+    /// Sensor-driven hue: the control's 0..1 value turns the hue by `(value − ½) × hue_amount`
+    /// of the wheel.
+    #[serde(skip_serializing_if = "is_default_dynamic")]
+    pub hue: Dynamic,
+    pub hue_amount: f32,
+    /// Sensor-driven saturation shift of `(value − ½) × 2 × saturation_amount`.
+    #[serde(skip_serializing_if = "is_default_dynamic")]
+    pub saturation: Dynamic,
+    pub saturation_amount: f32,
+    /// Sensor-driven value (brightness) shift of `(value − ½) × 2 × value_amount`.
+    #[serde(skip_serializing_if = "is_default_dynamic")]
+    pub value: Dynamic,
+    pub value_amount: f32,
+    /// Sensor-driven darkening: the colour is scaled by `1 − darken_amount × value`.
+    #[serde(skip_serializing_if = "is_default_dynamic")]
+    pub darken: Dynamic,
+    pub darken_amount: f32,
+    /// Sensor-driven mix between the foreground and background: the control's value is the
+    /// background's share (added to `fg_bg`).
+    #[serde(skip_serializing_if = "is_default_dynamic")]
+    pub mix: Dynamic,
 }
 
 impl Default for ColorDynamics {
     fn default() -> Self {
-        Self { enabled: false, per_tip: true, fg_bg: Dynamic::default(), hue_jitter: 0.0, saturation_jitter: 0.0, brightness_jitter: 0.0, purity: 0.0 }
+        Self {
+            enabled: false,
+            per_tip: true,
+            fg_bg: Dynamic::default(),
+            hue_jitter: 0.0,
+            saturation_jitter: 0.0,
+            brightness_jitter: 0.0,
+            purity: 0.0,
+            source: ColorSource::Foreground,
+            gradient: Vec::new(),
+            gradient_dynamic: Dynamic::default(),
+            gradient_steps: 100,
+            hue: Dynamic::default(),
+            hue_amount: 1.0,
+            saturation: Dynamic::default(),
+            saturation_amount: 1.0,
+            value: Dynamic::default(),
+            value_amount: 1.0,
+            darken: Dynamic::default(),
+            darken_amount: 1.0,
+            mix: Dynamic::default(),
+        }
     }
 }
 
@@ -1144,4 +1199,63 @@ impl BrushPreset {
         }
         b
     }
+}
+
+/// Where Color Dynamics takes the base colour from ([`ColorDynamics::source`]).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ColorSource {
+    #[default]
+    Foreground,
+    Background,
+    /// [`ColorDynamics::gradient`] at the position [`ColorDynamics::gradient_dynamic`] picks.
+    Gradient,
+    /// A random colour (full hue wheel, full saturation and value) per dab.
+    Random,
+}
+
+impl ColorSource {
+    pub fn is_default(&self) -> bool {
+        *self == ColorSource::Foreground
+    }
+}
+
+/// One stop of a Color Dynamics gradient.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct GradientStop {
+    /// 0..1 along the gradient.
+    pub position: f32,
+    /// Straight RGBA.
+    pub color: [f32; 4],
+}
+
+impl Default for GradientStop {
+    fn default() -> Self {
+        Self { position: 0.0, color: [0.0, 0.0, 0.0, 1.0] }
+    }
+}
+
+/// The colour of a gradient at `t` (0..1): linear between the neighbouring stops, flat beyond
+/// the ends. An empty gradient runs from `fg` to `bg`.
+pub fn gradient_at(stops: &[GradientStop], fg: [f32; 4], bg: [f32; 4], t: f32) -> [f32; 4] {
+    let t = if t.is_finite() { t.clamp(0.0, 1.0) } else { 0.0 };
+    let lerp = |a: [f32; 4], b: [f32; 4], f: f32| [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f, a[2] + (b[2] - a[2]) * f, a[3] + (b[3] - a[3]) * f];
+    if stops.is_empty() {
+        return lerp(fg, bg, t);
+    }
+    let mut sorted: Vec<GradientStop> = stops.iter().filter(|s| s.position.is_finite()).copied().collect();
+    sorted.sort_by(|a, b| a.position.total_cmp(&b.position));
+    let Some(first) = sorted.first() else { return lerp(fg, bg, t) };
+    if t <= first.position {
+        return first.color;
+    }
+    for w in sorted.windows(2) {
+        let (a, b) = (w[0], w[1]);
+        if t <= b.position {
+            let f = if b.position > a.position { (t - a.position) / (b.position - a.position) } else { 1.0 };
+            return lerp(a.color, b.color, f);
+        }
+    }
+    sorted.last().map_or(fg, |s| s.color)
 }

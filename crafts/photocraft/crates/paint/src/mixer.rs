@@ -33,11 +33,39 @@ pub struct MixerSettings {
     /// Smudge radius: how far around the dab colour is sampled, as a multiple of the dab radius
     /// (0.5..=3; 1 samples the dab itself).
     pub smudge_radius: f32,
+    /// Paint thickness (0..1): the stroke keeps a height map of the paint it lays down, and the
+    /// deposit is shaded by the height's slope (ridges lit from the top left), like thick paint.
+    #[serde(default)]
+    pub thickness: f32,
+    /// Take the paint colour from the brush's Color Dynamics gradient along the stroke (position
+    /// = dab progress over `gradient_steps`) instead of the loaded colour.
+    #[serde(default)]
+    pub gradient_source: bool,
+    /// 0..1 random hue, saturation and value variation of the deposited colour per dab.
+    #[serde(default)]
+    pub hue_jitter: f32,
+    #[serde(default)]
+    pub saturation_jitter: f32,
+    #[serde(default)]
+    pub value_jitter: f32,
 }
 
 impl Default for MixerSettings {
     fn default() -> Self {
-        Self { wet: 0.5, load: 0.5, mix: 0.5, flow: 1.0, sample_all_layers: false, smear: false, smudge_radius: 1.0 }
+        Self {
+            wet: 0.5,
+            load: 0.5,
+            mix: 0.5,
+            flow: 1.0,
+            sample_all_layers: false,
+            smear: false,
+            smudge_radius: 1.0,
+            thickness: 0.0,
+            gradient_source: false,
+            hue_jitter: 0.0,
+            saturation_jitter: 0.0,
+            value_jitter: 0.0,
+        }
     }
 }
 
@@ -104,9 +132,37 @@ pub fn apply_mixer_stroke(
     let halo = sample_halo(stroke.brush.size, smudge_radius);
     // Smear mode: where the previous dab was, so this dab drags its pixels along.
     let mut prev_center: Option<[f64; 2]> = None;
+    // Paint thickness: the height of paint laid down so far, over the working region.
+    let thickness = m.thickness.clamp(0.0, 1.0);
+    let mut height: Option<(Rect, Vec<f32>)> = None;
+    let seed = stroke.brush.seed;
+    let cd = &stroke.brush.color_dynamics;
+    let (fg, bg) = (stroke.brush.color, stroke.brush.background);
     let dmg = apply_dab_stroke(target, &st, selection, lock_transparency, halo, |work, fp| {
         // Transfer › Wetness / Mix Jitter scale the settings per dab.
         let (wet, mix) = (wet * fp.dab.wet.clamp(0.0, 1.0), mix * fp.dab.mix.clamp(0.0, 1.0));
+        // Gradient source: the reservoir colour follows the gradient along the stroke.
+        let res: Option<Vec<f32>> = if m.gradient_source {
+            let n = u64::from(cd.gradient_steps.max(1));
+            let pos = (fp.dab.index % n) as f32 / (n - 1).max(1) as f32;
+            Some(native(crate::brush::gradient_at(&cd.gradient, fg, bg, pos)))
+        } else {
+            res.clone()
+        };
+        let res = res.map(|mut v| {
+            // HSV jitter of the paint per dab.
+            if m.hue_jitter > 0.0 || m.saturation_jitter > 0.0 || m.value_jitter > 0.0 {
+                let c = to_rgba(&fmt, &v);
+                let o = crate::engines::buffer::shift_hsv(
+                    c,
+                    crate::rng::rand_signed(seed, fp.dab.index, crate::rng::stream::HUE) * m.hue_jitter.clamp(0.0, 1.0) * 0.5,
+                    crate::rng::rand_signed(seed, fp.dab.index, crate::rng::stream::SAT) * m.saturation_jitter.clamp(0.0, 1.0),
+                    crate::rng::rand_signed(seed, fp.dab.index, crate::rng::stream::BRIGHT) * m.value_jitter.clamp(0.0, 1.0),
+                );
+                v = native(o);
+            }
+            v
+        });
         let pixel_at = |work: &crate::retouch::Region, x: i32, y: i32| -> Vec<f32> {
             match sample {
                 Some(s) => {
@@ -188,12 +244,45 @@ pub fn apply_mixer_stroke(
                 paint[c] = (rv * wr + pv * wp) / total;
             }
             let dep = total.min(1.0) * flow;
+            // Paint thickness: raise the height map under the dab, then shade the deposit by the
+            // slope (lit from the top left) so ridges between dabs read as thick paint.
+            let hm = if thickness > 0.0 {
+                let (hr, hv) = height.get_or_insert_with(|| (work.rect, vec![0.0f32; work.rect.width() as usize * work.rect.height() as usize]));
+                let w = hr.width() as usize;
+                for y in r.y0..r.y1 {
+                    for x in r.x0..r.x1 {
+                        let k = fp.at(x, y) * dep;
+                        if k > 0.0 && hr.contains(x, y) {
+                            let i = (y - hr.y0) as usize * w + (x - hr.x0) as usize;
+                            hv[i] = (hv[i] + k * thickness).min(4.0);
+                        }
+                    }
+                }
+                Some((*hr, w))
+            } else {
+                None
+            };
+            let mut shaded = paint.clone();
             for y in r.y0..r.y1 {
                 for x in r.x0..r.x1 {
                     let k = fp.at(x, y) * dep;
-                    if k > 0.0 {
-                        over_native(&fmt, work.px_mut(x, y), &paint, k, lock_transparency);
+                    if k <= 0.0 {
+                        continue;
                     }
+                    let src: &[f32] = match (&hm, &height) {
+                        (Some((hr, w)), Some((_, hv))) if hr.contains(x - 1, y - 1) && hr.contains(x + 1, y + 1) => {
+                            let at = |xx: i32, yy: i32| hv[(yy - hr.y0) as usize * w + (xx - hr.x0) as usize];
+                            // Slope towards the light (top left) brightens, away darkens.
+                            let slope = (at(x - 1, y) - at(x + 1, y)) + (at(x, y - 1) - at(x, y + 1));
+                            let shade = 1.0 + (slope * 0.25).clamp(-0.5, 0.5);
+                            for c in 0..n {
+                                shaded[c] = if Some(c) == a { paint[c] } else { (paint[c] * shade).clamp(0.0, 1.0) };
+                            }
+                            &shaded
+                        }
+                        _ => &paint,
+                    };
+                    over_native(&fmt, work.px_mut(x, y), src, k, lock_transparency);
                 }
             }
         }

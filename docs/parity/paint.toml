@@ -10,9 +10,9 @@ name = "Pixel brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/pixel_brush_engine.html"
 behaviour = "Default dab engine: stamps a generated, bitmap or text tip along the stroke at a spacing; every parameter (size, opacity, flow, ratio, rotation, scatter, softness, sharpness, mirror, source, mix, darken, HSV, airbrush, texture, masked tip) can be driven by sensors; multithreaded tips."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "per-dab HSV/darken from sensors, mix between two colours, gradient and random sources are missing"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -22,9 +22,9 @@ name = "Colour smudge engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/color_smudge_engine.html"
 behaviour = "Picks colour from under the tip and drags it; two modes (smear copies the previous dab area, dulling fills the dab with the average under it); colour rate adds foreground paint, smudge length and radius, smear alpha, overlay to sample all layers, paint thickness height map, gradient source, HSV jitter."
-ours = "partial"
+ours = "full"
 ours_where = "crafts/photocraft/crates/paint/src/mixer.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
-gap = "wet/load/mix/flow, sample all layers, smear vs dulling modes and a smudge radius; no paint-thickness height map, gradient source or HSV jitter"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -46,9 +46,9 @@ name = "Filter brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/filter_brush_engine.html"
 behaviour = "Applies any filter (blur, sharpen, dodge, levels, ...) through a brush tip instead of separate retouch tools; the filter's own dialog appears in the brush editor."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/retouch_cmds.rs"
-gap = "only fixed retouch tools (blur, sharpen, smudge, dodge, burn, sponge); no arbitrary filter through a brush"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -58,9 +58,9 @@ name = "Deform brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/deform_brush_engine.html"
 behaviour = "Fast pixel-pushing brush: grow, shrink, swirl both ways, move, colour deform, lens zoom in/out; deform amount, bilinear interpolation, counter, option to sample the undeformed image."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/liquify_ui.rs"
-gap = "Liquify is a modal filter with its own mesh, not a live brush engine; lens zoom and colour deform modes missing"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/deform.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -70,9 +70,9 @@ name = "Sketch brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/sketch_brush_engine.html"
 behaviour = "Line-based 'harmony' brush: connects the current point to nearby earlier points inside the tip area; line width, offset scale, density, distance density, magnetify, random RGB/opacity, distance opacity, simple mode, antialiasing."
-ours = "none"
-ours_where = ""
-gap = "no line-connecting sketch engine"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/sketch.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -82,9 +82,9 @@ name = "Hatching brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/hatching_brush_engine.html"
 behaviour = "Reveals a fixed hatching pattern through the tip: angle, separation, thickness, origin, crosshatch styles (none, perpendicular, +45/-45 orders, moire), separation and thickness dynamics, antialiased lines, coloured background."
-ours = "none"
-ours_where = ""
-gap = "no hatching engine; closest is a pattern-textured tip"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/hatching.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -94,9 +94,9 @@ name = "Spray brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/spray_brush_engine.html"
 behaviour = "Scatters many particles (shapes or a tip bitmap) in an area: diameter, aspect, angle, scale, spacing, jitter; count or density; angular and radial distributions (uniform, gaussian, cluster, curve); particle shape dynamics and colour options."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "our Scattering jitters one dab per step with a count; no per-area particle shapes, radial/angular distribution curves or per-particle colour options"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/spray.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -106,8 +106,8 @@ name = "Shape brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/shape_brush_engine.html"
 behaviour = "Experimental contour brush: the stroke outline becomes a filled shape; speed, smooth, displace, winding fill, hard edge."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/shape.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -130,8 +130,8 @@ name = "Grid brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/grid_brush_engine.html"
 behaviour = "Draws particles (ellipse, rectangle, line, pixel, antialiased pixel) on a grid under the cursor for halftone and retro effects; grid size, division (optionally by pressure), borders, jitter; random HSV/opacity, per-particle colour, sample input layer, fill background."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/grid.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -142,8 +142,8 @@ name = "Particle brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/particle_brush_engine.html"
 behaviour = "Draws wires that follow the cursor with gravity and iterations; particle count, opacity weight, distance scales."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/particle.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -154,8 +154,8 @@ name = "Curve brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/curve_engine.html"
 behaviour = "Evenly spaced lines plus extra curve lines connecting the stroke to earlier points; line width with dynamics, history size, curve opacity with dynamics, connection line toggle; mouse users get pressure-like width by speed."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/curve.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -166,9 +166,9 @@ name = "Bristle brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/bristle_engine.html"
 behaviour = "Simulates individual bristles seeded from the tip: scale, random offset, shear, density, mouse-speed pressure, threshold, connect hairs, antialiasing, composite bristles; ink depletion over time (opacity, saturation, curve) and soaking colour from the canvas."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/procedural.rs"
-gap = "we ship procedural bristle tip textures, not per-bristle trails, depletion or soak"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/bristle.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -178,9 +178,9 @@ name = "Dyna brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/dyna_brush_engine.html"
 behaviour = "Removed in 4.0; mass and drag satellite motion with circle, two, line, polygon, wire shapes. Kept in the manual for old presets."
-ours = "none"
-ours_where = ""
-gap = "deprecated upstream, not worth porting"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/dyna.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -202,8 +202,8 @@ name = "Tangent normal brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/tangen_normal_brush_engine.html"
 behaviour = "Paints normal-map colours from stylus tilt (or drawing direction or rotation) so a 3D surface can be painted directly; tangent channel encoding, elevation sensitivity; used with a normalize filter and a phong bump filter for live preview."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/tangent.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -214,9 +214,9 @@ name = "MyPaint brush engine"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/mypaint_engine.html"
 behaviour = "Runs MyPaint brushes: nine inputs (pressure, fine/gross speed, random, stroke, direction, declination, ascension, custom) mapped by curves to radius, hardness, eraser, radius by random, antialiasing, elliptical dab angle and ratio, direction filter, colour hue/lightness/value change, speed, dabs, opacity, tracking, smudge, stroke and custom input groups; logarithmic radius."
-ours = "none"
-ours_where = ""
-gap = "no MyPaint engine or .myb reader"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/mypaint.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -226,8 +226,8 @@ name = "Text as brush tip"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Any string in a chosen font becomes the tip; spacing and pipe mode (one character per dab) let a word be laid along the stroke."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/engines/mod.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 

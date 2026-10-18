@@ -4953,3 +4953,83 @@ navigator	Zoom	Zoom
 	X Size	Tamaño X
 	Y Size	Tamaño Y
 	Z Offset	Desplazamiento Z
+	Gradient Source	Origen de degradado
+	Value Jitter	Variación de valor
+	Pipe	Secuencia
+	Brush file (.myb)	Archivo de pincel (.myb)
+	Text as brush tip	Texto como punta de pincel
+	One character per dab along the stroke	Un carácter por toque a lo largo del trazo
+	Engine	Motor
+	Text Tip	Punta de texto
+	Hatching	Sombreado
+	Particle	Partícula
+	Dyna	Dyna
+	Tangent Normal	Normal tangente
+	MyPaint	MyPaint
+	Spray	Aerosol
+	Bristle	Cerdas
+	Deform	Deformar
+	Separation	Separación
+	Jitter	Variación
+	Mass	Masa
+	Drag	Resistencia
+	Gravity	Gravedad
+	Particles	Partículas
+	Grid Width	Ancho de cuadrícula
+	Grid Height	Alto de cuadrícula
+	Aspect	Proporción
+	Cluster	Agrupado
+	Tip	Punta
+	Perpendicular	Perpendicular
+	Shrink	Encoger
+	Wire	Alambre
+	Two	Dos
+	Lens Zoom In	Lente acercar
+	Lens Zoom Out	Lente alejar
+	Swirl CW	Remolino horario
+	Swirl CCW	Remolino antihorario
+	Colour Deform	Deformar color
+	Follow Cursor	Seguir el cursor
+	Weighted	Ponderado
+	Angular	Angular
+	Moiré	Muaré
+	Anti-aliased Pixel	Píxel suavizado
+	Magnetify	Magnetizar
+	Simple Mode	Modo simple
+	Hard Edge	Borde duro
+	Connect Hairs	Conectar cerdas
+	Ink Depletion	Agotamiento de tinta
+	Soak Ink	Absorber tinta
+	Mouse Pressure	Presión del ratón
+	Composite Bristles	Componer cerdas
+	Use Density	Usar densidad
+	Proportional	Proporcional
+	Random Size	Tamaño aleatorio
+	Sample Input Layer	Muestrear la capa
+	Colour per Particle	Color por partícula
+	Fill Background	Rellenar fondo
+	Fixed Angle	Ángulo fijo
+	Paint Connection	Pintar conexión
+	Use Foreground Colour	Usar color frontal
+	Width by Pressure	Ancho por presión
+	Opacity by Pressure	Opacidad por presión
+	Connection Line	Línea de conexión
+	Even-odd Fill	Relleno par-impar
+	Division by Pressure	División por presión
+	Separation by Pressure	Separación por presión
+	Thickness by Pressure	Grosor por presión
+	Coloured Background	Fondo coloreado
+	Distance Density	Densidad por distancia
+	Distance Opacity	Opacidad por distancia
+	Use Undeformed Image	Usar imagen sin deformar
+	Random RGB	RGB aleatorio
+	Random Opacity	Opacidad aleatoria
+	Curve Opacity	Opacidad de curva
+	Width Range	Rango de ancho
+	Line Spacing	Espaciado de líneas
+	Angle Offset	Desfase de ángulo
+	Particle Width	Ancho de partícula
+	Particle Height	Alto de partícula
+	Random Offset	Desfase aleatorio
+	Ink Amount	Cantidad de tinta
+	Counter	Contador

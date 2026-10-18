@@ -5109,3 +5109,83 @@ shape	Appearance	Aspetto
 	X Size	Dimensione X
 	Y Size	Dimensione Y
 	Z Offset	Scostamento Z
+	Gradient Source	Sorgente sfumatura
+	Value Jitter	Variazione valore
+	Pipe	Sequenza
+	Brush file (.myb)	File pennello (.myb)
+	Text as brush tip	Testo come punta del pennello
+	One character per dab along the stroke	Un carattere per tocco lungo il tratto
+	Engine	Motore
+	Text Tip	Punta testo
+	Hatching	Tratteggio
+	Particle	Particella
+	Dyna	Dyna
+	Tangent Normal	Normale tangente
+	MyPaint	MyPaint
+	Spray	Spray
+	Bristle	Setole
+	Deform	Deforma
+	Separation	Separazione
+	Jitter	Variazione
+	Mass	Massa
+	Drag	Resistenza
+	Gravity	Gravità
+	Particles	Particelle
+	Grid Width	Larghezza griglia
+	Grid Height	Altezza griglia
+	Aspect	Proporzioni
+	Cluster	Cluster
+	Tip	Punta
+	Perpendicular	Perpendicolare
+	Shrink	Riduci
+	Wire	Filo
+	Two	Due
+	Lens Zoom In	Lente ingrandisci
+	Lens Zoom Out	Lente riduci
+	Swirl CW	Vortice orario
+	Swirl CCW	Vortice antiorario
+	Colour Deform	Deforma colore
+	Follow Cursor	Segui il cursore
+	Weighted	Ponderato
+	Angular	Angolare
+	Moiré	Moiré
+	Anti-aliased Pixel	Pixel antialias
+	Magnetify	Magnetizza
+	Simple Mode	Modalità semplice
+	Hard Edge	Bordo netto
+	Connect Hairs	Collega setole
+	Ink Depletion	Esaurimento inchiostro
+	Soak Ink	Assorbi inchiostro
+	Mouse Pressure	Pressione mouse
+	Composite Bristles	Componi setole
+	Use Density	Usa densità
+	Proportional	Proporzionale
+	Random Size	Dimensione casuale
+	Sample Input Layer	Campiona il livello
+	Colour per Particle	Colore per particella
+	Fill Background	Riempi sfondo
+	Fixed Angle	Angolo fisso
+	Paint Connection	Dipingi connessione
+	Use Foreground Colour	Usa colore di primo piano
+	Width by Pressure	Larghezza per pressione
+	Opacity by Pressure	Opacità per pressione
+	Connection Line	Linea di connessione
+	Even-odd Fill	Riempimento pari-dispari
+	Division by Pressure	Divisione per pressione
+	Separation by Pressure	Separazione per pressione
+	Thickness by Pressure	Spessore per pressione
+	Coloured Background	Sfondo colorato
+	Distance Density	Densità per distanza
+	Distance Opacity	Opacità per distanza
+	Use Undeformed Image	Usa immagine non deformata
+	Random RGB	RGB casuale
+	Random Opacity	Opacità casuale
+	Curve Opacity	Opacità curva
+	Width Range	Intervallo larghezza
+	Line Spacing	Spaziatura linee
+	Angle Offset	Scostamento angolo
+	Particle Width	Larghezza particella
+	Particle Height	Altezza particella
+	Random Offset	Scostamento casuale
+	Ink Amount	Quantità inchiostro
+	Counter	Contatore

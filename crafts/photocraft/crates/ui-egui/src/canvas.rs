@@ -5553,7 +5553,9 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
                 app.stylus.record_point();
             }
             // Line mode shows a rubber band instead of the live stroke; the release paints the line.
-            app.live_stroke = if strokes_live(tool) && !line_mode(app, tool) { begin_live_stroke(app) } else { None };
+            // An alternative brush engine paints on release (`brush_engines_ui::commit`).
+            app.live_stroke =
+                if strokes_live(tool) && !line_mode(app, tool) && !crate::brush_engines_ui::active(app, tool) { begin_live_stroke(app) } else { None };
         }
         ToolEvent::Move { x, y, pressure } => {
             // Polygonal Lasso: ⌥ held while the button is down draws freehand into the polygon;
@@ -5778,6 +5780,9 @@ pub(crate) fn line_mode(app: &PhotocraftApp, tool: Tool) -> bool {
 }
 
 fn commit_brush_stroke(app: &mut PhotocraftApp, d: &Drag) {
+    if crate::brush_engines_ui::commit(app, d) {
+        return;
+    }
     if line_mode(app, d.tool) {
         app.live_stroke = None;
         let pts = crate::stroke_constraint::straighten(&d.points, d.live.shift || d.modifiers.shift);

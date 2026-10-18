@@ -3500,3 +3500,84 @@ curves	Smooth	Glätten
 	Copy upper to lower	Obere nach unten kopieren
 	Swap curves	Kurven tauschen
 	Mirror	Spiegeln
+	Gradient Source	Verlaufsquelle
+	Value Jitter	Wert-Jitter
+	Pipe	Sequenz
+	Brush file (.myb)	Pinseldatei (.myb)
+	Text as brush tip	Text als Pinselspitze
+	One character per dab along the stroke	Ein Zeichen pro Tupfer entlang des Strichs
+	Engine	Engine
+	Text Tip	Textspitze
+	Hatching	Schraffur
+	Particle	Partikel
+	Dyna	Dyna
+	Tangent Normal	Tangentiale Normale
+	MyPaint	MyPaint
+	Spray	Sprühen
+	Bristle	Borsten
+	Deform	Verformen
+	Separation	Abstand
+	Jitter	Jitter
+	Mass	Masse
+	Drag	Widerstand
+	Gravity	Schwerkraft
+	Particles	Partikel
+	Grid Width	Rasterbreite
+	Grid Height	Rasterhöhe
+	Diameter	Durchmesser
+	Aspect	Seitenverhältnis
+	Cluster	Cluster
+	Tip	Spitze
+	Perpendicular	Senkrecht
+	Shrink	Schrumpfen
+	Wire	Draht
+	Two	Zwei
+	Lens Zoom In	Linse vergrößern
+	Lens Zoom Out	Linse verkleinern
+	Swirl CW	Wirbel im Uhrzeigersinn
+	Swirl CCW	Wirbel gegen Uhrzeigersinn
+	Colour Deform	Farbverformung
+	Follow Cursor	Zeiger folgen
+	Weighted	Gewichtet
+	Angular	Winkelverteilung
+	Moiré	Moiré
+	Anti-aliased Pixel	Geglättetes Pixel
+	Magnetify	Magnetisieren
+	Simple Mode	Einfacher Modus
+	Hard Edge	Harte Kante
+	Connect Hairs	Haare verbinden
+	Ink Depletion	Tintenverbrauch
+	Soak Ink	Tinte aufsaugen
+	Mouse Pressure	Mausdruck
+	Composite Bristles	Borsten überlagern
+	Use Density	Dichte verwenden
+	Proportional	Proportional
+	Random Size	Zufällige Größe
+	Sample Input Layer	Eingabeebene abtasten
+	Colour per Particle	Farbe pro Partikel
+	Fill Background	Hintergrund füllen
+	Fixed Angle	Fester Winkel
+	Paint Connection	Verbindung zeichnen
+	Use Foreground Colour	Vordergrundfarbe verwenden
+	Width by Pressure	Breite nach Druck
+	Opacity by Pressure	Deckkraft nach Druck
+	Connection Line	Verbindungslinie
+	Even-odd Fill	Gerade-ungerade-Füllung
+	Division by Pressure	Teilung nach Druck
+	Separation by Pressure	Abstand nach Druck
+	Thickness by Pressure	Dicke nach Druck
+	Coloured Background	Farbiger Hintergrund
+	Distance Density	Dichte nach Abstand
+	Distance Opacity	Deckkraft nach Abstand
+	Use Undeformed Image	Unverformtes Bild verwenden
+	Random RGB	Zufälliges RGB
+	Random Opacity	Zufällige Deckkraft
+	Curve Opacity	Kurvendeckkraft
+	Width Range	Breitenbereich
+	Line Spacing	Linienabstand
+	Angle Offset	Winkelversatz
+	Particle Width	Partikelbreite
+	Particle Height	Partikelhöhe
+	Random Offset	Zufallsversatz
+	Ink Amount	Tintenmenge
+	Counter	Zähler

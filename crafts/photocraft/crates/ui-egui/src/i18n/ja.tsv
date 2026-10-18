@@ -4171,3 +4171,84 @@ curves	Smooth	スムーズ
 	Copy upper to lower	上を下にコピー
 	Swap curves	カーブを入れ替え
 	Mirror	ミラー
+	Gradient Source	グラデーション源
+	Value Jitter	明度ジッター
+	Pipe	パイプ
+	Brush file (.myb)	ブラシファイル (.myb)
+	Text as brush tip	テキストをブラシ先端に
+	One character per dab along the stroke	ストロークに沿って1ダブに1文字
+	Engine	エンジン
+	Text Tip	テキスト先端
+	Hatching	ハッチング
+	Particle	パーティクル
+	Dyna	ダイナ
+	Tangent Normal	タンジェント法線
+	MyPaint	MyPaint
+	Spray	スプレー
+	Bristle	ブリスル
+	Deform	変形
+	Separation	間隔
+	Jitter	ジッター
+	Mass	質量
+	Drag	抵抗
+	Gravity	重力
+	Particles	パーティクル数
+	Grid Width	グリッド幅
+	Grid Height	グリッド高さ
+	Diameter	直径
+	Aspect	縦横比
+	Cluster	クラスター
+	Tip	先端
+	Perpendicular	垂直
+	Shrink	縮小
+	Wire	ワイヤー
+	Two	2つ
+	Lens Zoom In	レンズ拡大
+	Lens Zoom Out	レンズ縮小
+	Swirl CW	渦 (時計回り)
+	Swirl CCW	渦 (反時計回り)
+	Colour Deform	色の変形
+	Follow Cursor	カーソルに従う
+	Weighted	重み付き
+	Angular	角度分布
+	Moiré	モアレ
+	Anti-aliased Pixel	アンチエイリアスピクセル
+	Magnetify	磁力
+	Simple Mode	シンプルモード
+	Hard Edge	ハードエッジ
+	Connect Hairs	毛を接続
+	Ink Depletion	インク消耗
+	Soak Ink	インク吸収
+	Mouse Pressure	マウス筆圧
+	Composite Bristles	毛を合成
+	Use Density	密度を使用
+	Proportional	比例
+	Random Size	ランダムサイズ
+	Sample Input Layer	入力レイヤーをサンプル
+	Colour per Particle	パーティクルごとの色
+	Fill Background	背景を塗る
+	Fixed Angle	固定角度
+	Paint Connection	接続線を描く
+	Use Foreground Colour	描画色を使用
+	Width by Pressure	筆圧で幅
+	Opacity by Pressure	筆圧で不透明度
+	Connection Line	接続線
+	Even-odd Fill	偶奇塗り
+	Division by Pressure	筆圧で分割
+	Separation by Pressure	筆圧で間隔
+	Thickness by Pressure	筆圧で太さ
+	Coloured Background	色付き背景
+	Distance Density	距離密度
+	Distance Opacity	距離不透明度
+	Use Undeformed Image	変形前の画像を使用
+	Random RGB	ランダムRGB
+	Random Opacity	ランダム不透明度
+	Curve Opacity	曲線の不透明度
+	Width Range	幅の範囲
+	Line Spacing	線間隔
+	Angle Offset	角度オフセット
+	Particle Width	パーティクル幅
+	Particle Height	パーティクル高さ
+	Random Offset	ランダムオフセット
+	Ink Amount	インク量
+	Counter	カウンター
