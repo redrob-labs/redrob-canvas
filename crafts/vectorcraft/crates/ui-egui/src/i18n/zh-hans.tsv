@@ -4474,3 +4474,4 @@ lighting	Light	光源
 @msg	{name}: not found among the document's images	{name}：在文档的图像中未找到
 @msg	{name}: too large	{name}：过大
 @msg	{url}: {e}	{url}：{e}
+	Tracing	描摹

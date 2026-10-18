@@ -385,11 +385,10 @@ pub fn encode_all(doc: &Document, format: &str, p: &Value) -> Result<Encoded> {
 /// [`encode_all`] of `doc` as it is.
 fn encode_all_of(doc: &Document, format: &str, p: &Value) -> Result<Encoded> {
     let f = super::writable(C, Some(format), None)?;
-    let failed = redrob_vector_render::decode_failures();
     let mut enc = encode_files(doc, f, p)?;
-    // An image the renderer couldn't decode draws nothing: say so rather than write a picture
+    // An image the renderer can't decode draws nothing: say so rather than write a picture
     // that silently lacks it.
-    if f.raster && redrob_vector_render::decode_failures() > failed {
+    if f.raster && doc.images.values().any(|b| !b.bytes.is_empty() && !redrob_vector_render::image_decodes(&b.bytes)) {
         enc.warnings.push("an image couldn't be decoded and is missing from the picture".into());
     }
     // Formats that draw type: missing fonts come out in the fallback font (PDF and SVG say so
