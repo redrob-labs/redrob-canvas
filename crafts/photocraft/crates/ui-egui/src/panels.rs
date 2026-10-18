@@ -1326,8 +1326,16 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         opt_label(ui, tl!("Tolerance"));
                         widgets::value_field(ui, &mut app.ui.tool_options.tolerance, 0.0..=255.0, "", 58.0);
                         widgets::checkbox(ui, &mut app.ui.tool_options.anti_alias, tl!("Anti-alias"));
-                        widgets::checkbox(ui, &mut app.ui.tool_options.contiguous, tl!("Contiguous"));
-                        widgets::checkbox(ui, &mut app.ui.tool_options.sample_all_layers, tl!("All Layers"));
+                        if widgets::checkbox(ui, &mut app.ui.tool_options.contiguous, tl!("Contiguous")).changed() {
+                            // The Fill mode dropdown (fill_tool_ui) says the same thing: keep them together.
+                            let o = &mut app.ui.tool_options;
+                            o.bucket_fill_mode = if o.contiguous { "contiguous" } else { "similar" }.into();
+                        }
+                        if widgets::checkbox(ui, &mut app.ui.tool_options.sample_all_layers, tl!("All Layers")).changed() {
+                            // The Reference dropdown (fill_tool_ui) is what the fill reads (#1118).
+                            let o = &mut app.ui.tool_options;
+                            o.bucket_reference = if o.sample_all_layers { "all" } else { "current" }.into();
+                        }
                         crate::eraser_ui::wand_options(ui, &mut app.ui.tool_options);
                         widgets::vline(ui, 22.0);
                         let o = &mut app.ui.tool_options;
