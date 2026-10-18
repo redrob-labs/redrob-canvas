@@ -4609,3 +4609,15 @@ lighting	Light	Свет
 	Tritone	Трёхтоновый
 	Watercolor	Акварель
 	Waves	Волны
+	Turns:	Витки:
+	Divergence:	Расхождение:
+	Clockwise	По часовой стрелке
+	Threshold:	Порог:
+	Grow/Shrink:	Расширить/сжать:
+	Fill by:	Заливка по:
+	Visible Colors	Видимые цвета
+	Alpha	Альфа
+	Add to Fill	Добавить к заливке
+	View rotation (Cmd+Shift+scroll turns the view)	Поворот вида (Cmd+Shift+прокрутка поворачивает вид)
+	Lock Rotate View	Заблокировать поворот вида
+	Rotate View	Повернуть вид

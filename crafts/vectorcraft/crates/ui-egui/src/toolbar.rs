@@ -395,6 +395,12 @@ pub fn control_bar_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     if app.session.tool_id() == "directSelection" {
         return node_options(app, ui);
     }
+    if app.session.tool_id() == "spiral" {
+        return spiral_options(app, ui);
+    }
+    if app.session.tool_id() == "livePaintBucket" {
+        return paint_bucket_options(app, ui);
+    }
     if app.session.tool_id() != "mirrorCut" {
         return;
     }
@@ -439,6 +445,61 @@ fn drawing_mode_options(app: &mut VectorcraftApp, ui: &mut Ui) {
         if let Some((value, _)) = widgets::dropdown(ui, ("cb-draw", key), shown, &labels, 112.0).and_then(|i| choices.get(i)) {
             app.run("tool.setOption", json!({ "key": key, "value": value })).ok();
         }
+    }
+    ui.separator();
+}
+
+/// The Spiral tool's controls: Turns (quarter turns ÷ 4), Divergence (the decay a quarter turn, %)
+/// and the winding direction, the tool's `segments`, `decay` and `clockwise` options; the live
+/// spiral's handles change the same values afterwards.
+fn spiral_options(app: &mut VectorcraftApp, ui: &mut Ui) {
+    let t = Tokens::get(ui.ctx());
+    let opts = app.session.tool_options();
+    let segments = opts["segments"].as_u64().unwrap_or(10);
+    let decay = opts["decay"].as_f64().unwrap_or(80.0);
+    let clockwise = opts["clockwise"].as_bool().unwrap_or(true);
+    ui.label(egui::RichText::new(tl!("Turns:")).size(12.0).color(t.text));
+    if let Some(v) = widgets::plain_field(ui, "cb-spiral-turns", segments as f64 / 4.0, "", 2, 52.0) {
+        let n = ((v * 4.0).round() as i64).clamp(2, 1000);
+        app.run("tool.setOption", json!({ "key": "segments", "value": n })).ok();
+    }
+    ui.label(egui::RichText::new(tl!("Divergence:")).size(12.0).color(t.text));
+    if let Some(v) = widgets::plain_field(ui, "cb-spiral-decay", decay, "%", 1, 56.0) {
+        app.run("tool.setOption", json!({ "key": "decay", "value": v.clamp(5.0, 150.0) })).ok();
+    }
+    if widgets::check(ui, "Clockwise", clockwise, true) {
+        app.run("tool.setOption", json!({ "key": "clockwise", "value": !clockwise })).ok();
+    }
+    ui.separator();
+}
+
+/// The Paint Bucket's controls: the colour threshold, grow/shrink of the filled region, fill by
+/// the visible colours or by one channel, and whether a click adds to the previous fill (what
+/// Shift does): the tool's `threshold`, `grow`, `channel` and `union` options.
+fn paint_bucket_options(app: &mut VectorcraftApp, ui: &mut Ui) {
+    const CHANNELS: [(&str, &str); 5] = [("visible", "Visible Colors"), ("red", "Red"), ("green", "Green"), ("blue", "Blue"), ("alpha", "Alpha")];
+    let t = Tokens::get(ui.ctx());
+    let opts = app.session.tool_options();
+    let threshold = opts["threshold"].as_f64().unwrap_or(10.0);
+    let grow = opts["grow"].as_f64().unwrap_or(0.0);
+    let channel = opts["channel"].as_str().unwrap_or("visible");
+    let union = opts["union"].as_bool().unwrap_or(false);
+    ui.label(egui::RichText::new(tl!("Threshold:")).size(12.0).color(t.text));
+    if let Some(v) = widgets::plain_field(ui, "cb-bucket-threshold", threshold, "%", 0, 48.0) {
+        app.run("tool.setOption", json!({ "key": "threshold", "value": v.clamp(0.0, 100.0) })).ok();
+    }
+    ui.label(egui::RichText::new(tl!("Grow/Shrink:")).size(12.0).color(t.text));
+    if let Some(v) = widgets::plain_field(ui, "cb-bucket-grow", grow, "px", 0, 48.0) {
+        app.run("tool.setOption", json!({ "key": "grow", "value": v.clamp(-64.0, 64.0) })).ok();
+    }
+    ui.label(egui::RichText::new(tl!("Fill by:")).size(12.0).color(t.text));
+    let shown = CHANNELS.iter().find(|(v, _)| *v == channel).map_or(channel, |(_, l)| *l);
+    let labels: Vec<&str> = CHANNELS.iter().map(|(_, l)| *l).collect();
+    if let Some((value, _)) = widgets::dropdown(ui, ("cb-bucket", "channel"), shown, &labels, 112.0).and_then(|i| CHANNELS.get(i)) {
+        app.run("tool.setOption", json!({ "key": "channel", "value": value })).ok();
+    }
+    if widgets::check(ui, "Add to Fill", union, true) {
+        app.run("tool.setOption", json!({ "key": "union", "value": !union })).ok();
     }
     ui.separator();
 }

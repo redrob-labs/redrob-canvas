@@ -5004,3 +5004,14 @@ imageTrace	Outline	Körvonal
 	Tritone	Háromtónusú
 	Watercolor	Akvarell
 	Waves	Hullámok
+	Turns:	Fordulatok:
+	Divergence:	Divergencia:
+	Clockwise	Óramutató járása szerint
+	Threshold:	Küszöb:
+	Grow/Shrink:	Növelés/zsugorítás:
+	Fill by:	Kitöltés alapja:
+	Visible Colors	Látható színek
+	Alpha	Alfa
+	Add to Fill	Hozzáadás a kitöltéshez
+	View rotation (Cmd+Shift+scroll turns the view)	Nézet forgatása (Cmd+Shift+görgetés forgat)
+	Lock Rotate View	Nézetforgatás zárolása

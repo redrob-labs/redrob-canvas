@@ -4622,3 +4622,15 @@ lighting	Light	ライト
 	Tritone	トリトーン
 	Watercolor	水彩
 	Waves	波
+	Turns:	巻き数:
+	Divergence:	発散:
+	Clockwise	時計回り
+	Threshold:	しきい値:
+	Grow/Shrink:	拡大/縮小:
+	Fill by:	塗りの基準:
+	Visible Colors	表示色
+	Alpha	アルファ
+	Add to Fill	塗りに追加
+	View rotation (Cmd+Shift+scroll turns the view)	表示の回転 (Cmd+Shift+スクロールで回転)
+	Lock Rotate View	表示の回転をロック
+	Rotate View	表示を回転

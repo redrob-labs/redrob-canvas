@@ -253,6 +253,18 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
     ("view.presentation", "Presentation Mode", "Shift+F", "{}"),
     ("view.screenMode", "Screen Mode", "F", "{mode?: 0..2} (no param cycles)"),
     ("view.rotateReset", "Reset Rotate View", "Cmd+Shift+1", "{}"),
+    (
+        "view.rotateLock",
+        "Lock Rotate View",
+        "",
+        "{} keep the view's rotation (the Rotate View tool, the status-bar angle and Cmd+Shift+scroll leave it alone); toggles",
+    ),
+    (
+        "view.setRotation",
+        "Rotate View",
+        "",
+        "{angle: deg (clockwise on screen)} set the view's rotation, as the status-bar angle field does; refused while Lock Rotate View is on",
+    ),
     ("view.flipHorizontal", "Flip Horizontal", "", "{} mirror the view left to right (View › Canvas Orientation); toggles"),
     ("view.flipVertical", "Flip Vertical", "", "{} mirror the view top to bottom (View › Canvas Orientation); toggles"),
     ("view.flipReset", "Reset Canvas Orientation", "", "{} undo both view flips"),
@@ -1192,6 +1204,18 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             }
             Ok(Value::Null)
         }
+        "view.rotateLock" => flag(&mut app.ui.view.rotation_lock),
+        "view.setRotation" => match p.get("angle").and_then(Value::as_f64) {
+            _ if app.ui.view.rotation_lock => Err("the view's rotation is locked (View › Lock Rotate View)".into()),
+            None => Err("view.setRotation: missing `angle`".into()),
+            Some(angle) => {
+                let rot = app.view_mut().map(|v| {
+                    v.rotation = redrob_vector_geom::normalize_deg(angle);
+                    v.rotation
+                });
+                Ok(rot.map_or(Value::Null, |r| json!(r)))
+            }
+        },
         "view.flipHorizontal" | "view.flipVertical" | "view.flipReset" => {
             let flipped = app.view_mut().map(|v| {
                 match id {
@@ -1570,6 +1594,7 @@ pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
             selected_text(true).is_some_and(|t| p.get("effect").and_then(Value::as_str) == Some(t.path_effect.id()))
         }
         "view.smartGuides" => v.smart_guides,
+        "view.rotateLock" => v.rotation_lock,
         "view.grid" => v.grid,
         "view.snapToGrid" => v.snap_to_grid,
         "view.snapToPoint" => v.snap_to_point,
@@ -2625,6 +2650,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Actual Size", "view.actualSize"),
                 Sep,
                 c("Reset Rotate View", "view.rotateReset"),
+                c("Lock Rotate View", "view.rotateLock"),
                 sub(
                     "Canvas Orientation",
                     vec![

@@ -596,9 +596,37 @@ fn handle_input(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, rect: 
         prev.is_some_and(|prev| prev != m)
     });
 
+    // Cmd+Shift+wheel turns the view (a line of wheel: 1°; Lock Rotate View keeps it): those
+    // events neither zoom nor scroll.
+    let turn_deg: Option<f64> = ui.input(|i| {
+        let mut any = false;
+        let mut deg = 0.0f64;
+        for e in &i.events {
+            if let egui::Event::MouseWheel { unit, delta, modifiers, .. } = e
+                && modifiers.command
+                && modifiers.shift
+            {
+                any = true;
+                let d = f64::from(delta.x + delta.y);
+                deg += match unit {
+                    egui::MouseWheelUnit::Point => d / f64::from(line.max(1.0)),
+                    egui::MouseWheelUnit::Line => d,
+                    egui::MouseWheelUnit::Page => d * 10.0,
+                };
+            }
+        }
+        any.then_some(deg)
+    });
+    if let Some(deg) = turn_deg
+        && resp.hovered()
+        && !app.ui.view.rotation_lock
+        && let Some(vm) = app.view_mut()
+    {
+        vm.rotation = redrob_vector_geom::normalize_deg(vm.rotation - deg);
+    }
     // Zoom around the pointer, and scroll ([`wheel`]): fingers pinching on a touch screen may also
     // slide.
-    if resp.hovered() {
+    if resp.hovered() && turn_deg.is_none() {
         if (factor - 1.0).abs() > 1e-6
             && let (Some(p), Some(vm)) = (hover, app.view_mut())
         {
@@ -671,7 +699,10 @@ fn handle_input(app: &mut VectorcraftApp, ui: &Ui, resp: &egui::Response, rect: 
                     if m.shift {
                         deg = (deg / 15.0).round() * 15.0;
                     }
-                    if let Some(vm) = app.view_mut() {
+                    // Lock Rotate View: the drag leaves the view where it is.
+                    if !app.ui.view.rotation_lock
+                        && let Some(vm) = app.view_mut()
+                    {
                         vm.rotation = redrob_vector_geom::normalize_deg(deg);
                     }
                 }

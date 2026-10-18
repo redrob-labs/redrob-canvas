@@ -4592,3 +4592,15 @@ lighting	Light	광원
 	Tritone	트라이톤
 	Watercolor	수채화
 	Waves	파도
+	Turns:	회전 수:
+	Divergence:	발산:
+	Clockwise	시계 방향
+	Threshold:	임계값:
+	Grow/Shrink:	확대/축소:
+	Fill by:	채우기 기준:
+	Visible Colors	표시 색상
+	Alpha	알파
+	Add to Fill	채우기에 추가
+	View rotation (Cmd+Shift+scroll turns the view)	보기 회전 (Cmd+Shift+스크롤로 회전)
+	Lock Rotate View	보기 회전 잠금
+	Rotate View	보기 회전

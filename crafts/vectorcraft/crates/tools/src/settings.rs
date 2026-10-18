@@ -27,6 +27,7 @@ const ROWS: &[Row] = &[
     (&["puppetWarp"], None, &["showMesh", "expand"]),
     (&["arc"], None, &["closed"]),
     (&["spiral"], None, &["decay", "segments", "clockwise"]),
+    (&["livePaintBucket"], None, &["threshold", "grow", "channel", "union"]),
     (&["rectangularGrid"], None, &["rows", "columns", "rowSkew", "columnSkew", "frame", "fill"]),
     (&["polarGrid"], None, &["concentric", "radial", "concentricSkew", "radialSkew", "compound", "fill"]),
     (&["pencil", "paintbrush"], None, &["fidelity", "fill", "editWithin", "closeWithin", "mode", "shape"]),

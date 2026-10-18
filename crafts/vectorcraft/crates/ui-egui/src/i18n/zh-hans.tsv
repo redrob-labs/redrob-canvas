@@ -4196,3 +4196,14 @@ lighting	Light	光源
 	Tritone	三色调
 	Watercolor	水彩
 	Waves	波浪
+	Turns:	圈数：
+	Divergence:	发散：
+	Clockwise	顺时针
+	Threshold:	阈值：
+	Grow/Shrink:	扩张/收缩：
+	Fill by:	填色依据：
+	Visible Colors	可见颜色
+	Alpha	Alpha
+	Add to Fill	加入填色
+	View rotation (Cmd+Shift+scroll turns the view)	视图旋转（Cmd+Shift+滚动可旋转）
+	Lock Rotate View	锁定视图旋转

@@ -204,6 +204,10 @@ pub struct ViewFlags {
     /// The node tool's handle visibility toggle: direction handles of selected anchors show.
     #[serde(default = "yes")]
     pub show_handles: bool,
+    /// View › Lock Rotate View: the view's rotation stays where it is (the Rotate View tool, the
+    /// status-bar angle and Cmd+Shift+scroll leave it alone).
+    #[serde(default)]
+    pub rotation_lock: bool,
 }
 
 impl Default for ViewFlags {
@@ -227,6 +231,7 @@ impl Default for ViewFlags {
             gradient_annotator: true,
             hidden_chars: false,
             show_handles: true,
+            rotation_lock: false,
         }
     }
 }

@@ -111,9 +111,9 @@ name = "Spiral tool"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/spirals.html"
 behaviour = "Drag draws a spiral; toolbar sets turns, divergence (how fast the radius grows) and inner radius; two handles adjust inner and outer ends, Alt/Ctrl on the handles change divergence or roll the spiral in or out."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/extra.rs"
-gap = "turns, decay and segments set in a dialog; no live handles after drawing"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/tools/src/draw2/family.rs (drag draws the spiral), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (control bar: Turns, Divergence, Clockwise), crafts/vectorcraft/crates/tools/src/shapehandles.rs (live outer and inner handles; Alt changes the divergence, Shift rolls the spiral in or out)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -207,9 +207,9 @@ name = "Paint bucket tool"
 reference = "Inkscape"
 manual = "https://inkscape.org/doc/keys.html"
 behaviour = "Click fills a region bounded by visible rendered edges (any object, including bitmaps) with a new path; threshold for colour similarity, grow/shrink the result, fill by visible colours or a single channel, Shift-click unions with the previous fill, Alt-click fills every region of the same colour."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/engine/src/cmd/floodfill.rs (paint.floodFill), crafts/vectorcraft/crates/tools/src/builder.rs (Live Paint Bucket: Alt-click), crafts/vectorcraft/crates/tools/src/xform/wand.rs"
-gap = "Alt-click (or a click on nothing Live Paint can fill) floods the rendered pixels across every object including bitmaps, with a colour threshold and grow/shrink as command parameters; no fill-by-channel, Shift-union with the previous fill or fill-every-same-colour-region, and the threshold has no tool options bar"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/floodfill.rs (paint.floodFill: threshold, grow/shrink, channel, everywhere, union with the previous fill), crafts/vectorcraft/crates/tools/src/builder.rs (Live Paint Bucket: click, Shift-click unions, Alt-click fills every region of the colour), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (control bar: Threshold, Grow/Shrink, Fill by, Add to Fill)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -339,9 +339,9 @@ name = "Keyboard transform of the selection"
 reference = "Inkscape"
 manual = "https://inkscape.org/doc/keys.html"
 behaviour = "With the selector: < and > scale by a preference step, [ and ] rotate by 15 degrees (Ctrl: 90), Alt variants work in screen pixels; Ctrl+> and Ctrl+< scale by a factor of two; H and V flip; Home/End/PgUp/PgDn change z-order."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/shortcuts.rs (bracket rotation, angle-bracket scaling, arrow nudges), crafts/vectorcraft/crates/engine/src/cmd/xform.rs"
-gap = "[ and ] rotate by 15 degrees, < and > scale by the keyboard increment (Alt: one screen pixel), arrows nudge and the z-order keys exist; Ctrl variants (90 degrees, scale by two) are taken by Arrange and other shortcuts, and H/V flips are tool shortcuts"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/shortcuts.rs ([ ] rotate 15°, { } rotate 90°, < > scale by the keyboard increment or one screen pixel with Alt, Cmd+Shift+< > halve and double, Alt+H / Alt+V flip, arrows nudge, Arrange keys for z-order), crafts/vectorcraft/crates/engine/src/cmd/object.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -3096,9 +3096,9 @@ name = "Canvas rotation and mirroring"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Canvas_Rotation"
 behaviour = "Ctrl+Shift+scroll (or the status-bar angle field) rotates the whole view; View > Canvas Orientation flips it horizontally or vertically; a lock prevents accidental rotation."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/state.rs (View::flip_h/flip_v), crafts/vectorcraft/crates/ui-egui/src/canvas.rs (Xf), crafts/vectorcraft/crates/ui-egui/src/menus.rs (view.flipHorizontal, view.flipVertical, view.flipReset), crafts/vectorcraft/crates/tools/src/catalog.rs (Rotate View tool)"
-gap = "View > Canvas Orientation flips the view horizontally or vertically and the Rotate View tool rotates it; no status-bar angle field or rotation lock"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/chrome.rs (status-bar angle field, presets and rotation lock), crafts/vectorcraft/crates/ui-egui/src/canvas.rs (Cmd+Shift+scroll turns the view, Rotate View tool, lock), crafts/vectorcraft/crates/ui-egui/src/menus.rs (view.rotateLock, view.setRotation, View › Canvas Orientation), crafts/vectorcraft/crates/ui-egui/src/state.rs (View::flip_h/flip_v, ViewFlags::rotation_lock)"
+gap = ""
 priority = 2
 
 [[feature]]

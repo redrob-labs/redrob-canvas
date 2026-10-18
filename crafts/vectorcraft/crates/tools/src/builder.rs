@@ -647,11 +647,17 @@ fn lp_overlays(h: &LpHover, cache: &RegionCache) -> Vec<Overlay> {
 pub struct LivePaintBucketTool {
     cache: RegionCache,
     hover: LpHover,
+    /// Fill Rendered Pixels options (the control bar): colour threshold in percent, grow/shrink in
+    /// points, the channel compared and whether a click adds to the previous fill.
+    threshold: f64,
+    grow: f64,
+    channel: String,
+    union: bool,
 }
 
 impl Default for LivePaintBucketTool {
     fn default() -> Self {
-        Self { cache: RegionCache::live_paint(), hover: LpHover::None }
+        Self { cache: RegionCache::live_paint(), hover: LpHover::None, threshold: 12.5, grow: 0.0, channel: "visible".into(), union: false }
     }
 }
 
@@ -670,11 +676,28 @@ impl Tool for LivePaintBucketTool {
             PointerKind::Down => {
                 self.hover = LpHover::None;
                 let point = json!([p.x, p.y]);
-                // Alt-click floods the rendered picture under the pointer, whatever draws it
-                // (`paint.floodFill`); so does a click on nothing Live Paint can fill.
-                let flood = || vec![Action::Exec("paint.floodFill".into(), json!({ "x": p.x, "y": p.y }))];
+                // Alt-click floods every region of the rendered picture in the clicked colour,
+                // whatever draws it (`paint.floodFill`); a click on nothing Live Paint can fill
+                // floods the connected one, Shift adding it to the previous fill.
+                let (threshold, grow, channel, add) = (self.threshold, self.grow, self.channel.clone(), self.union);
+                let flood = move |everywhere: bool, union: bool| {
+                    vec![Action::Exec(
+                        "paint.floodFill".into(),
+                        json!({
+                            "x": p.x, "y": p.y,
+                            "threshold": threshold * 2.55,
+                            "grow": grow,
+                            "channel": channel,
+                            "everywhere": everywhere,
+                            "union": union || add,
+                        }),
+                    )]
+                };
                 if ev.mods.alt {
-                    return flood();
+                    return flood(true, ev.mods.shift);
+                }
+                if ev.mods.shift && live_paint_at(cx.doc, p).is_none() && self.cache.at(cx, p).is_none() {
+                    return flood(false, true);
                 }
                 if ev.mods.shift {
                     let mut group = live_paint_at(cx.doc, p);
@@ -700,7 +723,7 @@ impl Tool for LivePaintBucketTool {
                     let roots = sorted_roots(cx.doc, &cx.selection.objects);
                     return vec![Action::Exec("livePaint.fill".into(), json!({ "ids": json_ids(&roots), "point": point }))];
                 }
-                flood()
+                flood(false, false)
             }
             _ => vec![],
         }
@@ -712,6 +735,24 @@ impl Tool for LivePaintBucketTool {
 
     fn cursor(&self, _cx: &ToolContext, _p: Point, _m: Mods) -> Cursor {
         Cursor::Crosshair
+    }
+
+    fn options(&self) -> Value {
+        json!({ "threshold": self.threshold, "grow": self.grow, "channel": self.channel, "union": self.union })
+    }
+
+    fn set_option(&mut self, key: &str, v: &Value) {
+        match key {
+            "threshold" => self.threshold = v.as_f64().unwrap_or(self.threshold).clamp(0.0, 100.0),
+            "grow" => self.grow = v.as_f64().unwrap_or(self.grow).clamp(-64.0, 64.0),
+            "channel" => {
+                if let Some(c) = v.as_str().filter(|c| ["visible", "red", "green", "blue", "alpha"].contains(c)) {
+                    self.channel = c.to_string();
+                }
+            }
+            "union" => self.union = v.as_bool().unwrap_or(self.union),
+            _ => {}
+        }
     }
 }
 
