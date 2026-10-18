@@ -395,6 +395,10 @@ pub struct Tools {
     /// The longest pause, in milliseconds, between two nudges that still bundle into one state.
     /// Longer than a key's auto-repeat delay (about half a second), so a held key is one state.
     pub nudge_bundle_pause_ms: u32,
+    /// Instant Preview (the global switch, Shift+L): a live stroke with a brush at or above its
+    /// preset's threshold paints a coarse preview first; the commit paints the exact stroke
+    /// (`tools.instantPreview`).
+    pub instant_preview: bool,
 }
 
 impl Default for Tools {
@@ -415,6 +419,7 @@ impl Default for Tools {
             pressure_curve: vec![[0.0, 0.0], [1.0, 1.0]],
             bundle_nudges: true,
             nudge_bundle_pause_ms: 1000,
+            instant_preview: true,
         }
     }
 }

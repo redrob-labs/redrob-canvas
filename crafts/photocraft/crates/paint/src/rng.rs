@@ -69,6 +69,12 @@ pub mod stream {
     pub const SENSOR_SAT: u64 = 52;
     pub const SENSOR_VALUE: u64 = 53;
     pub const DARKEN: u64 = 54;
+    /// Softness, Sharpness and Lightness Strength sensors (their Random sensor / jitter draws).
+    pub const SOFTNESS: u64 = 55;
+    pub const SHARPNESS: u64 = 56;
+    pub const LIGHTNESS: u64 = 57;
+    /// Total random colour: per-pixel noise salt.
+    pub const PIXEL_NOISE: u64 = 58;
 }
 
 /// Seed derived from arbitrary bytes (FNV-1a then mixed), for commands without an explicit seed.

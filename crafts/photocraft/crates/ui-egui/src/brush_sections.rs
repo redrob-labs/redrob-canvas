@@ -5,6 +5,7 @@
 
 use egui::{Color32, RichText, Sense, Stroke, pos2, vec2};
 use redrob_photo_engine::BrushSettings;
+use redrob_photo_engine::paint::brush::{ColorSource, TextureApply};
 use redrob_photo_engine::paint::{
     self, BrushPreset, Control, Dynamic, MAX_BRUSH_SIZE, MaskMode, MaskType, Pattern, PatternStyle, SensorCombine, TipGeometry, TipShape,
 };
@@ -57,6 +58,19 @@ pub const MASK_MODES: [(MaskMode, &str); 10] = [
 
 const PATTERNS: [(PatternStyle, &str); 4] =
     [(PatternStyle::Paper, "Paper"), (PatternStyle::Canvas, "Canvas"), (PatternStyle::Noise, "Noise"), (PatternStyle::Dots, "Dots")];
+
+/// Color Dynamics › Source.
+pub const COLOR_SOURCES: [(ColorSource, &str); 5] = [
+    (ColorSource::Foreground, "Foreground"),
+    (ColorSource::Background, "Background"),
+    (ColorSource::Gradient, "Gradient"),
+    (ColorSource::Random, "Uniform Random"),
+    (ColorSource::TotalRandom, "Total Random"),
+];
+
+/// Texture › Apply.
+pub const TEXTURE_APPLIES: [(TextureApply, &str); 3] =
+    [(TextureApply::Alpha, "Alpha"), (TextureApply::LightnessMap, "Lightness Map"), (TextureApply::GradientMap, "Gradient Map")];
 
 /// Percent slider over a 0..`max` fraction.
 fn pct(ui: &mut egui::Ui, label: &str, v: &mut f32, max: f32) -> bool {
@@ -456,8 +470,16 @@ fn tip_shape(ui: &mut egui::Ui, b: &mut BrushSettings, presets: &[BrushPreset], 
     ui.add_space(6.0);
     ui.add_enabled_ui(matches!(b.tip, TipShape::Round), |ui| {
         pct(ui, tl!("Hardness"), &mut b.hardness, 1.0);
+        // Softness: a sensor on the hardness (the control scales it down to Minimum × hardness).
+        control_row(ui, "brush-softness-ctl", &mut b.softness, false);
+        minimum_row(ui, tl!("Minimum Hardness"), &mut b.softness);
         generated_tip(ui, b);
     });
+    if b.tip.bitmap().is_some() {
+        widgets::checkbox(ui, &mut b.tip_lightness, tl!("Tip as Lightness Map"))
+            .on_hover_text(tl!("The tip's grey levels are painted into the colour as lightness"));
+    }
+    sharpness(ui, b);
     // Unchecked, the pointer's speed sets the spacing (Photoshop).
     widgets::checkbox(ui, &mut b.spacing_enabled, tl!("Spacing")).on_hover_text(tl!("Off: the speed of the pointer sets the spacing"));
     ui.add_space(2.0);
@@ -478,7 +500,71 @@ fn tip_shape(ui: &mut egui::Ui, b: &mut BrushSettings, presets: &[BrushPreset], 
         minimum_row(ui, tl!("Minimum Spacing"), &mut b.spacing_dynamic);
         widgets::checkbox(ui, &mut b.isotropic_spacing, tl!("Isotropic Spacing")).on_hover_text(tl!("Space dabs by the diameter alone, not by the roundness"));
     });
+    brush_options(ui, b);
     None
+}
+
+/// Sharpness: a threshold over the tip mask (crisp pixel strokes), its sensor and Soften Edge.
+fn sharpness(ui: &mut egui::Ui, b: &mut BrushSettings) {
+    let sh = &mut b.sharpness;
+    widgets::checkbox(ui, &mut sh.enabled, tl!("Sharpness")).on_hover_text(tl!("Threshold the tip mask for crisp pixel strokes"));
+    if sh.enabled {
+        pct(ui, tl!("Strength"), &mut sh.strength.jitter, 1.0);
+        control_row(ui, "brush-sharpness-ctl", &mut sh.strength, false);
+        minimum_row(ui, tl!("Minimum Strength"), &mut sh.strength);
+        pct(ui, tl!("Soften Edge"), &mut sh.soften_edge, 1.0);
+    }
+}
+
+/// Whole-brush options under the tip shape: the shared sensor curve, the Enable Pen Settings
+/// box, the eraser switch and the Instant Preview threshold.
+fn brush_options(ui: &mut egui::Ui, b: &mut BrushSettings) {
+    ui.add_space(4.0);
+    widgets::hairline(ui);
+    ui.add_space(4.0);
+    // Enable Pen Settings: every dynamic's sensors at once (their curves stay).
+    let mut pen = b.shape_dynamics.size.sensors_enabled;
+    if widgets::checkbox(ui, &mut pen, tl!("Enable Pen Settings")).on_hover_text(tl!("Off: every sensor is ignored; the curves are kept")).changed() {
+        b.set_sensors_enabled(pen);
+    }
+    ui.horizontal(|ui| {
+        widgets::checkbox(ui, &mut b.share_curve, tl!("Share Curve Across Settings"));
+        if b.share_curve {
+            let open_id = curve_open_id("brush-shared-curve");
+            let mut open: bool = ui.data(|m| m.get_temp(open_id)).unwrap_or(false);
+            if crate::icons::button(ui, "spline", 22.0, open || !b.shared_curve.is_linear(), tl!("Response curve")).clicked() {
+                open = !open;
+            }
+            ui.data_mut(|m| m.insert_temp(open_id, open));
+        }
+    });
+    if b.share_curve && ui.data(|m| m.get_temp(curve_open_id("brush-shared-curve"))).unwrap_or(false) {
+        let mut points = b.shared_curve.points();
+        if crate::pressure_curve_ui::edit_points(ui, egui::Id::new(("brush-curve-rect", "brush-shared-curve")), &mut points) {
+            b.shared_curve = paint::ResponseCurve::new(&points);
+        }
+    }
+    ui.add_space(4.0);
+    let sw = &mut b.eraser_switch;
+    ui.horizontal(|ui| {
+        widgets::checkbox(ui, &mut sw.switch_size, tl!("Eraser Size")).on_hover_text(tl!("Erase mode keeps its own size on this preset"));
+        ui.add_space(8.0);
+        widgets::checkbox(ui, &mut sw.switch_opacity, tl!("Eraser Opacity")).on_hover_text(tl!("Erase mode keeps its own opacity on this preset"));
+    });
+    ui.add_space(4.0);
+    let ip = &mut b.instant_preview;
+    ui.horizontal(|ui| {
+        widgets::checkbox(ui, &mut ip.enabled, tl!("Instant Preview"));
+        ui.add_enabled_ui(ip.enabled, |ui| {
+            let mut t = ip.threshold;
+            if widgets::value_field(ui, &mut t, 1.0..=MAX_BRUSH_SIZE, "px", 70.0)
+                .on_hover_text(tl!("Brushes this large preview coarsely while painting"))
+                .changed()
+            {
+                ip.threshold = t.round().clamp(1.0, MAX_BRUSH_SIZE);
+            }
+        });
+    });
 }
 
 /// The computed tip's generated-shape controls: outline, mask type, fade per axis, spikes,
@@ -685,6 +771,16 @@ fn texture(ui: &mut egui::Ui, b: &mut BrushSettings) {
         pct(ui, tl!("Depth Jitter"), &mut tx.depth_jitter.jitter, 1.0);
         control_row(ui, "brush-depth-ctl", &mut tx.depth_jitter, false);
     });
+    ui.add_space(4.0);
+    ui.horizontal(|ui| {
+        dim(ui, tl!("Apply:"));
+        widgets::dropdown(ui, "brush-texture-apply", &mut tx.apply, &TEXTURE_APPLIES, 130.0);
+    });
+    if tx.apply == TextureApply::LightnessMap || b.tip_lightness {
+        pct(ui, tl!("Lightness Strength"), &mut b.lightness_amount, 1.0);
+        control_row(ui, "brush-lightness-ctl", &mut b.lightness_strength, false);
+        minimum_row(ui, tl!("Minimum Strength"), &mut b.lightness_strength);
+    }
 }
 
 fn dual_brush(ui: &mut egui::Ui, b: &mut BrushSettings, presets: &[BrushPreset]) {
@@ -723,11 +819,35 @@ fn color_dynamics(ui: &mut egui::Ui, b: &mut BrushSettings) {
     let c = &mut b.color_dynamics;
     widgets::checkbox(ui, &mut c.per_tip, tl!("Apply Per Tip"));
     ui.add_space(6.0);
+    ui.horizontal(|ui| {
+        dim(ui, tl!("Source:"));
+        widgets::dropdown(ui, "brush-color-source", &mut c.source, &COLOR_SOURCES, 130.0);
+    });
+    if c.source == ColorSource::Gradient {
+        let mut steps = c.gradient_steps as f32;
+        if num(ui, tl!("Gradient Steps"), &mut steps, 2.0..=10000.0, "") {
+            c.gradient_steps = steps as u32;
+        }
+    }
+    ui.add_space(4.0);
     dynamic(ui, "brush-fgbg-ctl", tl!("Foreground/Background Jitter"), &mut c.fg_bg, 1.0, None, false);
+    // Mix: the sensor's value is the background's share (or the gradient position).
+    dim(ui, tl!("Mix"));
+    control_row(ui, "brush-mixcolor-ctl", &mut c.mix, false);
     pct(ui, tl!("Hue Jitter"), &mut c.hue_jitter, 1.0);
     pct(ui, tl!("Saturation Jitter"), &mut c.saturation_jitter, 1.0);
     pct(ui, tl!("Brightness Jitter"), &mut c.brightness_jitter, 1.0);
     signed_pct(ui, tl!("Purity"), &mut c.purity, -1.0, 1.0);
+    ui.add_space(6.0);
+    // Sensor-driven hue, saturation, value and darken.
+    pct(ui, tl!("Hue"), &mut c.hue_amount, 1.0);
+    control_row(ui, "brush-hue-ctl", &mut c.hue, false);
+    pct(ui, tl!("Saturation"), &mut c.saturation_amount, 1.0);
+    control_row(ui, "brush-sat-ctl", &mut c.saturation, false);
+    pct(ui, tl!("Value"), &mut c.value_amount, 1.0);
+    control_row(ui, "brush-value-ctl", &mut c.value, false);
+    pct(ui, tl!("Darken"), &mut c.darken_amount, 1.0);
+    control_row(ui, "brush-darken-ctl", &mut c.darken, false);
 }
 
 fn transfer(ui: &mut egui::Ui, b: &mut BrushSettings) {

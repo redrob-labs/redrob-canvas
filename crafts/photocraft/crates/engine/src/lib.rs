@@ -22,6 +22,7 @@ pub mod background_cmds;
 pub mod brush_cmds;
 pub mod brush_engine_cmds;
 pub mod brush_key_cmds;
+pub mod brush_mode_cmds;
 pub mod brush_preset_cmds;
 pub mod build_info;
 mod canvas_geom;
@@ -71,8 +72,8 @@ pub mod inspect;
 pub mod installed_profiles;
 pub mod jobs;
 pub mod kys;
-pub mod layer_copy_cmds;
 pub mod layer_boundary_cmds;
+pub mod layer_copy_cmds;
 pub mod layer_label_cmds;
 pub mod layer_list_cmds;
 pub mod layer_mask_props_cmds;
@@ -84,9 +85,11 @@ pub mod lens_cmds;
 pub mod link_watch;
 pub mod magnetic_cmds;
 pub mod mask_view_cmds;
+pub mod metadata_cmds;
 mod migrate_cmds;
 pub mod mode_cmds;
 pub mod multichannel_cmds;
+pub mod mypaint_cmds;
 pub mod new_layer;
 pub mod notes_cmds;
 pub mod paint_cmds;
@@ -108,14 +111,12 @@ pub mod proof_sim;
 pub mod rasterize_style_cmds;
 pub mod redeye_cmds;
 pub mod render_cmds;
+pub mod resource_tags_cmds;
 pub mod retouch_cmds;
 pub mod sample_cmds;
 pub mod sampler_cmds;
 pub mod select_extra_cmds;
 pub mod select_refine_cmds;
-pub mod resource_tags_cmds;
-pub mod mypaint_cmds;
-pub mod metadata_cmds;
 pub mod selection_cmds;
 pub mod shortcut_sets;
 pub mod slice_cmds;
@@ -396,6 +397,9 @@ pub struct ToolState {
     /// A preset may carry any number of tags; the preset store keeps them in its index. Bumping
     /// `presets_rev` syncs them.
     pub preset_tags: std::collections::BTreeMap<String, Vec<String>>,
+    /// Brush presets tweaked in this session (`brush_mode_cmds`): lower-case preset name → the
+    /// tweaked brush, brought back when the preset is picked again; never written to the file.
+    pub preset_tweaks: std::collections::BTreeMap<String, redrob_photo_paint::BrushSettings>,
 }
 
 impl ToolState {
@@ -466,6 +470,7 @@ impl Default for ToolState {
             dynamics_presets: redrob_photo_paint::dynamics_preset::builtin(),
             current_dynamics: None,
             preset_tags: Default::default(),
+            preset_tweaks: Default::default(),
         }
     }
 }

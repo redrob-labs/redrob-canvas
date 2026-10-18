@@ -521,6 +521,10 @@ pub fn dynamic_value(d: &Dynamic, s: &StepInput) -> f32 {
 
 /// [`dynamic_value`] with `rnd` as the value of a [`Control::Random`] sensor.
 pub fn dynamic_value_rnd(d: &Dynamic, s: &StepInput, rnd: f32) -> f32 {
+    // Enable Pen Settings off: every sensor reads full, the curves are kept for later.
+    if !d.sensors_enabled {
+        return 1.0;
+    }
     let mut acc: Option<f32> = (d.control != Control::Off).then(|| sensor_value(d, d.control, d.fade_steps, &d.curve, s, rnd));
     for (k, sen) in d.sensors.iter().enumerate() {
         if sen.control == Control::Off {
@@ -570,7 +574,7 @@ pub fn control_angle(c: Control, fade_steps: u32, s: &StepInput) -> f32 {
 /// [`control_angle`] for a dynamic: the drawing-angle sensor adds its offset and may lock to the
 /// first segment; a Random control turns the tip by a random angle.
 pub fn dynamic_angle(d: &Dynamic, s: &StepInput, rnd: f32) -> f32 {
-    match d.control {
+    match d.control_on() {
         Control::DrawingAngle => drawing_angle_deg(d, s),
         Control::Random => 360.0 * rnd.clamp(0.0, 1.0),
         c => control_angle(c, d.fade_steps, s),
@@ -630,23 +634,29 @@ pub fn dynamic_color(b: &BrushSettings, s: &StepInput, seed: u64, index: u64) ->
         ColorSource::Foreground => (b.color, b.background),
         ColorSource::Background => (b.background, b.color),
         ColorSource::Gradient => {
+            // The gradient position: the gradient's own sensor, else the Mix sensor, else the
+            // dab's progress.
             let pos = if cd.gradient_dynamic.is_active() {
                 dynamic_value_rnd(&cd.gradient_dynamic, s, r(stream::GRADIENT))
+            } else if cd.mix.is_active() {
+                dynamic_value_rnd(&cd.mix, s, r(stream::MIX_COLOR))
             } else {
                 let n = u64::from(cd.gradient_steps.max(1));
                 (index % n) as f32 / (n - 1).max(1) as f32
             };
             (crate::brush::gradient_at(&cd.gradient, b.color, b.background, pos), b.background)
         }
-        ColorSource::Random => {
+        // Total random is a colour per pixel (see the renderer); per dab it starts from a random
+        // colour too, so the dab's own tint is noise as well.
+        ColorSource::Random | ColorSource::TotalRandom => {
             let o = hsv_to_rgb(r(stream::RANDOM_COLOR), 1.0, 1.0);
             ([o[0], o[1], o[2], b.color[3]], b.background)
         }
     };
-    let base = if cd.fg_bg.control != Control::Off || cd.fg_bg.has_sensors() { 1.0 - dynamic_value_rnd(&cd.fg_bg, s, r(stream::RANDOM)) } else { 0.0 };
+    let base = if cd.fg_bg.control_on() != Control::Off || cd.fg_bg.has_sensors() { 1.0 - dynamic_value_rnd(&cd.fg_bg, s, r(stream::RANDOM)) } else { 0.0 };
     let mut t = (base + (1.0 - base) * cd.fg_bg.jitter.clamp(0.0, 1.0) * r(stream::FG_BG)).clamp(0.0, 1.0);
     // Sensor-driven mix: the control's value is the background's share.
-    if cd.mix.is_active() {
+    if cd.mix.is_active() && cd.source != ColorSource::Gradient {
         t = (t + dynamic_value_rnd(&cd.mix, s, r(stream::MIX_COLOR))).clamp(0.0, 1.0);
     }
     let rgb = [fg[0] + (bg[0] - fg[0]) * t, fg[1] + (bg[1] - fg[1]) * t, fg[2] + (bg[2] - fg[2]) * t];
@@ -677,7 +687,7 @@ pub fn dynamic_color(b: &BrushSettings, s: &StepInput, seed: u64, index: u64) ->
 pub fn base_diameter(b: &BrushSettings, s: &StepInput) -> f32 {
     let sd = &b.shape_dynamics;
     let mut f = 1.0;
-    if sd.enabled && (sd.size.control != Control::Off || sd.size.has_sensors()) {
+    if sd.enabled && (sd.size.control_on() != Control::Off || sd.size.has_sensors()) {
         let min = sd.size.minimum.clamp(0.0, 1.0);
         f = min + (1.0 - min) * dynamic_value(&sd.size, s);
     } else if b.pressure_size {
@@ -752,7 +762,9 @@ pub struct DabBuilder {
 
 impl DabBuilder {
     pub fn new(brush: &BrushSettings) -> Self {
-        Self { brush: brush.clone(), seed: brush.seed, stroke_color: None, next_index: 0, last_direction: None }
+        // "Share curve across all settings" is applied once here, so every sensor read below sees
+        // the shared curve.
+        Self { brush: brush.clone().with_shared_curve(), seed: brush.seed, stroke_color: None, next_index: 0, last_direction: None }
     }
 
     pub fn step_len(&self, p: &StrokePoint) -> f64 {
@@ -780,6 +792,10 @@ impl DabBuilder {
             dyns.push(&b.texture.depth_jitter);
         }
         dyns.push(&b.spacing_dynamic);
+        dyns.extend([&b.softness, &b.lightness_strength]);
+        if b.sharpness.enabled {
+            dyns.push(&b.sharpness.strength);
+        }
         dyns.iter()
             .filter(|d| d.drawing_angle.fan_corners && (d.reads_drawing_angle() || d.control == Control::Direction))
             .map(|d| d.drawing_angle.fan_angle.clamp(1.0, 180.0).to_radians())
@@ -856,7 +872,7 @@ impl DabBuilder {
             let (mut proj_angle, mut proj_scale) = (0.0, 1.0);
             if sd.enabled {
                 let tilt = s.point.tilt_x.hypot(s.point.tilt_y).clamp(0.0, 90.0);
-                if sd.size.control == Control::PenTilt && sd.tilt_scale > 0.0 {
+                if sd.size.control_on() == Control::PenTilt && sd.tilt_scale > 0.0 {
                     let k = 1.0 - sd.tilt_scale.clamp(0.0, 2.0) * 0.5 * tilt / 90.0;
                     roundness = (roundness * k).clamp(0.01, 1.0);
                 }
@@ -908,7 +924,7 @@ impl DabBuilder {
                 flow *= scalar(&tr.flow, s, r(stream::FLOW));
             }
             let (wet, mix) = if tr.enabled { (scalar(&tr.wetness, s, r(stream::WET)), scalar(&tr.mix, s, r(stream::MIX))) } else { (1.0, 1.0) };
-            if b.pressure_opacity && !(tr.enabled && (tr.opacity.control != Control::Off || tr.opacity.has_sensors())) {
+            if b.pressure_opacity && !(tr.enabled && (tr.opacity.control_on() != Control::Off || tr.opacity.has_sensors())) {
                 opacity *= s.point.pressure.clamp(0.0, 1.0);
             }
             // Colour.
@@ -923,6 +939,15 @@ impl DabBuilder {
                 if tx.enabled && tx.each_tip { tx.depth.clamp(0.0, 1.0) * scalar(&tx.depth_jitter, s, r(stream::DEPTH)) } else { tx.depth.clamp(0.0, 1.0) };
             // Image hose: which cell this dab paints with.
             let cell = b.hose.as_ref().filter(|h| h.is_active()).map_or(0, |h| hose_cell(h, s, seed, i));
+            // Softness: the sensor scales the hardness of a computed tip. Sharpness: the sensor
+            // scales the threshold strength. Lightness Strength: the contrast of a lightness map.
+            let hardness_scale = if b.softness.is_active() { scalar(&b.softness, s, r(stream::SOFTNESS)) } else { 1.0 };
+            let sharpness = if b.sharpness.enabled { scalar(&b.sharpness.strength, s, r(stream::SHARPNESS)) } else { 0.0 };
+            let lightness = if b.lightness_strength.is_active() {
+                b.lightness_amount.clamp(0.0, 1.0) * scalar(&b.lightness_strength, s, r(stream::LIGHTNESS))
+            } else {
+                b.lightness_amount.clamp(0.0, 1.0)
+            };
             out.push(Dab {
                 center: c,
                 radius,
@@ -940,6 +965,9 @@ impl DabBuilder {
                 wet,
                 mix,
                 cell,
+                hardness_scale,
+                sharpness,
+                lightness,
             });
         }
     }
@@ -996,6 +1024,9 @@ impl DualBuilder {
                 wet: 1.0,
                 mix: 1.0,
                 cell: 0,
+                hardness_scale: 1.0,
+                sharpness: 0.0,
+                lightness: 1.0,
             });
         }
     }

@@ -466,9 +466,9 @@ name = "Softness"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Sensor-driven fade of the tip edge; noticeable on large soft tips."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "hardness is static; no sensor on it"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -478,8 +478,8 @@ name = "Sharpness"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Threshold over the tip mask for crisp pixel-art strokes; strength by sensor, soften edge slider."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -526,8 +526,8 @@ name = "Source: gradient"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Dabs take their colour from the active gradient, position chosen by the Mix sensor."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -538,9 +538,9 @@ name = "Source: uniform / total random"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Uniform random gives every dab one random colour; total random paints noise."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "ColorDynamics hue/sat/brightness jitter approximates uniform random; no noise source"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -562,9 +562,9 @@ name = "Mix"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Sensor blends between foreground and background colour (or picks a gradient position)."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "ColorDynamics foreground/background jitter is random only, no sensor control"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -574,8 +574,8 @@ name = "Darken"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Sensor-driven darkening of the source colour towards black."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -586,9 +586,9 @@ name = "Hue / saturation / value"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Three sensor-driven HSV offsets on the source colour; all three on fuzzy gives rich colour texture."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "ColorDynamics jitter is random only; no per-sensor HSV curves"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -610,8 +610,8 @@ name = "Lightness strength"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Sensor-driven contrast of a lightness-map tip for variable impasto."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -694,8 +694,8 @@ name = "Texture modes: lightness map, gradient map"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
 behaviour = "Texture lightness painted into the colour (or mapped to the active gradient) instead of the alpha."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -730,9 +730,9 @@ name = "Eraser switch size/opacity"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Toggling erase mode (E) can remember a separate size and opacity for the same preset."
-ours = "none"
-ours_where = ""
-gap = "erase is a separate tool, no per-preset eraser size"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -742,9 +742,9 @@ name = "Temporarily save tweaks to preset"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Changes made in the editor are kept while switching presets in the session without overwriting the file; a reload button reverts."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/brush_preset_cmds.rs"
-gap = "PresetCaptures keeps tool options per preset; no explicit dirty/reload"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -754,8 +754,8 @@ name = "Instant preview per brush"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/instant_preview.html"
 behaviour = "Large brushes paint a low-resolution preview first and refine; per-preset threshold and global toggle (Shift+L)."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs, crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -766,9 +766,9 @@ name = "Sensor curve combination modes"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Several sensors on one option combine by multiply, addition, maximum, minimum or difference; share curve across all settings."
-ours = "partial"
+ours = "full"
 ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
-gap = "up to three extra sensors per option; no 'share curve across all settings'"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -790,9 +790,9 @@ name = "Enable pen settings toggle"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "A checkbox turns all sensors for an option off while keeping the curves."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
-gap = "Control::Off per dynamic; locks per section"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+gap = ""
 priority = 2
 
 [[feature]]

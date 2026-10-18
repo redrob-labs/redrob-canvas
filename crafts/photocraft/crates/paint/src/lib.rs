@@ -41,6 +41,7 @@ pub use brush::{
     HoseSelection, ImageHose, MAX_BRUSH_SIZE, MAX_EXTRA_SENSORS, MAX_SCATTER, MaskMode, MaskType, Pattern, PatternStyle, Pose, PresetCaptures, Scattering,
     SectionLocks, Sensor, SensorCombine, ShapeDynamics, Smoothing, Texture, TipGeometry, TipShape, Transfer,
 };
+pub use brush::{EraserSwitch, InstantPreview, Sharpness, TextureApply};
 pub use curve::ResponseCurve;
 pub use dynamics_preset::{DynInput, DynOutput, DynamicsPreset, DynamicsRow};
 pub use engines::EngineSettings;
@@ -114,6 +115,12 @@ pub struct Dab {
     pub mix: f32,
     /// Image hose cell this dab paints with ([`BrushSettings::hose`]); 0 for a plain tip.
     pub cell: u32,
+    /// Softness: multiplier of the computed tip's hardness for this dab (1 = as set).
+    pub hardness_scale: f32,
+    /// Sharpness: 0..1 strength of the mask threshold for this dab (0 = off).
+    pub sharpness: f32,
+    /// Lightness Strength: 0..1 contrast of a lightness map painted into the colour.
+    pub lightness: f32,
 }
 
 impl Dab {
@@ -136,6 +143,9 @@ impl Dab {
             wet: 1.0,
             mix: 1.0,
             cell: 0,
+            hardness_scale: 1.0,
+            sharpness: 0.0,
+            lightness: 1.0,
         }
     }
 }
