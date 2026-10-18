@@ -1346,7 +1346,7 @@ fn vcycle(u: &mut [f32], f: &[f32], w: usize, h: usize, depth: usize) {
     let r2: Vec<f32> = par_map(w2 * h2, |i| {
         let (x, y) = (i % w2, i / w2);
         let mut acc = 0.0;
-        let mut n = 0.0;
+        let mut n: f32 = 0.0;
         for dy in 0..2 {
             for dx in 0..2 {
                 let (sx, sy) = (2 * x + dx, 2 * y + dy);

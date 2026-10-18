@@ -75,7 +75,7 @@ pub fn load_color_pattern(s: &Session, b: &mut redrob_photo_paint::BrushSettings
             data.extend_from_slice(&pat.surface.rgba(x, y));
         }
     }
-    cd.pattern = Some(std::sync::Arc::new(redrob_photo_paint::brush::ColorTile { width: w, height: h, data }));
+    cd.pattern = Some(std::sync::Arc::new(redrob_photo_paint::brush::PatternTile { width: w, height: h, data }));
     Ok(())
 }
 

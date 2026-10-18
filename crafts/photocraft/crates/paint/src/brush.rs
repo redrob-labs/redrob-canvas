@@ -984,7 +984,7 @@ pub struct ColorDynamics {
     /// The colour pattern's pixels, loaded by the engine from `pattern_key` (not saved with the
     /// brush: the key is).
     #[serde(skip)]
-    pub pattern: Option<std::sync::Arc<ColorTile>>,
+    pub pattern: Option<std::sync::Arc<PatternTile>>,
     /// Pattern scale (1 = 100 %).
     #[serde(skip_serializing_if = "is_one")]
     pub pattern_scale: f32,
@@ -1924,19 +1924,19 @@ impl ColorSource {
 /// row-major, four floats each.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
-pub struct ColorTile {
+pub struct PatternTile {
     pub width: u32,
     pub height: u32,
     pub data: Vec<f32>,
 }
 
-impl Default for ColorTile {
+impl Default for PatternTile {
     fn default() -> Self {
         Self { width: 0, height: 0, data: Vec::new() }
     }
 }
 
-impl ColorTile {
+impl PatternTile {
     pub fn is_valid(&self) -> bool {
         self.width > 0 && self.height > 0 && self.data.len() == (self.width as usize) * (self.height as usize) * 4
     }

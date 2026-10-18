@@ -1062,7 +1062,7 @@ fn slice_open(sp: &SubPath, a: Point, d: Vec2, keep_left: bool) -> Vec<SubPath> 
     let cut_line = kurbo::Line::new(a - d * far, a + d * far);
     for i in 0..sp.segment_count() {
         let c = sp.segment(i);
-        let mut ts: Vec<f64> = c.intersect_line(cut_line).iter().map(|x| x.segment_t).filter(|t| *t > 1e-9 && *t < 1.0 - 1e-9).collect();
+        let mut ts: Vec<f64> = kurbo::PathSeg::Cubic(c).intersect_line(cut_line).iter().map(|x| x.segment_t).filter(|t| *t > 1e-9 && *t < 1.0 - 1e-9).collect();
         ts.sort_by(f64::total_cmp);
         ts.push(1.0);
         let mut t0 = 0.0;
