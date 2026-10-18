@@ -4787,7 +4787,7 @@ manual = "https://docs.gimp.org/3.0/en/export-file-formats.html"
 behaviour = "Modern JPEG successors, lossless and lossy, with bit depth and effort."
 ours = "partial"
 ours_where = "crafts/photocraft/crates/io/src/modern.rs (JPEG XL decode via jxl-oxide 0.12.6, lossless encode via zune-jpegxl 0.5.2; JPEG 2000 / HTJ2K decode and lossless or quality-factor lossy encode via j2k 0.12.0; .jp2/.j2k/.jph containers), crafts/photocraft/crates/io/Cargo.toml, crafts/photocraft/crates/io/src/lib.rs, apps/redrob-canvas/src/services.rs"
-gap = "JPEG XL export is lossless only (no pure-Rust lossy JPEG XL encoder); JPEG 2000 opens at 8 bits per sample"
+gap = "JPEG XL export is lossless only (no pure-Rust lossy JPEG XL encoder); JPEG 2000 is detected but not decoded or encoded: the pure-Rust j2k codec requires rustc 1.96+ and the toolchain is pinned to 1.95.0 (wire it back when the pin moves)"
 priority = 3
 
 [[feature]]

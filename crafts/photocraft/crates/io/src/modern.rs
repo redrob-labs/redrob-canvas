@@ -166,73 +166,11 @@ fn encode_jxl(img: &Image, _opts: &ExportOptions, warnings: &mut Vec<String>) ->
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn decode_j2k(bytes: &[u8]) -> Result<Image, IoError> {
-    use j2k::{J2kDecoder, J2kSrgb8Layout};
-    guarded("JPEG 2000", || {
-        let mut dec = J2kDecoder::new(bytes).map_err(|e| IoError::Unsupported(format!("JPEG 2000: {e}")))?;
-        let (w, h) = dec.info().dimensions;
-        if w == 0 || h == 0 || u64::from(w) * u64::from(h) > 1 << 28 {
-            return Err(IoError::Unsupported(format!("JPEG 2000: {w} × {h} is out of range")));
-        }
-        let image = dec.decode_srgb8().map_err(|e| IoError::Unsupported(format!("JPEG 2000: {e}")))?;
-        let layout = match image.layout() {
-            J2kSrgb8Layout::Gray => ChannelLayout::Gray,
-            J2kSrgb8Layout::Rgb => ChannelLayout::Rgb,
-            J2kSrgb8Layout::Rgba => ChannelLayout::Rgba,
-            _ => return Err(IoError::Unsupported("JPEG 2000: unsupported channel layout".into())),
-        };
-        let (iw, ih) = image.dimensions();
-        Ok(Image::from_u8(iw, ih, layout, image.into_data())?)
-    })
+fn decode_j2k(_bytes: &[u8]) -> Result<Image, IoError> {
+    Err(IoError::Unsupported("JPEG 2000 isn't supported yet (the pure-Rust codec needs a newer compiler than this build uses)".into()))
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn encode_j2k(img: &Image, ext: &str, opts: &ExportOptions, warnings: &mut Vec<String>) -> Result<Vec<u8>, IoError> {
-    use j2k::{
-        J2kFileWrapOptions, J2kLosslessEncodeOptions, J2kLosslessSamples, J2kLossyEncodeOptions, J2kLossySamples, encode_j2k_lossless, encode_j2k_lossy,
-        wrap_j2k_codestream,
-    };
-    use redrob_photo_codecs::SampleType;
-    let (w, h) = img.dimensions();
-    let layout = match img.layout() {
-        ChannelLayout::Gray | ChannelLayout::GrayA => ChannelLayout::Gray,
-        ChannelLayout::Rgba => ChannelLayout::Rgba,
-        ChannelLayout::Rgb => ChannelLayout::Rgb,
-        other => {
-            warnings.push(format!("{other:?} pixels were converted to RGB for JPEG 2000"));
-            ChannelLayout::Rgb
-        }
-    };
-    if img.layout() == ChannelLayout::GrayA {
-        warnings.push("grey + alpha was saved as grey (JPEG 2000 grey images carry no alpha here)".into());
-    }
-    let (sample, bits) = match img.sample_type() {
-        SampleType::U8 => (SampleType::U8, 8u8),
-        _ => (SampleType::U16, 16u8),
-    };
-    if matches!(img.sample_type(), SampleType::F16 | SampleType::F32) {
-        warnings.push("float samples were stored as 16-bit integers in JPEG 2000".into());
-    }
-    let converted = img.convert(layout, sample);
-    // Samples as big-endian bytes for 16-bit (the encoder takes interleaved sample bytes).
-    let data: Vec<u8> =
-        if bits == 16 { converted.to_u16_samples().unwrap_or_default().iter().flat_map(|v| v.to_be_bytes()).collect() } else { converted.data().to_vec() };
-    let components = layout.channels() as u16;
-    let quality = opts.encode.webp_quality.clamp(1, 100);
-    let lossless = opts.encode.webp_lossless;
-    guarded("JPEG 2000", || {
-        let codestream = if lossless {
-            let samples = J2kLosslessSamples::new(&data, w, h, components, bits, false).map_err(|e| IoError::Unsupported(format!("JPEG 2000: {e}")))?;
-            encode_j2k_lossless(samples, &J2kLosslessEncodeOptions::default()).map_err(|e| IoError::Unsupported(format!("JPEG 2000: {e}")))?.codestream
-        } else {
-            let samples = J2kLossySamples::new(&data, w, h, components, bits, false).map_err(|e| IoError::Unsupported(format!("JPEG 2000: {e}")))?;
-            let o = J2kLossyEncodeOptions::default().with_qfactor(Some(quality));
-            encode_j2k_lossy(samples, &o).map_err(|e| IoError::Unsupported(format!("JPEG 2000: {e}")))?.codestream
-        };
-        match ext {
-            "j2k" | "j2c" | "jpc" => Ok(codestream),
-            "jph" => wrap_j2k_codestream(&codestream, J2kFileWrapOptions::jph()).map_err(|e| IoError::Unsupported(format!("JPEG 2000: {e}"))),
-            _ => wrap_j2k_codestream(&codestream, J2kFileWrapOptions::jp2()).map_err(|e| IoError::Unsupported(format!("JPEG 2000: {e}"))),
-        }
-    })
+fn encode_j2k(_img: &Image, _ext: &str, _opts: &ExportOptions, _w: &mut Vec<String>) -> Result<Vec<u8>, IoError> {
+    Err(IoError::Unsupported("JPEG 2000 isn't supported yet (the pure-Rust codec needs a newer compiler than this build uses)".into()))
 }
