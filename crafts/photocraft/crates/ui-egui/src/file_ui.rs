@@ -130,6 +130,22 @@ pub fn invoke(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &V
             }
             form(app, id, "Export Paths to File", json!({"path": format!("{dir}/{stem}.ai"), "paths": "all"}), json!({"paths": names}))
         }
+        // File › Open Location, Create › From Screenshot / From Web Page, Send by Email.
+        "file.openLocation" => form(app, id, "Open Location", json!({"url": "https://"}), json!({})),
+        "file.create.screenshot" => {
+            form(app, id, "From Screenshot", json!({"mode": "screen", "delay": 0.0, "cursor": false}), json!({"mode": ["screen", "window", "region"]}))
+        }
+        "file.create.webPage" => form(app, id, "From Web Page", json!({"url": "https://", "width": 1280, "height": 1024}), json!({})),
+        "file.sendByEmail" => {
+            app.session.active()?;
+            form(
+                app,
+                id,
+                "Send by Email",
+                json!({"format": "png", "subject": format!("{stem}.png")}),
+                json!({"format": ["png", "jpg", "webp", "tif", "psd", "pdf"]}),
+            )
+        }
         // Resource and animation exports (one layer = one frame or cell; see the layer-name tags).
         "file.export.layersAsAnimation" => form(
             app,

@@ -103,6 +103,35 @@ fn open_url(url: &str) -> Result<(), String> {
     webbrowser::open(url).map(|_| ()).map_err(|e| e.to_string())
 }
 
+/// File › Open Location: the bytes at `url`, through the workspace's `reqwest` on a
+/// current-thread tokio runtime (as `update.rs` does). Redirects are followed, 120 s timeout.
+#[cfg(not(target_arch = "wasm32"))]
+pub fn fetch_url(url: &str) -> Result<Vec<u8>, String> {
+    let rt = tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()
+        .map_err(|e| format!("tokio runtime: {e}"))?;
+    rt.block_on(async {
+        let client = reqwest::Client::builder()
+            .user_agent(concat!("Redrob Canvas/", env!("CARGO_PKG_VERSION")))
+            .timeout(std::time::Duration::from_secs(120))
+            .redirect(reqwest::redirect::Policy::limited(10))
+            .build()
+            .map_err(|e| format!("HTTP client: {e}"))?;
+        let response = client
+            .get(url)
+            .send()
+            .await
+            .map_err(|e| format!("{url}: {e}"))?;
+        let status = response.status();
+        if !status.is_success() {
+            return Err(format!("{url}: HTTP {status}"));
+        }
+        let bytes = response.bytes().await.map_err(|e| format!("{url}: {e}"))?;
+        Ok(bytes.to_vec())
+    })
+}
+
 // ---------------------------------------------------------------------------------------------
 // Photo (photocraft)
 // ---------------------------------------------------------------------------------------------

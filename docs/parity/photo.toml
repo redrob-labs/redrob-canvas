@@ -4317,9 +4317,9 @@ name = "Create submenu (from clipboard, screenshot, web page)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-file-create.html"
 behaviour = "New image from the clipboard contents, a screenshot (whole screen, window, region with delay), or by rendering a URL."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/edit_cmds.rs (file.newFromClipboard)"
-gap = "no screenshot or web-page capture"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/edit_cmds.rs (file.newFromClipboard), crafts/photocraft/crates/engine/src/create_cmds.rs (file.create.screenshot: screen/window/region with delay and cursor through the platform screenshot tool; file.create.webPage: a headless Chromium/Chrome/Edge/Brave/Firefox renders the URL), crafts/photocraft/crates/ui-egui/src/file_ui.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs (File > Create)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -4341,8 +4341,8 @@ name = "Open Location (URL)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-file-open-location.html"
 behaviour = "Opens an image from a URI."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/create_cmds.rs (file.openLocation: http(s)/file URLs through Session::fetch_url or curl), apps/redrob-canvas/src/services.rs (fetch_url over reqwest), apps/redrob-canvas/src/shell.rs, crafts/photocraft/crates/ui-egui/src/file_ui.rs"
 gap = ""
 priority = 3
 
@@ -4401,8 +4401,8 @@ name = "Send by Email"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-send-by-email.html"
 behaviour = "Exports and attaches to a new mail in the system mailer."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/create_cmds.rs (file.sendByEmail: exports a copy in the chosen format and opens it in a new message through xdg-email, Mail.app or the mailto handler), crafts/photocraft/crates/ui-egui/src/file_ui.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 3
 
