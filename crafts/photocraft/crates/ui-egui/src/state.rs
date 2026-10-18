@@ -785,6 +785,17 @@ pub struct ToolOptions {
     /// the tip-stamping default; see `brush_engines_ui`).
     #[serde(default = "crate::brush_engines_ui::default_engine")]
     pub brush_engine: serde_json::Value,
+    /// Painting tools › Snap to Assistants magnetism: how far (document px) a stroke may stray
+    /// from an assistant and still be pulled onto it; 1000 = always (`assistant_ui`).
+    #[serde(default = "thousand")]
+    pub assistant_magnetism: f32,
+    /// Eraser › snap to the painting assistants too (off by default, as in the reference).
+    #[serde(default)]
+    pub eraser_snaps_assistants: bool,
+}
+
+fn thousand() -> f32 {
+    1000.0
 }
 
 fn one_f32() -> f32 {
@@ -986,6 +997,8 @@ impl Default for ToolOptions {
             filter_split_pos: 0.5,
             filter_split_horizontal: false,
             brush_engine: crate::brush_engines_ui::default_engine(),
+            assistant_magnetism: 1000.0,
+            eraser_snaps_assistants: false,
         }
     }
 }

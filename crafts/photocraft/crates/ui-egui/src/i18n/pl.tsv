@@ -4109,3 +4109,26 @@ curves	Smooth	Wygładź
 	Spray	Spray
 	Bristle	Włosie
 	Deform	Deformacja
+	2-Point Perspective	Perspektywa dwupunktowa
+	Assistant colour	Kolor asystenta
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetyzm asystenta: jak daleko pociągnięcie może odbiec od asystenta i nadal zostać przyciągnięte (1000 = zawsze)
+	Assistant opacity	Krycie asystenta
+	Concentric Ellipse	Elipsa współśrodkowa
+	Curvilinear Perspective	Perspektywa krzywoliniowa
+	Eraser snaps	Gumka przyciąga
+	Fish-Eye Point	Punkt rybiego oka
+	Handles	Uchwyty
+	Infinite Ruler	Linijka nieskończona
+	Limit to area	Ogranicz do obszaru
+	Minor subdivisions	Podziały pomocnicze
+	Own colour	Własny kolor
+	Perspective Ellipse	Elipsa perspektywiczna
+	Previews	Podglądy
+	Show the snapped stroke's line while painting	Pokaż linię przyciągniętego pociągnięcia podczas malowania
+	Show this assistant's control handles	Pokaż uchwyty sterujące tego asystenta
+	Spline	Krzywa sklejana
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Pociągnięcia podążają za asystentami malowania (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Dwa dodatkowe uchwyty ograniczają, gdzie asystent rysuje i przyciąga
+	Vertical ruler	Linijka pionowa
+	Painting Assistants	Asystenci malowania
+	Assistant Previews	Podglądy asystentów

@@ -3123,3 +3123,26 @@ curves	Smooth	平滑
 	Bristle	鬃毛
 	Deform	變形
 	Thickness	粗細
+	2-Point Perspective	兩點透視
+	Assistant colour	輔助線顏色
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	輔助線磁性：筆畫偏離輔助線多遠仍會被吸附（1000 = 一律）
+	Assistant opacity	輔助線不透明度
+	Concentric Ellipse	同心橢圓
+	Curvilinear Perspective	曲線透視
+	Eraser snaps	橡皮擦吸附
+	Fish-Eye Point	魚眼點
+	Handles	控制點
+	Infinite Ruler	無限尺規
+	Limit to area	限制到區域
+	Minor subdivisions	次級細分
+	Own colour	單獨顏色
+	Perspective Ellipse	透視橢圓
+	Previews	預覽
+	Show the snapped stroke's line while painting	繪畫時顯示吸附筆畫的線
+	Show this assistant's control handles	顯示此輔助線的控制點
+	Spline	樣條
+	Strokes follow the painting assistants (Ctrl+Shift+L)	筆畫跟隨繪畫輔助線 (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	兩個額外控制點裁剪輔助線繪製和吸附的範圍
+	Vertical ruler	垂直尺規
+	Painting Assistants	繪畫輔助線
+	Assistant Previews	輔助線預覽

@@ -336,6 +336,7 @@ impl DynamicsPreset {
                 Control::StylusWheel => DynInput::Wheel,
                 Control::Rotation => DynInput::Wheel,
                 Control::Velocity => DynInput::Velocity,
+                Control::Perspective => return None,
                 Control::InitialDirection | Control::Direction | Control::DrawingAngle => DynInput::Direction,
                 Control::Random => DynInput::Random,
             })

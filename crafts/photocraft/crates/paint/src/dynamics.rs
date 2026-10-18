@@ -48,6 +48,7 @@ fn lerp_pt(a: &StrokePoint, b: &StrokePoint, f: f64) -> StrokePoint {
         rotation: a.rotation + (b.rotation - a.rotation) * ff,
         wheel: a.wheel + (b.wheel - a.wheel) * ff,
         time: a.time + (b.time - a.time) * f,
+        perspective: a.perspective + (b.perspective - a.perspective) * ff,
     }
 }
 
@@ -70,7 +71,8 @@ pub struct Smoother {
 /// time is the last point's).
 fn window_mean(win: &std::collections::VecDeque<StrokePoint>, last: StrokePoint, sensors: bool) -> StrokePoint {
     let n = win.len().max(1) as f64;
-    let mut m = StrokePoint { x: 0.0, y: 0.0, pressure: 0.0, tilt_x: 0.0, tilt_y: 0.0, rotation: 0.0, wheel: 0.0, time: last.time };
+    let mut m =
+        StrokePoint { x: 0.0, y: 0.0, pressure: 0.0, tilt_x: 0.0, tilt_y: 0.0, rotation: 0.0, wheel: 0.0, time: last.time, perspective: last.perspective };
     for q in win {
         m.x += q.x / n;
         m.y += q.y / n;
@@ -479,6 +481,7 @@ pub fn control_value(c: Control, fade_steps: u32, s: &StepInput) -> f32 {
         Control::StylusWheel => p.wheel.clamp(0.0, 1.0),
         Control::Rotation => (p.rotation.rem_euclid(360.0)) / 360.0,
         Control::Velocity => velocity_value(s.speed),
+        Control::Perspective => p.perspective.clamp(0.0, 1.0),
     }
 }
 
@@ -558,6 +561,7 @@ pub fn control_angle(c: Control, fade_steps: u32, s: &StepInput) -> f32 {
             }
         }
         Control::StylusWheel => 360.0 * p.wheel.clamp(0.0, 1.0),
+        Control::Perspective => 360.0 * p.perspective.clamp(0.0, 1.0),
         Control::Rotation => p.rotation,
         Control::Velocity => 360.0 * velocity_value(s.speed),
         Control::InitialDirection => s.initial_direction.to_degrees(),

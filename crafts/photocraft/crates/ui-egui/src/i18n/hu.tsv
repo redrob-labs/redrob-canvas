@@ -4429,3 +4429,26 @@ cameraRaw	Yellow	Sárga
 	Spray	Spray
 	Bristle	Sörte
 	Deform	Torzítás
+	2-Point Perspective	Kétpontos perspektíva
+	Assistant colour	Segédvonal színe
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Segédvonal mágnesesség: mennyire térhet el egy vonás a segédvonaltól, hogy még odahúzza (1000 = mindig)
+	Assistant opacity	Segédvonal átlátszatlansága
+	Concentric Ellipse	Koncentrikus ellipszis
+	Curvilinear Perspective	Görbevonalú perspektíva
+	Eraser snaps	Radír is illeszkedik
+	Fish-Eye Point	Halszem pont
+	Handles	Fogantyúk
+	Infinite Ruler	Végtelen vonalzó
+	Limit to area	Területre korlátozás
+	Minor subdivisions	Kisebb osztások
+	Own colour	Saját szín
+	Perspective Ellipse	Perspektivikus ellipszis
+	Previews	Előnézetek
+	Show the snapped stroke's line while painting	Az illesztett vonás vonalának mutatása festés közben
+	Show this assistant's control handles	Ennek a segédvonalnak a vezérlőfogantyúi
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	A vonások követik a festési segédvonalakat (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Két további fogantyú vágja, hol rajzol és illeszt a segédvonal
+	Vertical ruler	Függőleges vonalzó
+	Painting Assistants	Festési segédvonalak
+	Assistant Previews	Segédvonal-előnézetek

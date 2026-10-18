@@ -4301,3 +4301,26 @@ layerLabel	No Color	Sem cor
 	Spray	Spray
 	Bristle	Cerdas
 	Deform	Deformar
+	2-Point Perspective	Perspectiva de 2 pontos
+	Assistant colour	Cor do assistente
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetismo do assistente: quanto um traço pode se afastar do assistente e ainda ser atraído (1000 = sempre)
+	Assistant opacity	Opacidade do assistente
+	Concentric Ellipse	Elipse concêntrica
+	Curvilinear Perspective	Perspectiva curvilínea
+	Eraser snaps	Borracha ajusta
+	Fish-Eye Point	Ponto olho de peixe
+	Handles	Alças
+	Infinite Ruler	Régua infinita
+	Limit to area	Limitar à área
+	Minor subdivisions	Subdivisões menores
+	Own colour	Cor própria
+	Perspective Ellipse	Elipse em perspectiva
+	Previews	Visualizações
+	Show the snapped stroke's line while painting	Mostrar a linha do traço ajustado ao pintar
+	Show this assistant's control handles	Mostrar as alças de controle deste assistente
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Os traços seguem os assistentes de pintura (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Duas alças extras recortam onde o assistente desenha e ajusta
+	Vertical ruler	Régua vertical
+	Painting Assistants	Assistentes de pintura
+	Assistant Previews	Visualizações do assistente

@@ -4120,3 +4120,26 @@ navigator	Zoom	Zvětšení
 	Spray	Sprej
 	Bristle	Štětiny
 	Deform	Deformace
+	2-Point Perspective	Dvoubodová perspektiva
+	Assistant colour	Barva pomocníka
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetismus pomocníka: jak daleko se tah může od pomocníka vzdálit a přesto být přitažen (1000 = vždy)
+	Assistant opacity	Krytí pomocníka
+	Concentric Ellipse	Soustředná elipsa
+	Curvilinear Perspective	Křivočará perspektiva
+	Eraser snaps	Guma přichytává
+	Fish-Eye Point	Bod rybího oka
+	Handles	Úchyty
+	Infinite Ruler	Nekonečné pravítko
+	Limit to area	Omezit na oblast
+	Minor subdivisions	Vedlejší dílky
+	Own colour	Vlastní barva
+	Perspective Ellipse	Perspektivní elipsa
+	Previews	Náhledy
+	Show the snapped stroke's line while painting	Zobrazit čáru přichyceného tahu při malování
+	Show this assistant's control handles	Zobrazit ovládací úchyty tohoto pomocníka
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Tahy sledují malířské pomocníky (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Dva další úchyty ořezávají, kde pomocník kreslí a přichytává
+	Vertical ruler	Svislé pravítko
+	Painting Assistants	Malířští pomocníci
+	Assistant Previews	Náhledy pomocníků

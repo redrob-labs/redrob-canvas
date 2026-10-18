@@ -4241,3 +4241,26 @@ cameraData	Lens	Lens
 	Spray	Sprey
 	Bristle	Kıl
 	Deform	Deforme
+	2-Point Perspective	2 Noktalı Perspektif
+	Assistant colour	Yardımcı rengi
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Yardımcı manyetizması: bir vuruşun yardımcıdan ne kadar uzaklaşıp yine de çekilebileceği (1000 = her zaman)
+	Assistant opacity	Yardımcı opaklığı
+	Concentric Ellipse	Eşmerkezli Elips
+	Curvilinear Perspective	Eğrisel Perspektif
+	Eraser snaps	Silgi yaslanır
+	Fish-Eye Point	Balık Gözü Noktası
+	Handles	Tutamaçlar
+	Infinite Ruler	Sonsuz Cetvel
+	Limit to area	Alanla sınırla
+	Minor subdivisions	Küçük alt bölümler
+	Own colour	Kendi rengi
+	Perspective Ellipse	Perspektif Elips
+	Previews	Önizlemeler
+	Show the snapped stroke's line while painting	Boyarken yaslanan vuruşun çizgisini göster
+	Show this assistant's control handles	Bu yardımcının denetim tutamaçlarını göster
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Vuruşlar boyama yardımcılarını izler (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	İki ek tutamaç yardımcının çizdiği ve yaslandığı yeri kırpar
+	Vertical ruler	Dikey Cetvel
+	Painting Assistants	Boyama Yardımcıları
+	Assistant Previews	Yardımcı Önizlemeleri

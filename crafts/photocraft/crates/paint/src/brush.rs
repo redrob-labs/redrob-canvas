@@ -47,6 +47,9 @@ pub enum Control {
     DrawingAngle,
     /// A fresh random value per dab.
     Random,
+    /// The perspective sensor: a perspective grid assistant's scale at the point (1 near, smaller
+    /// as the plane recedes; 1 without a grid).
+    Perspective,
 }
 
 /// How the sensors of one dynamic combine into its value.

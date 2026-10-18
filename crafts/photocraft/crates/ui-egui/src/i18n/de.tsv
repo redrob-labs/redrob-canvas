@@ -3581,3 +3581,26 @@ curves	Smooth	Glätten
 	Random Offset	Zufallsversatz
 	Ink Amount	Tintenmenge
 	Counter	Zähler
+	2-Point Perspective	2-Punkt-Perspektive
+	Assistant colour	Assistentenfarbe
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Assistentenmagnetismus: wie weit ein Strich vom Assistenten abweichen darf und trotzdem angezogen wird (1000 = immer)
+	Assistant opacity	Assistentendeckkraft
+	Concentric Ellipse	Konzentrische Ellipse
+	Curvilinear Perspective	Kurvilineare Perspektive
+	Eraser snaps	Radierer rastet ein
+	Fish-Eye Point	Fischaugenpunkt
+	Handles	Griffe
+	Infinite Ruler	Unendliches Lineal
+	Limit to area	Auf Bereich begrenzen
+	Minor subdivisions	Nebenunterteilungen
+	Own colour	Eigene Farbe
+	Perspective Ellipse	Perspektivische Ellipse
+	Previews	Vorschauen
+	Show the snapped stroke's line while painting	Linie des eingerasteten Strichs beim Malen anzeigen
+	Show this assistant's control handles	Steuergriffe dieses Assistenten anzeigen
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Striche folgen den Malassistenten (Strg+Umschalt+L)
+	Two extra handles clip where the assistant draws and snaps	Zwei zusätzliche Griffe begrenzen, wo der Assistent zeichnet und einrastet
+	Vertical ruler	Vertikales Lineal
+	Painting Assistants	Malassistenten
+	Assistant Previews	Assistentenvorschauen

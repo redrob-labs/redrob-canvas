@@ -235,6 +235,9 @@ pub struct DocState {
     /// (tool state, not history).
     pub assistants: Vec<redrob_photo_paint::assistants::Assistant>,
     pub assistants_snap: bool,
+    /// Each assistant's look and area (aligned with `assistants`), and the global look.
+    pub assistant_styles: Vec<redrob_photo_paint::assistants::AssistantStyle>,
+    pub assistant_display: redrob_photo_paint::assistants::AssistantDisplay,
     /// Layers panel: layers whose effects list is collapsed under their row (the fx triangle;
     /// view state, not history). Effects lists start open.
     pub fx_collapsed: Vec<LayerId>,
@@ -316,6 +319,8 @@ impl DocState {
             wrap_around: false,
             assistants: Vec::new(),
             assistants_snap: true,
+            assistant_styles: Vec::new(),
+            assistant_display: Default::default(),
             fx_collapsed: Vec::new(),
             show_only: None,
             floating: None,

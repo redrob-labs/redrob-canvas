@@ -4210,3 +4210,26 @@ curves	Smooth	Згладити
 	Spray	Розпилювач
 	Bristle	Щетина
 	Deform	Деформація
+	2-Point Perspective	Двоточкова перспектива
+	Assistant colour	Колір помічника
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Магнетизм помічника: наскільки штрих може відхилитися від помічника і все ж притягнутися до нього (1000 = завжди)
+	Assistant opacity	Непрозорість помічника
+	Concentric Ellipse	Концентричний еліпс
+	Curvilinear Perspective	Криволінійна перспектива
+	Eraser snaps	Гумка притягується
+	Fish-Eye Point	Точка «риб'яче око»
+	Handles	Маркери
+	Infinite Ruler	Нескінченна лінійка
+	Limit to area	Обмежити областю
+	Minor subdivisions	Дрібні поділки
+	Own colour	Власний колір
+	Perspective Ellipse	Еліпс у перспективі
+	Previews	Попередній перегляд
+	Show the snapped stroke's line while painting	Показувати лінію притягнутого штриха під час малювання
+	Show this assistant's control handles	Показувати маркери цього помічника
+	Spline	Сплайн
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Штрихи слідують помічникам малювання (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Два додаткові маркери обмежують, де помічник малює й притягує
+	Vertical ruler	Вертикальна лінійка
+	Painting Assistants	Помічники малювання
+	Assistant Previews	Попередній перегляд помічників

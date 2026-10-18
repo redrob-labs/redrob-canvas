@@ -5033,3 +5033,26 @@ navigator	Zoom	Zoom
 	Random Offset	Desfase aleatorio
 	Ink Amount	Cantidad de tinta
 	Counter	Contador
+	2-Point Perspective	Perspectiva de 2 puntos
+	Assistant colour	Color del asistente
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetismo del asistente: cuánto puede alejarse un trazo del asistente y aun así atraerse a él (1000 = siempre)
+	Assistant opacity	Opacidad del asistente
+	Concentric Ellipse	Elipse concéntrica
+	Curvilinear Perspective	Perspectiva curvilínea
+	Eraser snaps	El borrador se ajusta
+	Fish-Eye Point	Punto ojo de pez
+	Handles	Manejadores
+	Infinite Ruler	Regla infinita
+	Limit to area	Limitar a un área
+	Minor subdivisions	Subdivisiones menores
+	Own colour	Color propio
+	Perspective Ellipse	Elipse en perspectiva
+	Previews	Previsualizaciones
+	Show the snapped stroke's line while painting	Mostrar la línea del trazo ajustado al pintar
+	Show this assistant's control handles	Mostrar los manejadores de control de este asistente
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Los trazos siguen a los asistentes de pintura (Ctrl+Mayús+L)
+	Two extra handles clip where the assistant draws and snaps	Dos manejadores adicionales recortan dónde el asistente dibuja y ajusta
+	Vertical ruler	Regla vertical
+	Painting Assistants	Asistentes de pintura
+	Assistant Previews	Previsualizaciones del asistente

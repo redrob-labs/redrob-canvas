@@ -3590,3 +3590,26 @@ curves	Smooth	Lisser
 	Ink Amount	Quantité d'encre
 	Counter	Compteur
 	Thickness	Épaisseur
+	2-Point Perspective	Perspective à 2 points
+	Assistant colour	Couleur de l'assistant
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnétisme de l'assistant : distance à laquelle un trait peut s'écarter de l'assistant tout en y étant attiré (1000 = toujours)
+	Assistant opacity	Opacité de l'assistant
+	Concentric Ellipse	Ellipse concentrique
+	Curvilinear Perspective	Perspective curviligne
+	Eraser snaps	La gomme s'aligne
+	Fish-Eye Point	Point fisheye
+	Handles	Poignées
+	Infinite Ruler	Règle infinie
+	Limit to area	Limiter à une zone
+	Minor subdivisions	Subdivisions mineures
+	Own colour	Couleur propre
+	Perspective Ellipse	Ellipse en perspective
+	Previews	Aperçus
+	Show the snapped stroke's line while painting	Afficher la ligne du trait aligné pendant la peinture
+	Show this assistant's control handles	Afficher les poignées de contrôle de cet assistant
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Les traits suivent les assistants de peinture (Ctrl+Maj+L)
+	Two extra handles clip where the assistant draws and snaps	Deux poignées supplémentaires délimitent où l'assistant dessine et aligne
+	Vertical ruler	Règle verticale
+	Painting Assistants	Assistants de peinture
+	Assistant Previews	Aperçus des assistants

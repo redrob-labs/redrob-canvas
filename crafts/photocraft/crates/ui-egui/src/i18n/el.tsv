@@ -4211,3 +4211,26 @@ curves	Smooth	Εξομάλυνση
 	Spray	Σπρέι
 	Bristle	Τρίχες
 	Deform	Παραμόρφωση
+	2-Point Perspective	Προοπτική 2 σημείων
+	Assistant colour	Χρώμα βοηθού
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Μαγνητισμός βοηθού: πόσο μπορεί να απομακρυνθεί μια πινελιά από τον βοηθό και να έλκεται ακόμη (1000 = πάντα)
+	Assistant opacity	Αδιαφάνεια βοηθού
+	Concentric Ellipse	Ομόκεντρη έλλειψη
+	Curvilinear Perspective	Καμπυλόγραμμη προοπτική
+	Eraser snaps	Η γόμα κουμπώνει
+	Fish-Eye Point	Σημείο fisheye
+	Handles	Λαβές
+	Infinite Ruler	Άπειρος χάρακας
+	Limit to area	Περιορισμός σε περιοχή
+	Minor subdivisions	Δευτερεύουσες υποδιαιρέσεις
+	Own colour	Δικό του χρώμα
+	Perspective Ellipse	Έλλειψη σε προοπτική
+	Previews	Προεπισκοπήσεις
+	Show the snapped stroke's line while painting	Εμφάνιση της γραμμής της κουμπωμένης πινελιάς κατά τη ζωγραφική
+	Show this assistant's control handles	Εμφάνιση λαβών ελέγχου αυτού του βοηθού
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Οι πινελιές ακολουθούν τους βοηθούς ζωγραφικής (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Δύο επιπλέον λαβές περικόπτουν όπου ο βοηθός σχεδιάζει και κουμπώνει
+	Vertical ruler	Κάθετος χάρακας
+	Painting Assistants	Βοηθοί ζωγραφικής
+	Assistant Previews	Προεπισκοπήσεις βοηθών

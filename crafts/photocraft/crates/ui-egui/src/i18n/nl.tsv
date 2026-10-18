@@ -4271,3 +4271,26 @@ curves	Smooth	Vloeiend maken
 	Spray	Spuitbus
 	Bristle	Haren
 	Deform	Vervormen
+	2-Point Perspective	2-puntsperspectief
+	Assistant colour	Assistentkleur
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Assistentmagnetisme: hoe ver een streek van een assistent mag afwijken en toch wordt aangetrokken (1000 = altijd)
+	Assistant opacity	Assistentdekking
+	Concentric Ellipse	Concentrische ellips
+	Curvilinear Perspective	Kromlijnig perspectief
+	Eraser snaps	Gum magnetisch
+	Fish-Eye Point	Fisheye-punt
+	Handles	Grepen
+	Infinite Ruler	Oneindige liniaal
+	Limit to area	Beperken tot gebied
+	Minor subdivisions	Kleine onderverdelingen
+	Own colour	Eigen kleur
+	Perspective Ellipse	Perspectiefellips
+	Previews	Voorvertoningen
+	Show the snapped stroke's line while painting	Lijn van de magnetische streek tonen tijdens het schilderen
+	Show this assistant's control handles	Besturingsgrepen van deze assistent tonen
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Streken volgen de tekenassistenten (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Twee extra grepen begrenzen waar de assistent tekent en magnetisch is
+	Vertical ruler	Verticale liniaal
+	Painting Assistants	Tekenassistenten
+	Assistant Previews	Assistentvoorvertoningen

@@ -3512,3 +3512,26 @@ curves	Smooth	Haluskan
 	Bristle	Bulu kuas
 	Deform	Deformasi
 	Thickness	Ketebalan
+	2-Point Perspective	Perspektif 2 titik
+	Assistant colour	Warna asisten
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetisme asisten: sejauh mana sapuan boleh menyimpang dari asisten namun tetap ditarik (1000 = selalu)
+	Assistant opacity	Opasitas asisten
+	Concentric Ellipse	Elips konsentris
+	Curvilinear Perspective	Perspektif kurvilinear
+	Eraser snaps	Penghapus menempel
+	Fish-Eye Point	Titik mata ikan
+	Handles	Pegangan
+	Infinite Ruler	Penggaris tak hingga
+	Limit to area	Batasi ke area
+	Minor subdivisions	Subdivisi minor
+	Own colour	Warna sendiri
+	Perspective Ellipse	Elips perspektif
+	Previews	Pratinjau
+	Show the snapped stroke's line while painting	Tampilkan garis sapuan yang ditempelkan saat melukis
+	Show this assistant's control handles	Tampilkan pegangan kontrol asisten ini
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Sapuan mengikuti asisten melukis (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Dua pegangan tambahan memotong tempat asisten menggambar dan menempel
+	Vertical ruler	Penggaris vertikal
+	Painting Assistants	Asisten melukis
+	Assistant Previews	Pratinjau asisten

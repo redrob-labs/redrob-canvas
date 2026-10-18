@@ -3205,3 +3205,26 @@ curves	Smooth	平滑
 	Ink Amount	墨水量
 	Counter	计数器
 	Thickness	粗细
+	2-Point Perspective	两点透视
+	Assistant colour	辅助线颜色
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	辅助线磁性：笔画偏离辅助线多远仍会被吸附（1000 = 始终）
+	Assistant opacity	辅助线不透明度
+	Concentric Ellipse	同心椭圆
+	Curvilinear Perspective	曲线透视
+	Eraser snaps	橡皮擦吸附
+	Fish-Eye Point	鱼眼点
+	Handles	控制柄
+	Infinite Ruler	无限标尺
+	Limit to area	限制到区域
+	Minor subdivisions	次级细分
+	Own colour	单独颜色
+	Perspective Ellipse	透视椭圆
+	Previews	预览
+	Show the snapped stroke's line while painting	绘画时显示吸附笔画的线
+	Show this assistant's control handles	显示此辅助线的控制柄
+	Spline	样条
+	Strokes follow the painting assistants (Ctrl+Shift+L)	笔画跟随绘画辅助线 (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	两个额外控制柄裁剪辅助线绘制和吸附的范围
+	Vertical ruler	垂直标尺
+	Painting Assistants	绘画辅助线
+	Assistant Previews	辅助线预览

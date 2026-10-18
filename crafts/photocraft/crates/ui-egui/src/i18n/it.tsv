@@ -5189,3 +5189,26 @@ shape	Appearance	Aspetto
 	Random Offset	Scostamento casuale
 	Ink Amount	Quantità inchiostro
 	Counter	Contatore
+	2-Point Perspective	Prospettiva a 2 punti
+	Assistant colour	Colore assistente
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Magnetismo assistente: quanto un tratto può allontanarsi dall'assistente ed essere comunque attratto (1000 = sempre)
+	Assistant opacity	Opacità assistente
+	Concentric Ellipse	Ellisse concentrica
+	Curvilinear Perspective	Prospettiva curvilinea
+	Eraser snaps	La gomma si aggancia
+	Fish-Eye Point	Punto fisheye
+	Handles	Maniglie
+	Infinite Ruler	Righello infinito
+	Limit to area	Limita all'area
+	Minor subdivisions	Suddivisioni minori
+	Own colour	Colore proprio
+	Perspective Ellipse	Ellisse in prospettiva
+	Previews	Anteprime
+	Show the snapped stroke's line while painting	Mostra la linea del tratto agganciato mentre si dipinge
+	Show this assistant's control handles	Mostra le maniglie di controllo di questo assistente
+	Spline	Spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	I tratti seguono gli assistenti di pittura (Ctrl+Maiusc+L)
+	Two extra handles clip where the assistant draws and snaps	Due maniglie extra ritagliano dove l'assistente disegna e si aggancia
+	Vertical ruler	Righello verticale
+	Painting Assistants	Assistenti di pittura
+	Assistant Previews	Anteprime assistenti

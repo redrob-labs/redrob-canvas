@@ -785,6 +785,8 @@ pub static CATALOG: &[(&[&str], &str, Option<&str>, &str)] = &[
     (&["View", "Show"], "Notes", None, "view.show.notes"),
     (&["View", "Show"], "Pixel Grid", None, "view.show.pixelGrid"),
     (&["View", "Show"], "Brush Preview", None, "view.show.brushPreview"),
+    (&["View", "Show"], "Painting Assistants", None, "view.show.paintingAssistants"),
+    (&["View", "Show"], "Assistant Previews", None, "view.show.assistantPreviews"),
     (&["View", "Show"], "Mesh", None, "view.show.mesh"),
     (&["View", "Show"], "Edit Pins", None, "view.show.editPins"),
     (&["View", "Show"], "---", None, "---"),

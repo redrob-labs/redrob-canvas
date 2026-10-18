@@ -848,6 +848,9 @@ fn checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
     if let Some(c) = crate::timeline_ui::checked(app, id) {
         return Some(c);
     }
+    if let Some(c) = crate::assistant_ui::checked(app, id) {
+        return Some(c);
+    }
     if let Some(c) = crate::type_panels_ui::checked(app, id) {
         return Some(c);
     }

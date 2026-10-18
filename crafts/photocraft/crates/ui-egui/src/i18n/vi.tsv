@@ -3999,3 +3999,26 @@ curves	Smooth	Làm mượt
 	Spray	Phun
 	Bristle	Lông cọ
 	Deform	Biến dạng
+	2-Point Perspective	Phối cảnh 2 điểm
+	Assistant colour	Màu trợ lý
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Lực hút trợ lý: nét vẽ có thể lệch khỏi trợ lý bao xa mà vẫn bị hút vào (1000 = luôn luôn)
+	Assistant opacity	Độ mờ trợ lý
+	Concentric Ellipse	Elip đồng tâm
+	Curvilinear Perspective	Phối cảnh cong
+	Eraser snaps	Tẩy cũng bám
+	Fish-Eye Point	Điểm mắt cá
+	Handles	Tay cầm
+	Infinite Ruler	Thước vô hạn
+	Limit to area	Giới hạn trong vùng
+	Minor subdivisions	Vạch chia phụ
+	Own colour	Màu riêng
+	Perspective Ellipse	Elip phối cảnh
+	Previews	Xem trước
+	Show the snapped stroke's line while painting	Hiện đường của nét vẽ đã bám khi tô
+	Show this assistant's control handles	Hiện tay cầm điều khiển của trợ lý này
+	Spline	Đường spline
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Nét vẽ đi theo trợ lý vẽ (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Hai tay cầm thêm giới hạn nơi trợ lý vẽ và bám
+	Vertical ruler	Thước dọc
+	Painting Assistants	Trợ lý vẽ
+	Assistant Previews	Xem trước trợ lý

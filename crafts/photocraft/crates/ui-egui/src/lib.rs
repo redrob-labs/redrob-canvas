@@ -32,6 +32,7 @@ pub mod blur_pins;
 mod brand;
 pub(crate) mod brush_cursor;
 pub mod brush_engines_ui;
+pub mod brush_extras_ui;
 pub mod brush_panel;
 pub mod brush_picker;
 pub mod brush_preset_dialog;

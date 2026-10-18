@@ -3491,3 +3491,26 @@ curves	Smooth	Сгладить
 	Bristle	Щетина
 	Deform	Деформация
 	Thickness	Толщина
+	2-Point Perspective	Двухточечная перспектива
+	Assistant colour	Цвет ассистента
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	Магнетизм ассистента: насколько штрих может отклониться от ассистента и всё же притянуться к нему (1000 = всегда)
+	Assistant opacity	Непрозрачность ассистента
+	Concentric Ellipse	Концентрический эллипс
+	Curvilinear Perspective	Криволинейная перспектива
+	Eraser snaps	Ластик притягивается
+	Fish-Eye Point	Точка «рыбий глаз»
+	Handles	Маркеры
+	Infinite Ruler	Бесконечная линейка
+	Limit to area	Ограничить областью
+	Minor subdivisions	Мелкие деления
+	Own colour	Свой цвет
+	Perspective Ellipse	Эллипс в перспективе
+	Previews	Предпросмотр
+	Show the snapped stroke's line while painting	Показывать линию притянутого штриха при рисовании
+	Show this assistant's control handles	Показывать маркеры этого ассистента
+	Spline	Сплайн
+	Strokes follow the painting assistants (Ctrl+Shift+L)	Штрихи следуют ассистентам рисования (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	Два дополнительных маркера ограничивают, где ассистент рисует и притягивает
+	Vertical ruler	Вертикальная линейка
+	Painting Assistants	Ассистенты рисования
+	Assistant Previews	Предпросмотр ассистентов

@@ -65,11 +65,14 @@ pub struct StrokePoint {
     pub wheel: f32,
     /// Timestamp in milliseconds (airbrush build-up and smoothing catch-up).
     pub time: f64,
+    /// The perspective sensor's reading at this point, 0..1: how large things are here relative
+    /// to the near edge of a perspective grid assistant (1 without one).
+    pub perspective: f32,
 }
 
 impl Default for StrokePoint {
     fn default() -> Self {
-        Self { x: 0.0, y: 0.0, pressure: 1.0, tilt_x: 0.0, tilt_y: 0.0, rotation: 0.0, wheel: 1.0, time: 0.0 }
+        Self { x: 0.0, y: 0.0, pressure: 1.0, tilt_x: 0.0, tilt_y: 0.0, rotation: 0.0, wheel: 1.0, time: 0.0, perspective: 1.0 }
     }
 }
 

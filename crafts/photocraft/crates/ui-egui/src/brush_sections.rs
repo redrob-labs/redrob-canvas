@@ -13,13 +13,14 @@ use crate::brush_preview;
 use crate::theme::{self, Tokens};
 use crate::widgets;
 
-pub const CONTROLS: [(Control, &str); 11] = [
+pub const CONTROLS: [(Control, &str); 12] = [
     (Control::Off, "Off"),
     (Control::Fade, "Fade"),
     (Control::PenPressure, "Pen Pressure"),
     (Control::PenTilt, "Pen Tilt"),
     (Control::StylusWheel, "Stylus Wheel"),
     (Control::Rotation, "Rotation"),
+    (Control::Perspective, "Perspective"),
     (Control::Velocity, "Velocity"),
     (Control::DrawingAngle, "Drawing Angle"),
     (Control::Random, "Random"),
@@ -28,7 +29,7 @@ pub const CONTROLS: [(Control, &str); 11] = [
 ];
 
 /// How many of [`CONTROLS`] have a 0..1 value (the rest are the angle-only direction controls).
-pub const SCALAR_CONTROLS: usize = 9;
+pub const SCALAR_CONTROLS: usize = 10;
 
 const COMBINES: [(SensorCombine, &str); 5] = [
     (SensorCombine::Multiply, "Multiply"),
@@ -98,6 +99,7 @@ pub(crate) fn takes_curve(control: Control, angle: bool) -> bool {
                 | Control::PenTilt
                 | Control::StylusWheel
                 | Control::Rotation
+                | Control::Perspective
                 | Control::Velocity
                 | Control::DrawingAngle
                 | Control::Random

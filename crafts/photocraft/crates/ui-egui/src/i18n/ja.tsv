@@ -4252,3 +4252,26 @@ curves	Smooth	スムーズ
 	Random Offset	ランダムオフセット
 	Ink Amount	インク量
 	Counter	カウンター
+	2-Point Perspective	2点透視
+	Assistant colour	アシスタントの色
+	Assistant magnetism: how far a stroke may stray from an assistant and still be pulled onto it (1000 = always)	アシスタントの磁力: ストロークがアシスタントから離れていても引き寄せられる距離 (1000 = 常に)
+	Assistant opacity	アシスタントの不透明度
+	Concentric Ellipse	同心楕円
+	Curvilinear Perspective	曲線透視
+	Eraser snaps	消しゴムもスナップ
+	Fish-Eye Point	魚眼ポイント
+	Handles	ハンドル
+	Infinite Ruler	無限定規
+	Limit to area	領域に限定
+	Minor subdivisions	補助目盛り
+	Own colour	固有の色
+	Perspective Ellipse	透視楕円
+	Previews	プレビュー
+	Show the snapped stroke's line while painting	ペイント中にスナップしたストロークの線を表示
+	Show this assistant's control handles	このアシスタントのコントロールハンドルを表示
+	Spline	スプライン
+	Strokes follow the painting assistants (Ctrl+Shift+L)	ストロークがペイントアシスタントに沿う (Ctrl+Shift+L)
+	Two extra handles clip where the assistant draws and snaps	2つの追加ハンドルで、アシスタントが描画・スナップする範囲を切り取る
+	Vertical ruler	垂直定規
+	Painting Assistants	ペイントアシスタント
+	Assistant Previews	アシスタントのプレビュー
