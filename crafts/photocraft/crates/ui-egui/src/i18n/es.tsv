@@ -5117,3 +5117,79 @@ navigator	Zoom	Zoom
 	No outline	Sin contorno
 	Instant preview	Previsualización instantánea
 	Instant preview megapixels	Megapíxeles de previsualización instantánea
+	Add…	Añadir…
+	Auto update	Actualización automática
+	Canvas input profile	Perfil de entrada del lienzo
+	Clean up	Limpieza
+	Clear key strokes	Borrar trazos clave
+	Colorize Mask	Máscara de coloreado
+	Device	Dispositivo
+	Draw in the area below to test pressure, tilt and rotation	Dibuja en el área inferior para probar presión, inclinación y rotación
+	Edge detection	Detección de bordes
+	Edit key strokes	Editar trazos clave
+	Embed	Incrustar
+	Fill only inside the line art's pixels	Rellenar solo dentro de los píxeles del dibujo lineal
+	Gap close	Cerrar huecos
+	Input API	API de entrada
+	Keep aspect	Mantener proporción
+	Limit to layer	Limitar a la capa
+	Next Preset	Siguiente ajuste preestablecido
+	No samples yet	Aún no hay muestras
+	Opacity +	Opacidad +
+	Opacity -	Opacidad -
+	Pasted image	Imagen pegada
+	Peak pressure	Presión máxima
+	Previous Preset	Ajuste preestablecido anterior
+	Reference Images	Imágenes de referencia
+	Rotate Left	Girar a la izquierda
+	Rotate Right	Girar a la derecha
+	Sample rate	Frecuencia de muestreo
+	Screen mapping	Asignación de pantalla
+	Show output	Mostrar resultado
+	Show the key strokes over the canvas	Mostrar los trazos clave sobre el lienzo
+	Show with all tools	Mostrar con todas las herramientas
+	Size +	Tamaño +
+	Size -	Tamaño -
+	Speed source	Origen de velocidad
+	Store the pixels in the set; off, link to the file	Guardar los píxeles en el conjunto; desactivado, enlazar al archivo
+	Tablet Settings…	Ajustes de la tableta…
+	Tablet Tester	Probador de tableta
+	The clipboard is not available	El portapapeles no está disponible
+	The next key strokes keep their regions clear	Los siguientes trazos clave mantienen sus regiones transparentes
+	Tilt offset	Desfase de inclinación
+	Touch Docker	Panel táctil
+	Transparent key	Clave transparente
+	Canvas Input	Entrada del lienzo
+	Canvas Input…	Entrada del lienzo…
+	Pan key	Tecla de desplazamiento
+	Zoom in key	Tecla de acercar
+	Zoom out key	Tecla de alejar
+	Rotate key	Tecla de rotación
+	Middle button	Botón central
+	Stylus button	Botón del lápiz
+	Pick modifier	Modificador de muestreo
+	Wheel	Rueda
+	Shift wheel rotates	Mayús+rueda gira
+	Trackpad	Trackpad
+	Pick	Muestrear
+	No action	Sin acción
+	No pick	Sin muestreo
+	Scroll	Desplazar
+	Rotate View (hold)	Rotar vista (mantener)
+	Tilt offset x	Desfase de inclinación X
+	Tilt offset y	Desfase de inclinación Y
+	Tablet speed source	Origen de velocidad de la tableta
+	Tablet api	API de la tableta
+	Tablet screen mapping	Asignación de pantalla de la tableta
+	Pointer	Puntero
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Tipo de cuadrícula
+	Isometric left angle	Ángulo izquierdo isométrico
+	Isometric right angle	Ángulo derecho isométrico
+	Isometric vertical lines	Líneas verticales isométricas
+	Rectangular	Rectangular
+	Isometric	Isométrica
+	Node	Nodo
+	Extension	Extensión
+	Intersection	Intersección

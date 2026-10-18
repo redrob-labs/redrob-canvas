@@ -4204,3 +4204,79 @@ navigator	Zoom	Zvětšení
 	No outline	Bez obrysu
 	Instant preview	Okamžitý náhled
 	Instant preview megapixels	Megapixely okamžitého náhledu
+	Add…	Přidat…
+	Auto update	Automatická aktualizace
+	Canvas input profile	Profil vstupu plátna
+	Clean up	Vyčištění
+	Clear key strokes	Smazat klíčové tahy
+	Colorize Mask	Kolorovací maska
+	Device	Zařízení
+	Draw in the area below to test pressure, tilt and rotation	Kreslete do oblasti níže a otestujte tlak, náklon a rotaci
+	Edge detection	Detekce hran
+	Edit key strokes	Upravit klíčové tahy
+	Embed	Vložit
+	Fill only inside the line art's pixels	Vyplnit jen uvnitř pixelů kresby
+	Gap close	Uzavřít mezery
+	Input API	Vstupní API
+	Keep aspect	Zachovat poměr
+	Limit to layer	Omezit na vrstvu
+	Next Preset	Další předvolba
+	No samples yet	Zatím žádné vzorky
+	Opacity +	Krytí +
+	Opacity -	Krytí -
+	Pasted image	Vložený obrázek
+	Peak pressure	Maximální tlak
+	Previous Preset	Předchozí předvolba
+	Reference Images	Referenční obrázky
+	Rotate Left	Otočit vlevo
+	Rotate Right	Otočit vpravo
+	Sample rate	Vzorkovací frekvence
+	Screen mapping	Mapování obrazovky
+	Show output	Zobrazit výstup
+	Show the key strokes over the canvas	Zobrazit klíčové tahy nad plátnem
+	Show with all tools	Zobrazit se všemi nástroji
+	Size +	Velikost +
+	Size -	Velikost -
+	Speed source	Zdroj rychlosti
+	Store the pixels in the set; off, link to the file	Uložit pixely do sady; vypnuto: odkaz na soubor
+	Tablet Settings…	Nastavení tabletu…
+	Tablet Tester	Tester tabletu
+	The clipboard is not available	Schránka není k dispozici
+	The next key strokes keep their regions clear	Další klíčové tahy nechají své oblasti průhledné
+	Tilt offset	Posun náklonu
+	Touch Docker	Dotykový panel
+	Transparent key	Průhledný klíč
+	Canvas Input	Vstup plátna
+	Canvas Input…	Vstup plátna…
+	Pan key	Klávesa posunu
+	Zoom in key	Klávesa přiblížení
+	Zoom out key	Klávesa oddálení
+	Rotate key	Klávesa otáčení
+	Middle button	Prostřední tlačítko
+	Stylus button	Tlačítko pera
+	Pick modifier	Modifikátor výběru barvy
+	Wheel	Kolečko
+	Shift wheel rotates	Shift+kolečko otáčí
+	Trackpad	Trackpad
+	Pick	Výběr barvy
+	No action	Žádná akce
+	No pick	Bez výběru barvy
+	Scroll	Posouvání
+	Rotate View (hold)	Otočit pohled (držet)
+	Tilt offset x	Posun náklonu X
+	Tilt offset y	Posun náklonu Y
+	Tablet speed source	Zdroj rychlosti tabletu
+	Tablet api	API tabletu
+	Tablet screen mapping	Mapování obrazovky tabletu
+	Pointer	Ukazatel
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Typ mřížky
+	Isometric left angle	Izometrický levý úhel
+	Isometric right angle	Izometrický pravý úhel
+	Isometric vertical lines	Izometrické svislé čáry
+	Rectangular	Obdélníková
+	Isometric	Izometrická
+	Node	Uzel
+	Extension	Prodloužení
+	Intersection	Průsečík

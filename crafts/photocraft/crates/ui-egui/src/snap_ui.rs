@@ -67,6 +67,9 @@ pub fn options(app: &PhotocraftApp) -> SnapOptions {
         equidistance: st.equidistance,
         grid_step,
         grid_offset,
+        node: st.node,
+        extension: st.extension,
+        intersection: st.intersection,
     }
 }
 
@@ -97,6 +100,9 @@ fn build(app: &PhotocraftApp, exclude: &[LayerId], smart: bool) -> SnapTargets {
             equidistance: app.ui.view.snap_to.equidistance,
             grid_step: [0.0; 2],
             grid_offset: [0.0; 2],
+            node: false,
+            extension: false,
+            intersection: false,
         }
     } else {
         options(app)

@@ -1702,8 +1702,8 @@ name = "Colorize mask tool"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/colorize_mask.html"
 behaviour = "Key strokes of colour inside a line-art layer are propagated into regions; edit key strokes, show output, limit to layer bounds, edge detection, gap close hint, clean up, transparent key."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/colorize.rs, crafts/photocraft/crates/engine/src/colorize_cmds.rs, crafts/photocraft/crates/ui-egui/src/colorize_ui.rs"
 gap = ""
 priority = 2
 
@@ -1714,8 +1714,8 @@ name = "Reference images tool"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/reference_images_tool.html"
 behaviour = "Place images on the canvas as floating references: add, paste, load/save set, keep aspect, opacity, saturation, embed or link."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/reference_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
 gap = ""
 priority = 2
 
@@ -1882,9 +1882,9 @@ name = "Canvas input profiles"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/canvas_input_settings.html"
 behaviour = "Every canvas gesture (pan, zoom, rotate, pick, resize) is remappable to mouse/key/stylus combos in profiles."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/shortcut_sets.rs"
-gap = "keyboard shortcut sets; mouse gesture mapping fixed"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/ui-egui/src/hold_keys.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1894,9 +1894,9 @@ name = "Tablet settings and tester"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/tablet_settings.html"
 behaviour = "Pressure curve, tilt offset, speed source, input API (WinTab / Pointer), screen mapping, tablet tester."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/tablet/src/lib.rs"
-gap = "pressure curve and raw tablet events; no tester or mapping"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/tablet_settings.rs, crafts/photocraft/crates/ui-egui/src/stylus.rs, crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/ui-egui/src/menus.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1906,8 +1906,8 @@ name = "Touch docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/touch_docker.html"
 behaviour = "Big-button panel for tablets: file, undo, opacity, size, rotation, zoom, preset switching."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/touch_docker_ui.rs, crafts/photocraft/crates/ui-egui/src/menus.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
 gap = ""
 priority = 3
 
@@ -1918,9 +1918,9 @@ name = "Snapping"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/snapping.html"
 behaviour = "Snap tools to grid, guides, orthogonal, node, extension, intersection, bounding box, image bounds, image centre, pixel."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/snap.rs"
-gap = "guides, grid, layers, bounds, slices; no node/extension/intersection"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/snap.rs, crafts/photocraft/crates/ui-egui/src/snap_ui.rs, crafts/photocraft/crates/ui-egui/src/view_cmds.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -1930,9 +1930,9 @@ name = "Grids and guides docker"
 reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/grids_and_guides.html"
 behaviour = "Rectangle or isometric grid with spacing, subdivision, styles, offset; guides with lock and snap."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/guide_layout_ui.rs"
-gap = "rectangular grid and guides; no isometric grid"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/iso_grid.rs, crafts/photocraft/crates/ui-egui/src/rulers.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+gap = ""
 priority = 2
 
 [[feature]]

@@ -101,6 +101,9 @@ choice!(
     RightClickPaint { BrushPicker = "brushPicker", Erase = "erase", PopupPalette = "popupPalette" } default BrushPicker
 );
 choice!(OtherCursor { Standard = "standard", Precise = "precise" } default Standard);
+choice!(GridType { Rectangular = "rectangular", Isometric = "isometric" } default Rectangular);
+choice!(TabletSpeedSource { Pointer = "pointer", Tablet = "tablet" } default Pointer);
+choice!(TabletApi { Auto = "auto", WinTab = "winTab", WindowsPointer = "windowsPointer" } default Auto);
 choice!(
     /// The painting cursor's pointer shape, independent of the brush outline: the tool's own
     /// icon (then `PaintingCursor` decides), an arrow, a crosshair, a small dot, no pointer at
@@ -394,6 +397,16 @@ pub struct Tools {
     /// Pen pressure response: `[input, output]` control points in 0..1 that the pen's pressure
     /// passes through before it reaches any brush ([`PressureCurve`]). Linear by default.
     pub pressure_curve: Vec<[f32; 2]>,
+    /// Pen tablets: degrees added to the reported tilt, so a pen held askew reads level.
+    pub tilt_offset_x: f32,
+    pub tilt_offset_y: f32,
+    /// Where stroke speed comes from (the pointer events, or the tablet's own timing).
+    pub tablet_speed_source: TabletSpeedSource,
+    /// Which API reads the pen on Windows (WinTab or Windows Pointer; Auto picks).
+    pub tablet_api: TabletApi,
+    /// The part of the screen the tablet's surface covers: `x,y,w,h` as fractions (empty = the
+    /// whole screen). The tablet tester shows the mapping in effect.
+    pub tablet_screen_mapping: String,
     /// Arrow-key nudges of one thing (the selected layers, the selection outline, the Free
     /// Transform box) that follow each other within [`Tools::nudge_bundle_pause_ms`] are one
     /// History state (#2259). Off: every press is a state.
@@ -419,6 +432,11 @@ impl Default for Tools {
             right_click_with_painting_tools: RightClickPaint::BrushPicker,
             use_tablet_pressure: true,
             pressure_curve: vec![[0.0, 0.0], [1.0, 1.0]],
+            tilt_offset_x: 0.0,
+            tilt_offset_y: 0.0,
+            tablet_speed_source: TabletSpeedSource::Pointer,
+            tablet_api: TabletApi::Auto,
+            tablet_screen_mapping: String::new(),
             bundle_nudges: true,
             nudge_bundle_pause_ms: 1000,
         }
@@ -771,6 +789,12 @@ pub struct GuidesGridAndSlices {
     pub subdivisions: u32,
     pub slice_color: String,
     pub show_slice_numbers: bool,
+    /// Rectangular (the default) or isometric: lines rising left and right at the two angles,
+    /// plus verticals when asked, spaced by the gridline distance.
+    pub grid_type: GridType,
+    pub isometric_left_angle: f32,
+    pub isometric_right_angle: f32,
+    pub isometric_vertical_lines: bool,
 }
 
 impl Default for GuidesGridAndSlices {
@@ -786,6 +810,10 @@ impl Default for GuidesGridAndSlices {
             subdivisions: 4,
             slice_color: "#38b5ff".into(),
             show_slice_numbers: true,
+            grid_type: GridType::Rectangular,
+            isometric_left_angle: 30.0,
+            isometric_right_angle: 30.0,
+            isometric_vertical_lines: true,
         }
     }
 }
@@ -916,6 +944,83 @@ impl Default for Integrations {
     }
 }
 
+choice!(
+    /// Canvas input profiles: how the canvas gestures (pan, zoom, rotate, pick) map to keys,
+    /// mouse buttons, the wheel and the stylus. A preset fills the bindings below; editing any
+    /// of them makes the profile `custom`.
+    InputProfile { Default = "default", Tablet = "tablet", Trackpad = "trackpad", Mouse = "mouse", Custom = "custom" } default Default
+);
+choice!(
+    /// What a middle-button (or stylus barrel button) drag does on the canvas.
+    DragAction { Pan = "pan", Rotate = "rotate", Zoom = "zoom", Pick = "pick", NoAction = "noAction" } default Pan
+);
+choice!(
+    /// The modifier that turns a painting tool into the colour picker for a press.
+    PickModifier { Alt = "alt", Ctrl = "ctrl", NoPick = "noPick" } default Alt
+);
+choice!(
+    /// What the plain mouse wheel does over the canvas.
+    WheelAction { Scroll = "scroll", Zoom = "zoom" } default Scroll
+);
+
+/// Edit › Preferences › Canvas Input: every canvas gesture remapped to key, mouse or stylus
+/// combinations, bundled as profiles (`canvas.input.useProfile`).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct CanvasInput {
+    pub profile: InputProfile,
+    /// Held keys (shortcut notation) for the Hand, Zoom In, Zoom Out and Rotate View gestures;
+    /// empty = the temporary tool's own shortcut (Edit › Keyboard Shortcuts).
+    pub pan_key: String,
+    pub zoom_in_key: String,
+    pub zoom_out_key: String,
+    pub rotate_key: String,
+    pub middle_button: DragAction,
+    pub stylus_button: DragAction,
+    pub pick_modifier: PickModifier,
+    pub wheel: WheelAction,
+    /// Shift + wheel rotates the view.
+    pub shift_wheel_rotates: bool,
+}
+
+impl Default for CanvasInput {
+    fn default() -> Self {
+        Self {
+            profile: InputProfile::Default,
+            pan_key: String::new(),
+            zoom_in_key: String::new(),
+            zoom_out_key: String::new(),
+            rotate_key: String::new(),
+            middle_button: DragAction::Pan,
+            stylus_button: DragAction::Pan,
+            pick_modifier: PickModifier::Alt,
+            wheel: WheelAction::Scroll,
+            shift_wheel_rotates: false,
+        }
+    }
+}
+
+impl CanvasInput {
+    /// The preset `profile`'s bindings (`Custom` keeps the current ones).
+    pub fn preset(profile: InputProfile, current: &Self) -> Self {
+        let base = Self { profile, ..Self::default() };
+        match profile {
+            InputProfile::Default => base,
+            InputProfile::Tablet => Self {
+                stylus_button: DragAction::Pan,
+                middle_button: DragAction::Rotate,
+                rotate_key: "Shift+Space".into(),
+                wheel: WheelAction::Zoom,
+                pick_modifier: PickModifier::Ctrl,
+                ..base
+            },
+            InputProfile::Trackpad => Self { middle_button: DragAction::NoAction, wheel: WheelAction::Scroll, shift_wheel_rotates: true, ..base },
+            InputProfile::Mouse => Self { middle_button: DragAction::Pan, wheel: WheelAction::Zoom, pick_modifier: PickModifier::Alt, ..base },
+            InputProfile::Custom => Self { profile, ..current.clone() },
+        }
+    }
+}
+
 /// Edit › Menus: hidden items and item colours, by command id.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
@@ -970,6 +1075,7 @@ pub struct Preferences {
     pub enhanced_controls: EnhancedControls,
     pub raw_defaults: RawDefaults,
     pub integrations: Integrations,
+    pub canvas_input: CanvasInput,
     /// Edit › Keyboard Shortcuts: command id → shortcut (`Cmd+Shift+N` notation); an empty
     /// string removes the default shortcut.
     pub shortcuts: BTreeMap<String, String>,
@@ -1021,7 +1127,7 @@ pub struct Preferences {
 }
 
 /// Preferences dialog sections in Photoshop's order: (id, title).
-pub const SECTIONS: [(&str, &str); 18] = [
+pub const SECTIONS: [(&str, &str); 19] = [
     ("general", "General"),
     ("interface", "Interface"),
     ("workspace", "Workspace"),
@@ -1040,6 +1146,7 @@ pub const SECTIONS: [(&str, &str); 18] = [
     ("enhancedControls", "Enhanced Controls"),
     ("rawDefaults", "Camera Raw Defaults"),
     ("integrations", "Integrations"),
+    ("canvasInput", "Canvas Input"),
 ];
 
 /// Preferences that nothing reads yet, so Edit › Preferences doesn't show them: a control that
@@ -1110,7 +1217,15 @@ pub fn choices(path: &str) -> Option<&'static [&'static str]> {
         "export.metadata" => ExportMetadata::NAMES,
         "cursors.painting" => PaintingCursor::NAMES,
         "cursors.other" => OtherCursor::NAMES,
+        "tools.tabletSpeedSource" => TabletSpeedSource::NAMES,
+        "tools.tabletApi" => TabletApi::NAMES,
+        "guidesGridAndSlices.gridType" => GridType::NAMES,
         "cursors.cursorShape" => CursorShape::NAMES,
+        "canvasInput.profile" => InputProfile::NAMES,
+        "canvasInput.middleButton" => DragAction::NAMES,
+        "canvasInput.stylusButton" => DragAction::NAMES,
+        "canvasInput.pickModifier" => PickModifier::NAMES,
+        "canvasInput.wheel" => WheelAction::NAMES,
         "cursors.outlineShape" => OutlineShape::NAMES,
         "tools.rightClickWithPaintingTools" => RightClickPaint::NAMES,
         "transparencyAndGamut.gridSize" => CheckerSize::NAMES,
@@ -1518,6 +1633,7 @@ pub const TEMPORARY_TOOLS: &[(&str, &str, &str)] = &[
     ("tools.temporary.hand", "Hand Tool (hold)", "Space"),
     ("tools.temporary.zoomIn", "Zoom In (hold, drag to scrub)", "Cmd+Space"),
     ("tools.temporary.zoomOut", "Zoom Out (hold)", "Alt+Space"),
+    ("tools.temporary.rotate", "Rotate View (hold)", "Shift+Space"),
     ("tools.temporary.erase", "Erase with Brush or Pencil (hold)", "`"),
 ];
 
@@ -2149,9 +2265,29 @@ fn section_of(id: &str) -> &str {
     id.rsplit('.').next().unwrap_or("general")
 }
 
+/// `canvas.input.useProfile`: load a preset's bindings into Preferences › Canvas Input.
+fn use_profile(s: &mut Session, p: &Value) -> Result<Value> {
+    let cmd = "canvas.input.useProfile";
+    let name = p.get("profile").and_then(Value::as_str).ok_or_else(|| bad(cmd, format!("`profile` must be one of {}", InputProfile::NAMES.join(", "))))?;
+    let profile = InputProfile::parse(name).ok_or_else(|| bad(cmd, format!("unknown profile `{name}` (want {})", InputProfile::NAMES.join(", "))))?;
+    let next = CanvasInput::preset(profile, &s.prefs().canvas_input);
+    s.prefs.edit(|p| p.canvas_input = next.clone());
+    s.apply_prefs();
+    serde_json::to_value(&next).map_err(|e| EngineError::Other(e.to_string()))
+}
+
 /// Preference command specs.
 pub fn specs() -> Vec<CommandSpec> {
     vec![
+        spec!(
+            "canvas.input.useProfile",
+            "Use Canvas Input Profile",
+            [],
+            None,
+            r##"{"profile":"default|tablet|trackpad|mouse|custom"} → the profile's bindings (Preferences › Canvas Input)"##,
+            use_profile,
+            true
+        ),
         spec!(
             "prefs.get",
             "Get Preferences",
@@ -2190,6 +2326,7 @@ pub fn specs() -> Vec<CommandSpec> {
         section!("edit.preferences.enhancedControls", "Enhanced Controls…"),
         section!("edit.preferences.rawDefaults", "Camera Raw…"),
         section!("edit.preferences.integrations", "Integrations…"),
+        section!("edit.preferences.canvasInput", "Canvas Input…"),
         spec!(
             "edit.keyboardShortcuts",
             "Keyboard Shortcuts…",

@@ -30,6 +30,12 @@ fn color(v: Option<&Value>, d: [f32; 4]) -> [f32; 4] {
         _ => d,
     }
 }
+/// A colour param (`#rrggbb[aa]` or `[r, g, b, a?]`), or `None` when it is neither.
+pub(crate) fn color_value(v: &Value) -> Option<[f32; 4]> {
+    let c = color(Some(v), [f32::NAN; 4]);
+    (!c[0].is_nan()).then_some(c)
+}
+
 fn point(p: &Value, k: &str) -> Option<(f32, f32)> {
     let a = p.get(k)?.as_array()?;
     Some((a.first()?.as_f64()? as f32, a.get(1)?.as_f64()? as f32))

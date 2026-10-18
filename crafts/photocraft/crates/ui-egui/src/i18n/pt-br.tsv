@@ -4385,3 +4385,80 @@ layerLabel	No Color	Sem cor
 	No outline	Sem contorno
 	Instant preview	Visualização instantânea
 	Instant preview megapixels	Megapixels da visualização instantânea
+	Add…	Adicionar…
+	Auto update	Atualizar automaticamente
+	Canvas input profile	Perfil de entrada da tela
+	Clean up	Limpeza
+	Clear key strokes	Limpar traços-chave
+	Colorize Mask	Máscara de colorização
+	Device	Dispositivo
+	Draw in the area below to test pressure, tilt and rotation	Desenhe na área abaixo para testar pressão, inclinação e rotação
+	Edge detection	Detecção de bordas
+	Edit key strokes	Editar traços-chave
+	Embed	Incorporar
+	Fill only inside the line art's pixels	Preencher somente dentro dos pixels do traço
+	Gap close	Fechar lacunas
+	Input API	API de entrada
+	Keep aspect	Manter proporção
+	Limit to layer	Limitar à camada
+	Next Preset	Próxima predefinição
+	No samples yet	Ainda sem amostras
+	Nothing to paste: the clipboard holds no image	Nada para colar: a área de transferência não contém imagem
+	Opacity +	Opacidade +
+	Opacity -	Opacidade -
+	Pasted image	Imagem colada
+	Peak pressure	Pressão máxima
+	Previous Preset	Predefinição anterior
+	Reference Images	Imagens de referência
+	Rotate Left	Girar à esquerda
+	Rotate Right	Girar à direita
+	Sample rate	Taxa de amostragem
+	Screen mapping	Mapeamento de tela
+	Show output	Mostrar resultado
+	Show the key strokes over the canvas	Mostrar os traços-chave sobre a tela
+	Show with all tools	Mostrar com todas as ferramentas
+	Size +	Tamanho +
+	Size -	Tamanho -
+	Speed source	Origem da velocidade
+	Store the pixels in the set; off, link to the file	Guardar os pixels no conjunto; desligado, vincular ao arquivo
+	Tablet Settings…	Configurações da mesa…
+	Tablet Tester	Testador de mesa
+	The clipboard is not available	A área de transferência não está disponível
+	The next key strokes keep their regions clear	Os próximos traços-chave mantêm suas regiões transparentes
+	Tilt offset	Deslocamento de inclinação
+	Touch Docker	Painel de toque
+	Transparent key	Chave transparente
+	Canvas Input	Entrada da tela
+	Canvas Input…	Entrada da tela…
+	Pan key	Tecla de deslocamento
+	Zoom in key	Tecla de ampliar
+	Zoom out key	Tecla de reduzir
+	Rotate key	Tecla de rotação
+	Middle button	Botão do meio
+	Stylus button	Botão da caneta
+	Pick modifier	Modificador de coleta
+	Wheel	Roda
+	Shift wheel rotates	Shift+roda gira
+	Trackpad	Trackpad
+	Pick	Coletar
+	No action	Nenhuma ação
+	No pick	Sem coleta
+	Scroll	Rolar
+	Rotate View (hold)	Girar visualização (segurar)
+	Tilt offset x	Deslocamento de inclinação X
+	Tilt offset y	Deslocamento de inclinação Y
+	Tablet speed source	Origem da velocidade da mesa
+	Tablet api	API da mesa
+	Tablet screen mapping	Mapeamento de tela da mesa
+	Pointer	Ponteiro
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Tipo de grade
+	Isometric left angle	Ângulo esquerdo isométrico
+	Isometric right angle	Ângulo direito isométrico
+	Isometric vertical lines	Linhas verticais isométricas
+	Rectangular	Retangular
+	Isometric	Isométrica
+	Node	Nó
+	Extension	Extensão
+	Intersection	Interseção

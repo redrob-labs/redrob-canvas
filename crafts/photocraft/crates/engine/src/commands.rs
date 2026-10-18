@@ -1374,6 +1374,7 @@ fn build() -> Vec<CommandSpec> {
     v.extend(crate::edit_menu_cmds::specs());
     v.extend(crate::fill_key_cmds::specs());
     v.extend(crate::fill_opacity_cmds::specs());
+    v.extend(crate::colorize_cmds::specs());
     v.extend(crate::sample_cmds::specs());
     v.extend(crate::sampler_cmds::specs());
     v.extend(crate::brush_key_cmds::specs());

@@ -5272,3 +5272,79 @@ shape	Appearance	Aspetto
 	No outline	Nessun contorno
 	Instant preview	Anteprima istantanea
 	Instant preview megapixels	Megapixel anteprima istantanea
+	Add…	Aggiungi…
+	Auto update	Aggiornamento automatico
+	Canvas input profile	Profilo di input della tela
+	Clean up	Pulizia
+	Clear key strokes	Cancella tratti chiave
+	Colorize Mask	Maschera di colorazione
+	Device	Dispositivo
+	Draw in the area below to test pressure, tilt and rotation	Disegna nell'area sotto per provare pressione, inclinazione e rotazione
+	Edge detection	Rilevamento bordi
+	Edit key strokes	Modifica tratti chiave
+	Embed	Incorpora
+	Fill only inside the line art's pixels	Riempi solo dentro i pixel del disegno al tratto
+	Gap close	Chiudi spazi
+	Input API	API di input
+	Keep aspect	Mantieni proporzioni
+	Limit to layer	Limita al livello
+	Next Preset	Preimpostazione successiva
+	No samples yet	Nessun campione ancora
+	Opacity +	Opacità +
+	Opacity -	Opacità -
+	Pasted image	Immagine incollata
+	Peak pressure	Pressione massima
+	Previous Preset	Preimpostazione precedente
+	Reference Images	Immagini di riferimento
+	Rotate Left	Ruota a sinistra
+	Rotate Right	Ruota a destra
+	Sample rate	Frequenza di campionamento
+	Screen mapping	Mappatura schermo
+	Show output	Mostra risultato
+	Show the key strokes over the canvas	Mostra i tratti chiave sulla tela
+	Show with all tools	Mostra con tutti gli strumenti
+	Size +	Dimensione +
+	Size -	Dimensione -
+	Speed source	Origine velocità
+	Store the pixels in the set; off, link to the file	Salva i pixel nel set; disattivato, collega al file
+	Tablet Settings…	Impostazioni tavoletta…
+	Tablet Tester	Tester tavoletta
+	The clipboard is not available	Gli appunti non sono disponibili
+	The next key strokes keep their regions clear	I prossimi tratti chiave lasciano trasparenti le loro regioni
+	Tilt offset	Scostamento inclinazione
+	Touch Docker	Pannello touch
+	Transparent key	Chiave trasparente
+	Canvas Input	Input della tela
+	Canvas Input…	Input della tela…
+	Pan key	Tasto scorrimento
+	Zoom in key	Tasto zoom avanti
+	Zoom out key	Tasto zoom indietro
+	Rotate key	Tasto rotazione
+	Middle button	Tasto centrale
+	Stylus button	Pulsante penna
+	Pick modifier	Modificatore di prelievo
+	Wheel	Rotella
+	Shift wheel rotates	Maiusc+rotella ruota
+	Trackpad	Trackpad
+	Pick	Preleva
+	No action	Nessuna azione
+	No pick	Nessun prelievo
+	Scroll	Scorrimento
+	Rotate View (hold)	Ruota vista (tieni premuto)
+	Tilt offset x	Scostamento inclinazione X
+	Tilt offset y	Scostamento inclinazione Y
+	Tablet speed source	Origine velocità tavoletta
+	Tablet api	API tavoletta
+	Tablet screen mapping	Mappatura schermo tavoletta
+	Pointer	Puntatore
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Tipo di griglia
+	Isometric left angle	Angolo sinistro isometrico
+	Isometric right angle	Angolo destro isometrico
+	Isometric vertical lines	Linee verticali isometriche
+	Rectangular	Rettangolare
+	Isometric	Isometrica
+	Node	Nodo
+	Extension	Estensione
+	Intersection	Intersezione

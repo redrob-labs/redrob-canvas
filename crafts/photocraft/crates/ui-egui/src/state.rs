@@ -454,6 +454,12 @@ pub struct Panels {
     /// floating window rather than a modal so the canvas stays usable while a gradient is edited.
     #[serde(default)]
     pub gradient_editor: bool,
+    /// Window › Touch Docker: the big-button panel for tablets (`touch_docker_ui`).
+    #[serde(default)]
+    pub touch_docker: bool,
+    /// Window › Tablet Tester (`tablet_settings`).
+    #[serde(default)]
+    pub tablet_tester: bool,
 }
 
 impl Default for Panels {
@@ -476,6 +482,8 @@ impl Default for Panels {
             rail: true,
             menu_bar: true,
             gradient_editor: false,
+            touch_docker: false,
+            tablet_tester: false,
         }
     }
 }

@@ -22,6 +22,9 @@ pub const TOP_MENUS: [&str; 10] = ["File", "Edit", "Image", "Layer", "Type", "Se
 /// UI-level commands (handled by the shell rather than the engine): id, label, menu, shortcut.
 pub const UI_COMMANDS: &[(&str, &str, &[&str], Option<&str>)] = &[
     ("ui.symmetryTransform", "Transform Symmetry", &[], None),
+    // Tablet helpers (`touch_docker_ui`, `tablet_settings`).
+    ("window.touchDocker", "Touch Docker", &["Window"], None),
+    ("window.tabletTester", "Tablet Tester", &["Window"], None),
     // Right-click the options bar's tool icon (#2825); `tool.resetAll` asks first.
     ("tool.reset", "Reset Tool", &[], None),
     ("tool.resetAll", "Reset All Tools", &[], None),
@@ -172,6 +175,9 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
     }
     if id == "ui.symmetryTransform" {
         return crate::symmetry_ui::begin(app).map(|_| Value::Null);
+    }
+    if let Some(r) = crate::touch_docker_ui::menu(app, id).or_else(|| crate::tablet_settings::menu(app, id)) {
+        return r;
     }
     if let Some(r) = crate::tool_reset::invoke(app, id, &params) {
         return r;
@@ -848,7 +854,9 @@ fn checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
     if let Some(c) = crate::timeline_ui::checked(app, id) {
         return Some(c);
     }
-    if let Some(c) = crate::assistant_ui::checked(app, id) {
+    if let Some(c) =
+        crate::assistant_ui::checked(app, id).or_else(|| crate::touch_docker_ui::checked(app, id)).or_else(|| crate::tablet_settings::checked(app, id))
+    {
         return Some(c);
     }
     if let Some(c) = crate::type_panels_ui::checked(app, id) {

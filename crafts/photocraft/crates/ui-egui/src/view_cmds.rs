@@ -65,11 +65,26 @@ pub struct SnapTo {
     pub active_path: bool,
     /// Equal spacing between layers.
     pub equidistance: bool,
+    /// Path anchors as points, the extensions of path segments, guide crossings.
+    pub node: bool,
+    pub extension: bool,
+    pub intersection: bool,
 }
 
 impl Default for SnapTo {
     fn default() -> Self {
-        Self { guides: true, grid: true, layers: true, slices: true, document_bounds: true, active_path: false, equidistance: false }
+        Self {
+            guides: true,
+            grid: true,
+            layers: true,
+            slices: true,
+            document_bounds: true,
+            active_path: false,
+            equidistance: false,
+            node: false,
+            extension: false,
+            intersection: false,
+        }
     }
 }
 
@@ -256,6 +271,9 @@ fn snap_slot<'a>(s: &'a mut SnapTo, key: &str) -> Option<&'a mut bool> {
         "documentBounds" => &mut s.document_bounds,
         "activePath" => &mut s.active_path,
         "equidistance" => &mut s.equidistance,
+        "node" => &mut s.node,
+        "extension" => &mut s.extension,
+        "intersection" => &mut s.intersection,
         _ => return None,
     })
 }
@@ -277,7 +295,7 @@ const SHOW_KEYS: [&str; 13] = [
     "artboardGuides",
 ];
 /// Every [`snap_slot`] key.
-const SNAP_KEYS: [&str; 7] = ["guides", "grid", "layers", "slices", "documentBounds", "activePath", "equidistance"];
+const SNAP_KEYS: [&str; 10] = ["guides", "grid", "layers", "slices", "documentBounds", "activePath", "equidistance", "node", "extension", "intersection"];
 
 /// The flags of `now` that differ from `def`, by key (`None` when none do).
 fn changed_flags<T: Copy>(now: T, def: T, keys: &[&str], slot: impl for<'a> Fn(&'a mut T, &str) -> Option<&'a mut bool>) -> Option<Value> {
@@ -687,7 +705,18 @@ fn run(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, p: &Value) -> Res
     if let Some(k) = id.strip_prefix("view.snapTo.") {
         if k == "all" || k == "none" {
             let on = k == "all";
-            o.snap_to = SnapTo { guides: on, grid: on, layers: on, slices: on, document_bounds: on, active_path: on, equidistance: on };
+            o.snap_to = SnapTo {
+                guides: on,
+                grid: on,
+                layers: on,
+                slices: on,
+                document_bounds: on,
+                active_path: on,
+                equidistance: on,
+                node: on,
+                extension: on,
+                intersection: on,
+            };
             return Ok(json!(on));
         }
         let slot = snap_slot(&mut o.snap_to, k).ok_or("unknown Snap To item")?;

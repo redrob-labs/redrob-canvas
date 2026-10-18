@@ -3255,12 +3255,22 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     // Interface › Enable Animations off: the wheel moves the canvas without a glide (#5721).
     let wheel = crate::wheel_nav::read_with(
         &ctx,
-        app.session.prefs().general.zoom_with_scroll_wheel,
+        app.session.prefs().general.zoom_with_scroll_wheel || app.session.prefs().canvas_input.wheel == redrob_photo_engine::prefs::WheelAction::Zoom,
         app.session.prefs().enhanced_controls.zoom_with_trackpad_pinch,
         response.id.with("wheel"),
         nav_hovered,
         app.session.prefs().interface.enable_animations,
     );
+    // Preferences › Canvas Input: Shift + wheel turns the view instead of scrolling it.
+    let wheel = if nav_hovered && app.session.prefs().canvas_input.shift_wheel_rotates && ui.input(|i| i.modifiers.shift && !i.modifiers.command) {
+        let dy = ui.input(|i| i.raw_scroll_delta.y);
+        if dy != 0.0 {
+            view.rotation = crate::rotate_view::wrap_deg(view.rotation + dy * 0.1);
+        }
+        None
+    } else {
+        wheel
+    };
     if nav_hovered {
         let pointer = ui.input(|i| i.pointer.hover_pos());
         match (wheel, pointer) {
@@ -3305,6 +3315,7 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     app.stylus.use_pressure = app.session.prefs().tools.use_tablet_pressure;
     let curve = app.session.prefs().tools.pressure_curve.clone();
     app.stylus.set_pressure_curve(&curve);
+    app.stylus.set_tilt_offset([app.session.prefs().tools.tilt_offset_x, app.session.prefs().tools.tilt_offset_y]);
     app.stylus.update_for_frame(ui.ctx().cumulative_frame_nr(), &ui.input(|i| i.events.clone()));
     crate::stylus::Stylus::sync_eraser_tool(app);
     // A Magnetic Lasso border left behind by a tool or document switch is dropped.
@@ -3334,9 +3345,22 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
     let temporary = crate::hold_keys::for_frame(app, &ctx, drawing || crate::type_transform::active(app));
     let space_pan = temporary == Some(crate::hold_keys::Temporary::Hand);
     let middle = ui.input(|i| i.pointer.middle_down());
+    // Preferences › Canvas Input: what the middle button and the stylus barrel button drag.
+    let barrel = ui.input(|i| i.pointer.button_down(egui::PointerButton::Extra1));
+    let drag_tool = |action: redrob_photo_engine::prefs::DragAction| -> Tool {
+        use redrob_photo_engine::prefs::DragAction;
+        match action {
+            DragAction::Pan => Tool::Hand,
+            DragAction::Rotate => Tool::RotateView,
+            DragAction::Zoom => Tool::Zoom,
+            DragAction::Pick => Tool::Eyedropper,
+            DragAction::NoAction => app.ui.tool,
+        }
+    };
     let tool = match temporary {
         Some(t) => t.tool(),
-        None if middle => Tool::Hand,
+        None if middle => drag_tool(app.session.prefs().canvas_input.middle_button),
+        None if barrel => drag_tool(app.session.prefs().canvas_input.stylus_button),
         None => app.ui.tool,
     };
     // ⌘ held: this frame's gestures go to the Move tool (`PhotocraftApp::active_tool`). The Hand
@@ -3872,6 +3896,8 @@ pub fn canvas_view(app: &mut PhotocraftApp, ui: &mut egui::Ui, idx: usize, rect:
         crate::symmetry_ui::draw(app, &painter, &xf);
         crate::assistant_ui::draw(app, &painter, &xf);
         crate::fill_tool_ui::draw_overlay(app, &painter, &xf);
+        crate::colorize_ui::draw(app, &painter, &xf);
+        crate::reference_ui::draw(app, &painter, &xf);
         crate::analysis_ui::draw_overlay(app, &painter, &xf);
         crate::gradient_ui::draw_overlay(app, &painter, &xf);
         crate::slice_ui::draw_overlay(app, &painter, &xf);
@@ -5070,9 +5096,20 @@ pub(crate) fn paint_bucket_cursor(ctx: &egui::Context, p: Pos2) -> egui::CursorI
 
 /// Decided when the press starts, so ⌥ pressed or released mid-stroke never switches between
 /// painting and sampling.
+/// Does a press with `tool` sample the colour, by Preferences › Canvas Input › Pick modifier
+/// (Alt by default, as [`alt_samples`]; Ctrl; or never)?
+pub(crate) fn picks(app: &PhotocraftApp, tool: Tool, mods: egui::Modifiers) -> bool {
+    use redrob_photo_engine::prefs::PickModifier;
+    match app.session.prefs().canvas_input.pick_modifier {
+        PickModifier::Alt => alt_samples(tool, mods),
+        PickModifier::Ctrl => mods.ctrl && !mods.alt && matches!(tool, Tool::Brush | Tool::Pencil | Tool::Gradient | Tool::PaintBucket),
+        PickModifier::NoPick => false,
+    }
+}
+
 fn alt_eyedropper(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers) -> bool {
     if matches!(ev, ToolEvent::Down { .. }) {
-        app.alt_sampling = alt_samples(app.active_tool(), mods);
+        app.alt_sampling = picks(app, app.active_tool(), mods);
     }
     if !app.alt_sampling {
         return false;
@@ -5269,6 +5306,10 @@ pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers)
     }
     // Assistant tool: place, move and delete painting assistants.
     if crate::assistant_ui::pointer(app, ev, mods) {
+        return;
+    }
+    // Reference Images and Colorize Mask tools.
+    if crate::reference_ui::pointer(app, ev, mods) || crate::colorize_ui::pointer(app, ev, mods) {
         return;
     }
     // Painting tools: strokes follow the painting assistants.

@@ -117,6 +117,7 @@ pub mod i18n;
 mod icon_data;
 pub mod icons;
 pub mod instant_preview;
+pub mod iso_grid;
 pub mod jobs_ui;
 pub mod kys_import;
 pub mod lasso_ui;
@@ -219,6 +220,7 @@ pub mod swap_arrow;
 pub mod swatches_ui;
 pub mod symmetry_ui;
 mod tab_strip;
+pub mod tablet_settings;
 pub mod targa_options_ui;
 pub mod text_field_menu;
 pub mod theme;
@@ -226,6 +228,7 @@ pub mod tiff_options_ui;
 mod tile_overlay;
 mod timeline_ui;
 mod titlebar;
+pub mod touch_docker_ui;
 pub use titlebar::{Caption, CaptionFamily, CaptionIcon, CaptionIcons, CaptionStyle, RenderIconFn};
 pub mod tone;
 mod tool_cursor;
@@ -627,6 +630,8 @@ pub struct PhotocraftApp {
     pub colorize: colorize_ui::ColorizeState,
     /// Instant preview: the low-resolution pass of a heavy operation (`instant_preview`).
     pub instant_preview: instant_preview::InstantPreview,
+    /// The Tablet Tester's recording (`tablet_settings`).
+    pub tablet_tester: tablet_settings::Tester,
     /// Control+Alt-drag brush resize in progress (`brush_resize`, #231).
     pub(crate) brush_resize: Option<brush_resize::Resize>,
     /// A ⌘⌥⌃-click layer pick is in progress; its drag and release are swallowed (`quick_pick`).
@@ -877,6 +882,7 @@ impl PhotocraftApp {
             references: Default::default(),
             colorize: Default::default(),
             instant_preview: Default::default(),
+            tablet_tester: tablet_settings::Tester::new(2000),
             brush_resize: None,
             quick_pick: false,
             brush_resize_armed: false,
@@ -1991,6 +1997,8 @@ impl eframe::App for PhotocraftApp {
         brush_panel::window(self, &ctx);
         preset_panels::windows(self, &ctx);
         gradient_ui::editor_window(self, &ctx);
+        touch_docker_ui::window(self, &ctx);
+        tablet_settings::window(self, &ctx);
         type_panels_ui::windows(self, &ctx);
         analysis_ui::windows(self, &ctx);
         timeline_ui::windows(self, &ctx);

@@ -4513,3 +4513,79 @@ cameraRaw	Yellow	Sárga
 	No outline	Nincs körvonal
 	Instant preview	Azonnali előnézet
 	Instant preview megapixels	Azonnali előnézet megapixel
+	Add…	Hozzáadás…
+	Auto update	Automatikus frissítés
+	Canvas input profile	Vászonbeviteli profil
+	Clean up	Tisztítás
+	Clear key strokes	Kulcsvonások törlése
+	Colorize Mask	Színezőmaszk
+	Device	Eszköz
+	Draw in the area below to test pressure, tilt and rotation	Rajzoljon az alábbi területre a nyomás, dőlés és forgatás teszteléséhez
+	Edge detection	Élérzékelés
+	Edit key strokes	Kulcsvonások szerkesztése
+	Embed	Beágyazás
+	Fill only inside the line art's pixels	Csak a vonalrajz pixelein belül tölt
+	Gap close	Hézagok zárása
+	Input API	Beviteli API
+	Keep aspect	Arány megtartása
+	Limit to layer	Rétegre korlátozás
+	Next Preset	Következő készlet
+	No samples yet	Még nincs minta
+	Opacity +	Átlátszatlanság +
+	Opacity -	Átlátszatlanság -
+	Pasted image	Beillesztett kép
+	Peak pressure	Csúcsnyomás
+	Previous Preset	Előző készlet
+	Reference Images	Referenciaképek
+	Rotate Left	Forgatás balra
+	Rotate Right	Forgatás jobbra
+	Sample rate	Mintavételi ráta
+	Screen mapping	Képernyőleképezés
+	Show output	Eredmény mutatása
+	Show the key strokes over the canvas	Kulcsvonások mutatása a vászon fölött
+	Show with all tools	Mutatás minden eszközzel
+	Size +	Méret +
+	Size -	Méret -
+	Speed source	Sebességforrás
+	Store the pixels in the set; off, link to the file	Pixelek tárolása a készletben; kikapcsolva a fájlra hivatkozik
+	Tablet Settings…	Tábla beállításai…
+	Tablet Tester	Táblateszter
+	The clipboard is not available	A vágólap nem érhető el
+	The next key strokes keep their regions clear	A következő kulcsvonások átlátszón hagyják területüket
+	Tilt offset	Dőléseltolás
+	Touch Docker	Érintőpanel
+	Transparent key	Átlátszó kulcs
+	Canvas Input	Vászonbevitel
+	Canvas Input…	Vászonbevitel…
+	Pan key	Mozgatás billentyű
+	Zoom in key	Nagyítás billentyű
+	Zoom out key	Kicsinyítés billentyű
+	Rotate key	Forgatás billentyű
+	Middle button	Középső gomb
+	Stylus button	Tollgomb
+	Pick modifier	Színválasztó módosító
+	Wheel	Görgő
+	Shift wheel rotates	Shift+görgő forgat
+	Trackpad	Érintőpad
+	Pick	Színválasztás
+	No action	Nincs művelet
+	No pick	Nincs színválasztás
+	Scroll	Görgetés
+	Rotate View (hold)	Nézet forgatása (nyomva)
+	Tilt offset x	Dőléseltolás X
+	Tilt offset y	Dőléseltolás Y
+	Tablet speed source	Tábla sebességforrása
+	Tablet api	Tábla API
+	Tablet screen mapping	Tábla képernyőleképezése
+	Pointer	Mutató
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Rács típusa
+	Isometric left angle	Izometrikus bal szög
+	Isometric right angle	Izometrikus jobb szög
+	Isometric vertical lines	Izometrikus függőleges vonalak
+	Rectangular	Négyszögletes
+	Isometric	Izometrikus
+	Node	Csomópont
+	Extension	Meghosszabbítás
+	Intersection	Metszéspont

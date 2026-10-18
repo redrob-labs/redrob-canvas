@@ -4193,3 +4193,83 @@ curves	Smooth	Wygładź
 	No outline	Bez obrysu
 	Instant preview	Natychmiastowy podgląd
 	Instant preview megapixels	Megapiksele natychmiastowego podglądu
+	Add…	Dodaj…
+	Auto update	Automatyczna aktualizacja
+	Canvas input profile	Profil wejścia kanwy
+	Clean up	Oczyszczanie
+	Clear key strokes	Wyczyść pociągnięcia kluczowe
+	Colorize Mask	Maska kolorowania
+	Device	Urządzenie
+	Draw in the area below to test pressure, tilt and rotation	Rysuj w obszarze poniżej, aby sprawdzić nacisk, nachylenie i obrót
+	Edge detection	Wykrywanie krawędzi
+	Edit key strokes	Edytuj pociągnięcia kluczowe
+	Embed	Osadź
+	Fill only inside the line art's pixels	Wypełniaj tylko w obrębie pikseli rysunku
+	Gap close	Zamknij przerwy
+	Input API	API wejścia
+	Keep aspect	Zachowaj proporcje
+	Limit to layer	Ogranicz do warstwy
+	Mouse	Mysz
+	Next Preset	Następne ustawienie
+	No samples yet	Brak próbek
+	Nothing to paste: the clipboard holds no image	Nie ma czego wkleić: schowek nie zawiera obrazu
+	Opacity +	Krycie +
+	Opacity -	Krycie -
+	Pasted image	Wklejony obraz
+	Peak pressure	Szczytowy nacisk
+	Previous Preset	Poprzednie ustawienie
+	Reference Images	Obrazy referencyjne
+	Rotate Left	Obróć w lewo
+	Rotate Right	Obróć w prawo
+	Sample rate	Częstotliwość próbkowania
+	Screen mapping	Mapowanie ekranu
+	Show output	Pokaż wynik
+	Show the key strokes over the canvas	Pokaż pociągnięcia kluczowe na kanwie
+	Show with all tools	Pokaż przy wszystkich narzędziach
+	Size +	Rozmiar +
+	Size -	Rozmiar -
+	Speed source	Źródło prędkości
+	Store the pixels in the set; off, link to the file	Zapisz piksele w zestawie; wyłączone: dowiązanie do pliku
+	Tablet Settings…	Ustawienia tabletu…
+	Tablet Tester	Tester tabletu
+	The clipboard is not available	Schowek jest niedostępny
+	The next key strokes keep their regions clear	Następne pociągnięcia kluczowe pozostawiają obszary przezroczyste
+	Tilt offset	Przesunięcie nachylenia
+	Touch Docker	Panel dotykowy
+	Transparent key	Klucz przezroczysty
+	Update	Aktualizuj
+	Canvas Input	Wejście kanwy
+	Canvas Input…	Wejście kanwy…
+	Pan key	Klawisz przesuwania
+	Zoom in key	Klawisz powiększania
+	Zoom out key	Klawisz pomniejszania
+	Rotate key	Klawisz obrotu
+	Middle button	Środkowy przycisk
+	Stylus button	Przycisk rysika
+	Pick modifier	Modyfikator pobierania
+	Wheel	Kółko
+	Shift wheel rotates	Shift+kółko obraca
+	Tablet	Tablet
+	Trackpad	Gładzik
+	Pick	Pobierz kolor
+	No action	Brak akcji
+	No pick	Bez pobierania
+	Scroll	Przewijanie
+	Rotate View (hold)	Obróć widok (trzymaj)
+	Tilt offset x	Przesunięcie nachylenia X
+	Tilt offset y	Przesunięcie nachylenia Y
+	Tablet speed source	Źródło prędkości tabletu
+	Tablet api	API tabletu
+	Tablet screen mapping	Mapowanie ekranu tabletu
+	Pointer	Wskaźnik
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Typ siatki
+	Isometric left angle	Lewy kąt izometryczny
+	Isometric right angle	Prawy kąt izometryczny
+	Isometric vertical lines	Pionowe linie izometryczne
+	Rectangular	Prostokątna
+	Isometric	Izometryczna
+	Node	Węzeł
+	Extension	Przedłużenie
+	Intersection	Przecięcie

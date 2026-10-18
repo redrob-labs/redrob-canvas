@@ -3674,3 +3674,83 @@ curves	Smooth	Lisser
 	No outline	Aucun contour
 	Instant preview	Aperçu instantané
 	Instant preview megapixels	Mégapixels de l'aperçu instantané
+	Add…	Ajouter…
+	Auto update	Mise à jour automatique
+	Canvas input profile	Profil d'entrée du canevas
+	Clean up	Nettoyage
+	Clear key strokes	Effacer les traits clés
+	Colorize Mask	Masque de colorisation
+	Device	Périphérique
+	Draw in the area below to test pressure, tilt and rotation	Dessinez dans la zone ci-dessous pour tester la pression, l'inclinaison et la rotation
+	Edge detection	Détection des contours
+	Edit key strokes	Modifier les traits clés
+	Embed	Incorporer
+	Fill only inside the line art's pixels	Remplir seulement dans les pixels du dessin au trait
+	Gap close	Fermer les trous
+	Input API	API d'entrée
+	Keep aspect	Conserver les proportions
+	Limit to layer	Limiter au calque
+	Mouse	Souris
+	Next Preset	Préréglage suivant
+	No samples yet	Aucun échantillon pour l'instant
+	Nothing to paste: the clipboard holds no image	Rien à coller : le presse-papiers ne contient pas d'image
+	Opacity +	Opacité +
+	Opacity -	Opacité -
+	Pasted image	Image collée
+	Peak pressure	Pression maximale
+	Previous Preset	Préréglage précédent
+	Reference Images	Images de référence
+	Rotate Left	Pivoter à gauche
+	Rotate Right	Pivoter à droite
+	Sample rate	Fréquence d'échantillonnage
+	Screen mapping	Mappage d'écran
+	Show output	Afficher le résultat
+	Show the key strokes over the canvas	Afficher les traits clés sur le canevas
+	Show with all tools	Afficher avec tous les outils
+	Size +	Taille +
+	Size -	Taille -
+	Speed source	Source de vitesse
+	Store the pixels in the set; off, link to the file	Stocker les pixels dans l'ensemble ; désactivé, lier au fichier
+	Tablet Settings…	Réglages de la tablette…
+	Tablet Tester	Testeur de tablette
+	The clipboard is not available	Le presse-papiers n'est pas disponible
+	The next key strokes keep their regions clear	Les prochains traits clés gardent leurs régions transparentes
+	Tilt offset	Décalage d'inclinaison
+	Touch Docker	Panneau tactile
+	Transparent key	Clé transparente
+	Update	Mettre à jour
+	Canvas Input	Entrée du canevas
+	Canvas Input…	Entrée du canevas…
+	Pan key	Touche de déplacement
+	Zoom in key	Touche de zoom avant
+	Zoom out key	Touche de zoom arrière
+	Rotate key	Touche de rotation
+	Middle button	Bouton du milieu
+	Stylus button	Bouton du stylet
+	Pick modifier	Modificateur de prélèvement
+	Wheel	Molette
+	Shift wheel rotates	Maj+molette fait pivoter
+	Tablet	Tablette
+	Trackpad	Pavé tactile
+	Pick	Prélever
+	No action	Aucune action
+	No pick	Pas de prélèvement
+	Scroll	Défilement
+	Rotate View (hold)	Rotation de l'affichage (maintenir)
+	Tilt offset x	Décalage d'inclinaison X
+	Tilt offset y	Décalage d'inclinaison Y
+	Tablet speed source	Source de vitesse de la tablette
+	Tablet api	API de la tablette
+	Tablet screen mapping	Mappage d'écran de la tablette
+	Pointer	Pointeur
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Type de grille
+	Isometric left angle	Angle gauche isométrique
+	Isometric right angle	Angle droit isométrique
+	Isometric vertical lines	Lignes verticales isométriques
+	Rectangular	Rectangulaire
+	Isometric	Isométrique
+	Node	Nœud
+	Extension	Prolongement
+	Intersection	Intersection

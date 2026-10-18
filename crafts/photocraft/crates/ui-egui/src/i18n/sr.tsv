@@ -4667,3 +4667,79 @@ shape	Appearance	Izgled
 	No outline	Bez konture
 	Instant preview	Trenutni pregled
 	Instant preview megapixels	Megapikseli trenutnog pregleda
+	Add…	Dodaj…
+	Auto update	Automatsko ažuriranje
+	Canvas input profile	Profil unosa platna
+	Clean up	Čišćenje
+	Clear key strokes	Obriši ključne poteze
+	Colorize Mask	Maska za bojenje
+	Device	Uređaj
+	Draw in the area below to test pressure, tilt and rotation	Crtajte u oblasti ispod da proverite pritisak, nagib i rotaciju
+	Edge detection	Otkrivanje ivica
+	Edit key strokes	Uredi ključne poteze
+	Embed	Ugradi
+	Fill only inside the line art's pixels	Popuni samo unutar piksela crteža
+	Gap close	Zatvori praznine
+	Input API	API unosa
+	Keep aspect	Zadrži proporcije
+	Limit to layer	Ograniči na sloj
+	Next Preset	Sledeći preset
+	No samples yet	Još nema uzoraka
+	Opacity +	Neprozirnost +
+	Opacity -	Neprozirnost -
+	Pasted image	Nalepljena slika
+	Peak pressure	Vršni pritisak
+	Previous Preset	Prethodni preset
+	Reference Images	Referentne slike
+	Rotate Left	Rotiraj ulevo
+	Rotate Right	Rotiraj udesno
+	Sample rate	Učestalost uzoraka
+	Screen mapping	Mapiranje ekrana
+	Show output	Prikaži rezultat
+	Show the key strokes over the canvas	Prikaži ključne poteze preko platna
+	Show with all tools	Prikaži sa svim alatkama
+	Size +	Veličina +
+	Size -	Veličina -
+	Speed source	Izvor brzine
+	Store the pixels in the set; off, link to the file	Sačuvaj piksele u skupu; isključeno, poveži sa datotekom
+	Tablet Settings…	Podešavanja tableta…
+	Tablet Tester	Tester tableta
+	The clipboard is not available	Ostava nije dostupna
+	The next key strokes keep their regions clear	Sledeći ključni potezi ostavljaju svoje oblasti providnim
+	Tilt offset	Pomak nagiba
+	Touch Docker	Panel na dodir
+	Transparent key	Providan ključ
+	Canvas Input	Unos platna
+	Canvas Input…	Unos platna…
+	Pan key	Taster pomeranja
+	Zoom in key	Taster uvećanja
+	Zoom out key	Taster umanjenja
+	Rotate key	Taster rotacije
+	Middle button	Srednje dugme
+	Stylus button	Dugme olovke
+	Pick modifier	Modifikator biranja boje
+	Wheel	Točkić
+	Shift wheel rotates	Shift+točkić rotira
+	Trackpad	Dodirna tabla
+	Pick	Biranje boje
+	No action	Bez radnje
+	No pick	Bez biranja
+	Scroll	Klizanje
+	Rotate View (hold)	Rotiraj prikaz (drži)
+	Tilt offset x	Pomak nagiba X
+	Tilt offset y	Pomak nagiba Y
+	Tablet speed source	Izvor brzine tableta
+	Tablet api	API tableta
+	Tablet screen mapping	Mapiranje ekrana tableta
+	Pointer	Pokazivač
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Vrsta mreže
+	Isometric left angle	Izometrijski levi ugao
+	Isometric right angle	Izometrijski desni ugao
+	Isometric vertical lines	Izometrijske vertikalne linije
+	Rectangular	Pravougaona
+	Isometric	Izometrijska
+	Node	Čvor
+	Extension	Produžetak
+	Intersection	Presek

@@ -3289,3 +3289,84 @@ curves	Smooth	平滑
 	No outline	无轮廓
 	Instant preview	即时预览
 	Instant preview megapixels	即时预览百万像素
+	Add…	添加…
+	Auto update	自动更新
+	Canvas input profile	画布输入配置
+	Clean up	清理
+	Clear key strokes	清除关键笔画
+	Colorize Mask	着色蒙版
+	Device	设备
+	Draw in the area below to test pressure, tilt and rotation	在下方区域绘画以测试压力、倾斜和旋转
+	Edge detection	边缘检测
+	Edit key strokes	编辑关键笔画
+	Embed	嵌入
+	Fill only inside the line art's pixels	仅在线稿像素内填充
+	Gap close	闭合间隙
+	Input API	输入 API
+	Keep aspect	保持比例
+	Limit to layer	限制到图层
+	Mouse	鼠标
+	Next Preset	下一个预设
+	No samples yet	尚无采样
+	Nothing to paste: the clipboard holds no image	无可粘贴内容：剪贴板中没有图像
+	Opacity +	不透明度 +
+	Opacity -	不透明度 -
+	Pasted image	粘贴的图像
+	Peak pressure	峰值压力
+	Pen	笔
+	Previous Preset	上一个预设
+	Reference Images	参考图像
+	Rotate Left	向左旋转
+	Rotate Right	向右旋转
+	Sample rate	采样率
+	Screen mapping	屏幕映射
+	Show output	显示输出
+	Show the key strokes over the canvas	在画布上显示关键笔画
+	Show with all tools	在所有工具下显示
+	Size +	大小 +
+	Size -	大小 -
+	Speed source	速度来源
+	Store the pixels in the set; off, link to the file	将像素存入集合；关闭则链接到文件
+	Tablet Settings…	数位板设置…
+	Tablet Tester	数位板测试器
+	The clipboard is not available	剪贴板不可用
+	The next key strokes keep their regions clear	接下来的关键笔画保持其区域透明
+	Tilt offset	倾斜偏移
+	Touch Docker	触控面板
+	Transparent key	透明键
+	Update	更新
+	Canvas Input	画布输入
+	Canvas Input…	画布输入…
+	Pan key	平移键
+	Zoom in key	放大键
+	Zoom out key	缩小键
+	Rotate key	旋转键
+	Middle button	中键
+	Stylus button	笔侧键
+	Pick modifier	取色修饰键
+	Wheel	滚轮
+	Shift wheel rotates	Shift+滚轮旋转
+	Tablet	数位板
+	Trackpad	触控板
+	Pick	取色
+	No action	无操作
+	No pick	不取色
+	Scroll	滚动
+	Rotate View (hold)	旋转视图（按住）
+	Tilt offset x	倾斜偏移 X
+	Tilt offset y	倾斜偏移 Y
+	Tablet speed source	数位板速度来源
+	Tablet api	数位板 API
+	Tablet screen mapping	数位板屏幕映射
+	Pointer	指针
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	网格类型
+	Isometric left angle	等距左角
+	Isometric right angle	等距右角
+	Isometric vertical lines	等距垂直线
+	Rectangular	矩形
+	Isometric	等距
+	Node	节点
+	Extension	延长线
+	Intersection	交点

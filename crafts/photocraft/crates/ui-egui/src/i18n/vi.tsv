@@ -4083,3 +4083,83 @@ curves	Smooth	Làm mượt
 	No outline	Không viền
 	Instant preview	Xem trước tức thì
 	Instant preview megapixels	Megapixel xem trước tức thì
+	Add…	Thêm…
+	Auto update	Tự cập nhật
+	Canvas input profile	Hồ sơ nhập liệu canvas
+	Clean up	Dọn dẹp
+	Clear key strokes	Xóa nét khóa
+	Colorize Mask	Mặt nạ tô màu
+	Device	Thiết bị
+	Draw in the area below to test pressure, tilt and rotation	Vẽ vào vùng dưới để kiểm tra lực nhấn, độ nghiêng và xoay
+	Edge detection	Phát hiện cạnh
+	Edit key strokes	Sửa nét khóa
+	Embed	Nhúng
+	Fill only inside the line art's pixels	Chỉ tô trong các điểm ảnh của nét vẽ
+	Gap close	Đóng khe hở
+	Input API	API nhập liệu
+	Keep aspect	Giữ tỉ lệ
+	Limit to layer	Giới hạn trong lớp
+	Mouse	Chuột
+	Next Preset	Cài sẵn tiếp
+	No samples yet	Chưa có mẫu
+	Nothing to paste: the clipboard holds no image	Không có gì để dán: bộ nhớ tạm không có ảnh
+	Opacity +	Độ mờ +
+	Opacity -	Độ mờ -
+	Pasted image	Ảnh đã dán
+	Peak pressure	Lực nhấn tối đa
+	Previous Preset	Cài sẵn trước
+	Reference Images	Ảnh tham chiếu
+	Rotate Left	Xoay trái
+	Rotate Right	Xoay phải
+	Sample rate	Tốc độ lấy mẫu
+	Screen mapping	Ánh xạ màn hình
+	Show output	Hiện kết quả
+	Show the key strokes over the canvas	Hiện nét khóa trên canvas
+	Show with all tools	Hiện với mọi công cụ
+	Size +	Kích cỡ +
+	Size -	Kích cỡ -
+	Speed source	Nguồn tốc độ
+	Store the pixels in the set; off, link to the file	Lưu điểm ảnh trong bộ; tắt thì liên kết tới tệp
+	Tablet Settings…	Cài đặt bảng vẽ…
+	Tablet Tester	Kiểm tra bảng vẽ
+	The clipboard is not available	Không dùng được bộ nhớ tạm
+	The next key strokes keep their regions clear	Các nét khóa tiếp theo giữ vùng của chúng trong suốt
+	Tilt offset	Bù độ nghiêng
+	Touch Docker	Bảng cảm ứng
+	Transparent key	Khóa trong suốt
+	Update	Cập nhật
+	Canvas Input	Nhập liệu canvas
+	Canvas Input…	Nhập liệu canvas…
+	Pan key	Phím kéo
+	Zoom in key	Phím phóng to
+	Zoom out key	Phím thu nhỏ
+	Rotate key	Phím xoay
+	Middle button	Nút giữa
+	Stylus button	Nút bút
+	Pick modifier	Phím bổ trợ lấy màu
+	Wheel	Con lăn
+	Shift wheel rotates	Shift+con lăn xoay
+	Tablet	Bảng vẽ
+	Trackpad	Bàn di chuột
+	Pick	Lấy màu
+	No action	Không hành động
+	No pick	Không lấy màu
+	Scroll	Cuộn
+	Rotate View (hold)	Xoay khung nhìn (giữ)
+	Tilt offset x	Bù độ nghiêng X
+	Tilt offset y	Bù độ nghiêng Y
+	Tablet speed source	Nguồn tốc độ bảng vẽ
+	Tablet api	API bảng vẽ
+	Tablet screen mapping	Ánh xạ màn hình bảng vẽ
+	Pointer	Con trỏ
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Loại lưới
+	Isometric left angle	Góc trái đẳng cự
+	Isometric right angle	Góc phải đẳng cự
+	Isometric vertical lines	Đường dọc đẳng cự
+	Rectangular	Hình chữ nhật
+	Isometric	Đẳng cự
+	Node	Nút
+	Extension	Đường kéo dài
+	Intersection	Giao điểm

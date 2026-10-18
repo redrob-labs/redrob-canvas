@@ -4325,3 +4325,80 @@ cameraData	Lens	Lens
 	No outline	Dış çizgi yok
 	Instant preview	Anlık önizleme
 	Instant preview megapixels	Anlık önizleme megapiksel
+	Add…	Ekle…
+	Auto update	Otomatik güncelle
+	Canvas input profile	Tuval giriş profili
+	Clean up	Temizle
+	Clear key strokes	Anahtar vuruşları temizle
+	Colorize Mask	Renklendirme Maskesi
+	Device	Aygıt
+	Draw in the area below to test pressure, tilt and rotation	Basınç, eğim ve döndürmeyi test etmek için aşağıdaki alana çizin
+	Edge detection	Kenar algılama
+	Edit key strokes	Anahtar vuruşları düzenle
+	Embed	Göm
+	Fill only inside the line art's pixels	Yalnızca çizginin piksellerinin içini doldur
+	Gap close	Boşlukları kapat
+	Input API	Giriş API'si
+	Keep aspect	Oranı koru
+	Limit to layer	Katmanla sınırla
+	Next Preset	Sonraki Ön Ayar
+	No samples yet	Henüz örnek yok
+	Nothing to paste: the clipboard holds no image	Yapıştırılacak bir şey yok: panoda görüntü yok
+	Opacity +	Opaklık +
+	Opacity -	Opaklık -
+	Pasted image	Yapıştırılan görüntü
+	Peak pressure	Tepe basıncı
+	Previous Preset	Önceki Ön Ayar
+	Reference Images	Referans Görüntüleri
+	Rotate Left	Sola Döndür
+	Rotate Right	Sağa Döndür
+	Sample rate	Örnekleme hızı
+	Screen mapping	Ekran eşlemesi
+	Show output	Çıktıyı göster
+	Show the key strokes over the canvas	Anahtar vuruşları tuvalin üzerinde göster
+	Show with all tools	Tüm araçlarla göster
+	Size +	Boyut +
+	Size -	Boyut -
+	Speed source	Hız kaynağı
+	Store the pixels in the set; off, link to the file	Pikselleri kümede sakla; kapalıysa dosyaya bağla
+	Tablet Settings…	Tablet Ayarları…
+	Tablet Tester	Tablet Test Aracı
+	The clipboard is not available	Pano kullanılamıyor
+	The next key strokes keep their regions clear	Sonraki anahtar vuruşlar bölgelerini boş bırakır
+	Tilt offset	Eğim kayması
+	Touch Docker	Dokunmatik Panel
+	Transparent key	Saydam anahtar
+	Canvas Input	Tuval Girişi
+	Canvas Input…	Tuval Girişi…
+	Pan key	Kaydırma tuşu
+	Zoom in key	Yaklaştırma tuşu
+	Zoom out key	Uzaklaştırma tuşu
+	Rotate key	Döndürme tuşu
+	Middle button	Orta düğme
+	Stylus button	Kalem düğmesi
+	Pick modifier	Renk seçme değiştiricisi
+	Wheel	Tekerlek
+	Shift wheel rotates	Shift+tekerlek döndürür
+	Trackpad	İzleme dörtgeni
+	Pick	Renk seç
+	No action	İşlem yok
+	No pick	Renk seçme yok
+	Scroll	Kaydır
+	Rotate View (hold)	Görünümü Döndür (basılı)
+	Tilt offset x	Eğim kayması X
+	Tilt offset y	Eğim kayması Y
+	Tablet speed source	Tablet hız kaynağı
+	Tablet api	Tablet API'si
+	Tablet screen mapping	Tablet ekran eşlemesi
+	Pointer	İşaretçi
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Izgara türü
+	Isometric left angle	İzometrik sol açı
+	Isometric right angle	İzometrik sağ açı
+	Isometric vertical lines	İzometrik dikey çizgiler
+	Rectangular	Dikdörtgen
+	Isometric	İzometrik
+	Node	Düğüm
+	Extension	Uzantı
+	Intersection	Kesişim

@@ -3207,3 +3207,84 @@ curves	Smooth	平滑
 	No outline	無外框
 	Instant preview	即時預覽
 	Instant preview megapixels	即時預覽百萬像素
+	Add…	加入…
+	Auto update	自動更新
+	Canvas input profile	畫布輸入設定檔
+	Clean up	清理
+	Clear key strokes	清除關鍵筆畫
+	Colorize Mask	著色遮色片
+	Device	裝置
+	Draw in the area below to test pressure, tilt and rotation	在下方區域繪畫以測試壓力、傾斜和旋轉
+	Edge detection	邊緣偵測
+	Edit key strokes	編輯關鍵筆畫
+	Embed	嵌入
+	Fill only inside the line art's pixels	僅在線稿像素內填滿
+	Gap close	閉合間隙
+	Input API	輸入 API
+	Keep aspect	保持比例
+	Limit to layer	限制到圖層
+	Mouse	滑鼠
+	Next Preset	下一個預設集
+	No samples yet	尚無取樣
+	Nothing to paste: the clipboard holds no image	沒有可貼上的內容：剪貼簿中沒有圖像
+	Opacity +	不透明度 +
+	Opacity -	不透明度 -
+	Pasted image	貼上的圖像
+	Peak pressure	峰值壓力
+	Pen	筆
+	Previous Preset	上一個預設集
+	Reference Images	參考圖像
+	Rotate Left	向左旋轉
+	Rotate Right	向右旋轉
+	Sample rate	取樣率
+	Screen mapping	螢幕對應
+	Show output	顯示輸出
+	Show the key strokes over the canvas	在畫布上顯示關鍵筆畫
+	Show with all tools	在所有工具下顯示
+	Size +	大小 +
+	Size -	大小 -
+	Speed source	速度來源
+	Store the pixels in the set; off, link to the file	將像素存入集合；關閉則連結到檔案
+	Tablet Settings…	數位板設定…
+	Tablet Tester	數位板測試器
+	The clipboard is not available	剪貼簿無法使用
+	The next key strokes keep their regions clear	接下來的關鍵筆畫保持其區域透明
+	Tilt offset	傾斜偏移
+	Touch Docker	觸控面板
+	Transparent key	透明鍵
+	Update	更新
+	Canvas Input	畫布輸入
+	Canvas Input…	畫布輸入…
+	Pan key	平移鍵
+	Zoom in key	放大鍵
+	Zoom out key	縮小鍵
+	Rotate key	旋轉鍵
+	Middle button	中鍵
+	Stylus button	筆側鍵
+	Pick modifier	取色修飾鍵
+	Wheel	滾輪
+	Shift wheel rotates	Shift+滾輪旋轉
+	Tablet	數位板
+	Trackpad	觸控板
+	Pick	取色
+	No action	無動作
+	No pick	不取色
+	Scroll	捲動
+	Rotate View (hold)	旋轉檢視（按住）
+	Tilt offset x	傾斜偏移 X
+	Tilt offset y	傾斜偏移 Y
+	Tablet speed source	數位板速度來源
+	Tablet api	數位板 API
+	Tablet screen mapping	數位板螢幕對應
+	Pointer	指標
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	格線類型
+	Isometric left angle	等距左角
+	Isometric right angle	等距右角
+	Isometric vertical lines	等距垂直線
+	Rectangular	矩形
+	Isometric	等距
+	Node	節點
+	Extension	延長線
+	Intersection	交點

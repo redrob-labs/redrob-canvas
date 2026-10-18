@@ -4294,3 +4294,83 @@ curves	Smooth	Згладити
 	No outline	Без контуру
 	Instant preview	Миттєвий попередній перегляд
 	Instant preview megapixels	Мегапікселі миттєвого перегляду
+	Add…	Додати…
+	Auto update	Автооновлення
+	Canvas input profile	Профіль введення полотна
+	Clean up	Очищення
+	Clear key strokes	Прибрати ключові штрихи
+	Colorize Mask	Маска розфарбовування
+	Device	Пристрій
+	Draw in the area below to test pressure, tilt and rotation	Малюйте в області нижче, щоб перевірити натиск, нахил і обертання
+	Edge detection	Пошук країв
+	Edit key strokes	Редагувати ключові штрихи
+	Embed	Вбудувати
+	Fill only inside the line art's pixels	Заливати лише всередині пікселів контуру
+	Gap close	Закрити проміжки
+	Input API	API введення
+	Keep aspect	Зберігати пропорції
+	Limit to layer	Обмежити шаром
+	Mouse	Миша
+	Next Preset	Наступний набір
+	No samples yet	Ще немає відліків
+	Nothing to paste: the clipboard holds no image	Нічого вставляти: в буфері немає зображення
+	Opacity +	Непрозорість +
+	Opacity -	Непрозорість -
+	Pasted image	Вставлене зображення
+	Peak pressure	Піковий натиск
+	Previous Preset	Попередній набір
+	Reference Images	Зразки
+	Rotate Left	Повернути вліво
+	Rotate Right	Повернути вправо
+	Sample rate	Частота відліків
+	Screen mapping	Прив'язка до екрана
+	Show output	Показати результат
+	Show the key strokes over the canvas	Показувати ключові штрихи над полотном
+	Show with all tools	Показувати з усіма інструментами
+	Size +	Розмір +
+	Size -	Розмір -
+	Speed source	Джерело швидкості
+	Store the pixels in the set; off, link to the file	Зберігати пікселі в наборі; вимкнено: посилання на файл
+	Tablet Settings…	Параметри планшета…
+	Tablet Tester	Тестер планшета
+	The clipboard is not available	Буфер обміну недоступний
+	The next key strokes keep their regions clear	Наступні ключові штрихи залишають свої області прозорими
+	Tilt offset	Поправка нахилу
+	Touch Docker	Сенсорна панель
+	Transparent key	Прозорий ключ
+	Update	Оновити
+	Canvas Input	Введення полотна
+	Canvas Input…	Введення полотна…
+	Pan key	Клавіша панорами
+	Zoom in key	Клавіша збільшення
+	Zoom out key	Клавіша зменшення
+	Rotate key	Клавіша обертання
+	Middle button	Середня кнопка
+	Stylus button	Кнопка стилуса
+	Pick modifier	Модифікатор піпетки
+	Wheel	Коліщатко
+	Shift wheel rotates	Shift+коліщатко обертає
+	Tablet	Планшет
+	Trackpad	Трекпад
+	Pick	Піпетка
+	No action	Без дії
+	No pick	Без піпетки
+	Scroll	Прокручування
+	Rotate View (hold)	Поворот вигляду (утримувати)
+	Tilt offset x	Поправка нахилу X
+	Tilt offset y	Поправка нахилу Y
+	Tablet speed source	Джерело швидкости планшета
+	Tablet api	API планшета
+	Tablet screen mapping	Прив'язка планшета до екрана
+	Pointer	Вказівник
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Тип сітки
+	Isometric left angle	Лівий кут ізометрії
+	Isometric right angle	Правий кут ізометрії
+	Isometric vertical lines	Вертикальні лінії ізометрії
+	Rectangular	Прямокутна
+	Isometric	Ізометрична
+	Node	Вузол
+	Extension	Продовження
+	Intersection	Перетин

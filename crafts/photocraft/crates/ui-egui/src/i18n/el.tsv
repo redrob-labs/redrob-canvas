@@ -4295,3 +4295,81 @@ curves	Smooth	Εξομάλυνση
 	No outline	Χωρίς περίγραμμα
 	Instant preview	Άμεση προεπισκόπηση
 	Instant preview megapixels	Megapixel άμεσης προεπισκόπησης
+	Add…	Προσθήκη…
+	Auto update	Αυτόματη ενημέρωση
+	Canvas input profile	Προφίλ εισόδου καμβά
+	Clean up	Καθαρισμός
+	Clear key strokes	Καθαρισμός πινελιών-κλειδιών
+	Colorize Mask	Μάσκα χρωματισμού
+	Device	Συσκευή
+	Draw in the area below to test pressure, tilt and rotation	Σχεδιάστε στην περιοχή παρακάτω για να ελέγξετε πίεση, κλίση και περιστροφή
+	Edge detection	Ανίχνευση ακμών
+	Edit key strokes	Επεξεργασία πινελιών-κλειδιών
+	Embed	Ενσωμάτωση
+	Fill only inside the line art's pixels	Γέμισμα μόνο μέσα στα pixel του σκίτσου
+	Gap close	Κλείσιμο κενών
+	Input API	API εισόδου
+	Keep aspect	Διατήρηση αναλογίας
+	Limit to layer	Περιορισμός στο επίπεδο
+	Next Preset	Επόμενη προεπιλογή
+	No samples yet	Δεν υπάρχουν δείγματα ακόμη
+	Nothing to paste: the clipboard holds no image	Τίποτα για επικόλληση: το πρόχειρο δεν έχει εικόνα
+	Opacity +	Αδιαφάνεια +
+	Opacity -	Αδιαφάνεια -
+	Pasted image	Επικολλημένη εικόνα
+	Peak pressure	Μέγιστη πίεση
+	Pen	Γραφίδα
+	Previous Preset	Προηγούμενη προεπιλογή
+	Reference Images	Εικόνες αναφοράς
+	Rotate Left	Περιστροφή αριστερά
+	Rotate Right	Περιστροφή δεξιά
+	Sample rate	Ρυθμός δειγματοληψίας
+	Screen mapping	Αντιστοίχιση οθόνης
+	Show output	Εμφάνιση αποτελέσματος
+	Show the key strokes over the canvas	Εμφάνιση των πινελιών-κλειδιών πάνω στον καμβά
+	Show with all tools	Εμφάνιση με όλα τα εργαλεία
+	Size +	Μέγεθος +
+	Size -	Μέγεθος -
+	Speed source	Πηγή ταχύτητας
+	Store the pixels in the set; off, link to the file	Αποθήκευση των pixel στο σύνολο· απενεργοποιημένο, σύνδεση με το αρχείο
+	Tablet Settings…	Ρυθμίσεις ταμπλέτας…
+	Tablet Tester	Δοκιμαστής ταμπλέτας
+	The clipboard is not available	Το πρόχειρο δεν είναι διαθέσιμο
+	The next key strokes keep their regions clear	Οι επόμενες πινελιές-κλειδιά κρατούν τις περιοχές τους διαφανείς
+	Tilt offset	Μετατόπιση κλίσης
+	Touch Docker	Πίνακας αφής
+	Transparent key	Διαφανές κλειδί
+	Canvas Input	Είσοδος καμβά
+	Canvas Input…	Είσοδος καμβά…
+	Pan key	Πλήκτρο μετακίνησης
+	Zoom in key	Πλήκτρο μεγέθυνσης
+	Zoom out key	Πλήκτρο σμίκρυνσης
+	Rotate key	Πλήκτρο περιστροφής
+	Middle button	Μεσαίο κουμπί
+	Stylus button	Κουμπί γραφίδας
+	Pick modifier	Τροποποιητής επιλογής χρώματος
+	Wheel	Ροδέλα
+	Shift wheel rotates	Shift+ροδέλα περιστρέφει
+	Trackpad	Επιφάνεια αφής
+	Pick	Επιλογή χρώματος
+	No action	Καμία ενέργεια
+	No pick	Χωρίς επιλογή χρώματος
+	Scroll	Κύλιση
+	Rotate View (hold)	Περιστροφή προβολής (κράτημα)
+	Tilt offset x	Μετατόπιση κλίσης X
+	Tilt offset y	Μετατόπιση κλίσης Y
+	Tablet speed source	Πηγή ταχύτητας ταμπλέτας
+	Tablet api	API ταμπλέτας
+	Tablet screen mapping	Αντιστοίχιση οθόνης ταμπλέτας
+	Pointer	Δείκτης
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Τύπος πλέγματος
+	Isometric left angle	Ισομετρική αριστερή γωνία
+	Isometric right angle	Ισομετρική δεξιά γωνία
+	Isometric vertical lines	Ισομετρικές κάθετες γραμμές
+	Rectangular	Ορθογώνιο
+	Isometric	Ισομετρικό
+	Node	Κόμβος
+	Extension	Επέκταση
+	Intersection	Τομή

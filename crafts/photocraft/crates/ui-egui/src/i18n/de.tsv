@@ -3664,3 +3664,83 @@ curves	Smooth	Glätten
 	No outline	Kein Umriss
 	Instant preview	Sofortvorschau
 	Instant preview megapixels	Megapixel für die Sofortvorschau
+	Add…	Hinzufügen…
+	Auto update	Automatisch aktualisieren
+	Canvas input profile	Leinwand-Eingabeprofil
+	Clean up	Aufräumen
+	Clear key strokes	Schlüsselstriche löschen
+	Colorize Mask	Kolorierungsmaske
+	Device	Gerät
+	Draw in the area below to test pressure, tilt and rotation	Im Bereich unten zeichnen, um Druck, Neigung und Rotation zu testen
+	Edge detection	Kantenerkennung
+	Edit key strokes	Schlüsselstriche bearbeiten
+	Embed	Einbetten
+	Fill only inside the line art's pixels	Nur innerhalb der Pixel der Strichzeichnung füllen
+	Gap close	Lücken schließen
+	Input API	Eingabe-API
+	Keep aspect	Seitenverhältnis halten
+	Limit to layer	Auf Ebene begrenzen
+	Mouse	Maus
+	Next Preset	Nächste Vorgabe
+	No samples yet	Noch keine Messwerte
+	Opacity +	Deckkraft +
+	Opacity -	Deckkraft -
+	Pasted image	Eingefügtes Bild
+	Peak pressure	Spitzendruck
+	Pen	Stift
+	Previous Preset	Vorherige Vorgabe
+	Reference Images	Referenzbilder
+	Rotate Left	Nach links drehen
+	Rotate Right	Nach rechts drehen
+	Sample rate	Abtastrate
+	Screen mapping	Bildschirmzuordnung
+	Show output	Ausgabe anzeigen
+	Show the key strokes over the canvas	Schlüsselstriche über der Leinwand anzeigen
+	Show with all tools	Mit allen Werkzeugen anzeigen
+	Size +	Größe +
+	Size -	Größe -
+	Speed source	Geschwindigkeitsquelle
+	Store the pixels in the set; off, link to the file	Pixel im Set speichern; aus: mit der Datei verknüpfen
+	Tablet Settings…	Tablett-Einstellungen…
+	Tablet Tester	Tablett-Tester
+	The clipboard is not available	Die Zwischenablage ist nicht verfügbar
+	The next key strokes keep their regions clear	Die nächsten Schlüsselstriche lassen ihre Bereiche frei
+	Tilt offset	Neigungsversatz
+	Touch Docker	Touch-Leiste
+	Transparent key	Transparenter Schlüssel
+	Update	Aktualisieren
+	Canvas Input	Leinwand-Eingabe
+	Canvas Input…	Leinwand-Eingabe…
+	Pan key	Verschiebetaste
+	Zoom in key	Vergrößerungstaste
+	Zoom out key	Verkleinerungstaste
+	Rotate key	Drehtaste
+	Middle button	Mittlere Taste
+	Stylus button	Stifttaste
+	Pick modifier	Pipetten-Modifikator
+	Wheel	Rad
+	Shift wheel rotates	Umschalt+Rad dreht
+	Tablet	Tablett
+	Trackpad	Trackpad
+	Pick	Pipette
+	No action	Keine Aktion
+	No pick	Keine Pipette
+	Scroll	Scrollen
+	Rotate View (hold)	Ansicht drehen (halten)
+	Tilt offset x	Neigungsversatz X
+	Tilt offset y	Neigungsversatz Y
+	Tablet speed source	Geschwindigkeitsquelle des Tabletts
+	Tablet api	Tablett-API
+	Tablet screen mapping	Bildschirmzuordnung des Tabletts
+	Pointer	Zeiger
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Rastertyp
+	Isometric left angle	Isometrischer Winkel links
+	Isometric right angle	Isometrischer Winkel rechts
+	Isometric vertical lines	Isometrische vertikale Linien
+	Rectangular	Rechteckig
+	Isometric	Isometrisch
+	Node	Knoten
+	Extension	Verlängerung
+	Intersection	Schnittpunkt

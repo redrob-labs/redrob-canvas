@@ -4355,3 +4355,80 @@ curves	Smooth	Vloeiend maken
 	No outline	Geen omtrek
 	Instant preview	Directe voorvertoning
 	Instant preview megapixels	Megapixels directe voorvertoning
+	Add…	Toevoegen…
+	Auto update	Automatisch bijwerken
+	Canvas input profile	Canvasinvoerprofiel
+	Clean up	Opschonen
+	Clear key strokes	Sleutelstreken wissen
+	Colorize Mask	Kleurmasker
+	Device	Apparaat
+	Draw in the area below to test pressure, tilt and rotation	Teken in het gebied hieronder om druk, kanteling en rotatie te testen
+	Edge detection	Randdetectie
+	Edit key strokes	Sleutelstreken bewerken
+	Embed	Insluiten
+	Fill only inside the line art's pixels	Alleen binnen de pixels van de lijntekening vullen
+	Gap close	Gaten sluiten
+	Input API	Invoer-API
+	Keep aspect	Verhouding behouden
+	Limit to layer	Beperken tot laag
+	Next Preset	Volgende voorinstelling
+	No samples yet	Nog geen metingen
+	Nothing to paste: the clipboard holds no image	Niets te plakken: het klembord bevat geen afbeelding
+	Opacity +	Dekking +
+	Opacity -	Dekking -
+	Pasted image	Geplakte afbeelding
+	Peak pressure	Piekdruk
+	Previous Preset	Vorige voorinstelling
+	Reference Images	Referentieafbeeldingen
+	Rotate Left	Linksom draaien
+	Rotate Right	Rechtsom draaien
+	Sample rate	Meetfrequentie
+	Screen mapping	Schermtoewijzing
+	Show output	Uitvoer tonen
+	Show the key strokes over the canvas	Sleutelstreken over het canvas tonen
+	Show with all tools	Tonen bij alle gereedschappen
+	Size +	Grootte +
+	Size -	Grootte -
+	Speed source	Snelheidsbron
+	Store the pixels in the set; off, link to the file	Pixels in de set opslaan; uit: koppelen aan het bestand
+	Tablet Settings…	Tabletinstellingen…
+	Tablet Tester	Tablettester
+	The clipboard is not available	Het klembord is niet beschikbaar
+	The next key strokes keep their regions clear	De volgende sleutelstreken houden hun gebieden leeg
+	Tilt offset	Kantelverschuiving
+	Touch Docker	Aanraakpaneel
+	Transparent key	Transparante sleutel
+	Canvas Input	Canvasinvoer
+	Canvas Input…	Canvasinvoer…
+	Pan key	Pantoets
+	Zoom in key	Inzoomtoets
+	Zoom out key	Uitzoomtoets
+	Rotate key	Draaitoets
+	Middle button	Middelste knop
+	Stylus button	Penknop
+	Pick modifier	Pipet-modificatietoets
+	Wheel	Wiel
+	Shift wheel rotates	Shift+wiel draait
+	Trackpad	Trackpad
+	Pick	Pipet
+	No action	Geen actie
+	No pick	Geen pipet
+	Scroll	Scrollen
+	Rotate View (hold)	Weergave draaien (vasthouden)
+	Tilt offset x	Kantelverschuiving X
+	Tilt offset y	Kantelverschuiving Y
+	Tablet speed source	Snelheidsbron tablet
+	Tablet api	Tablet-API
+	Tablet screen mapping	Schermtoewijzing tablet
+	Pointer	Aanwijzer
+	Win tab	WinTab
+	Windows pointer	Windows Pointer
+	Grid type	Rastertype
+	Isometric left angle	Isometrische linkerhoek
+	Isometric right angle	Isometrische rechterhoek
+	Isometric vertical lines	Isometrische verticale lijnen
+	Rectangular	Rechthoekig
+	Isometric	Isometrisch
+	Node	Knooppunt
+	Extension	Verlenging
+	Intersection	Snijpunt
