@@ -297,9 +297,9 @@ name = "Paint dynamics"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-dynamics.html"
 behaviour = "A dynamics preset maps input sensors (pressure, velocity, direction, tilt, wheel, random, fade) onto brush properties (opacity, size, angle, colour, hardness, force, aspect ratio, spacing, rate, flow, jitter) through a matrix of checkboxes plus per-property curves; presets such as Pressure Opacity, Velocity Tapering, Track Direction ship by default and users create their own in a dynamics editor; fade length and repeat mode and colour-from-gradient live in the tool options."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/paint/src/dynamics_preset.rs, crafts/photocraft/crates/paint/src/dynamics.rs (Control::Velocity), crafts/photocraft/crates/engine/src/dynamics_cmds.rs, crafts/photocraft/crates/engine/src/preset_store.rs (.rdyn), crafts/photocraft/crates/ui-egui/src/brush_panel.rs (Dynamics row)"
-gap = "named dynamics presets (inputs pressure/velocity/direction/tilt/wheel/random/fade onto opacity/size/angle/colour/aspect/flow/jitter, per-row curve and minimum) with 9 built-ins, saved as .rdyn in the preset store and applied from the brush panel; hardness, force, spacing and rate outputs have no per-dab brush dynamic and are reported as unmapped; no matrix editor dialog yet (presets are edited through brush.dynamics.save / the brush sections), no colour-from-gradient along the stroke"
+ours = "full"
+ours_where = "crafts/photocraft/crates/paint/src/dynamics_preset.rs (all 11 outputs mapped), crafts/photocraft/crates/paint/src/brush.rs (hardness_dynamic, force_dynamic, rate_dynamic, color_gradient), crafts/photocraft/crates/paint/src/dynamics.rs (per-dab hardness/force, rate, colour from gradient), crafts/photocraft/crates/engine/src/dynamics_cmds.rs, crafts/photocraft/crates/engine/src/dynamics_extra_cmds.rs (brush.colorFromGradient), crafts/photocraft/crates/ui-egui/src/dynamics_editor_ui.rs (matrix editor), crafts/photocraft/crates/ui-egui/src/brush_panel.rs, crafts/photocraft/crates/ui-egui/src/panels.rs (Color from Gradient, fade length)"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -321,9 +321,9 @@ name = "Bucket fill"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-bucket-fill.html"
 behaviour = "Fills the whole selection, similar colours (contiguous region by threshold with fill-transparent-areas, sample merged, diagonal neighbours, select-by criterion) or by line art detection (closes gaps in drawn outlines with stroke-width, max gap, segment-length and max-grow options); fill with FG, BG or pattern; Shift+click toggles whole-selection mode."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/paint_cmds.rs (paint.bucket), crafts/photocraft/crates/ui-egui/src/fill_ui.rs"
-gap = "no line-art fill mode, no diagonal neighbours or per-channel criterion"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/paint_cmds.rs (paint.bucket: lineArt, diagonal, criterion), crafts/photocraft/crates/algo/src/selection.rs (line_art_region, wand criterion), crafts/photocraft/crates/ui-egui/src/panels.rs (Line Art, diagonal, criterion options)"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -333,9 +333,9 @@ name = "Gradient tool"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-gradient.html"
 behaviour = "Drag a line to fill with the active gradient; shapes: linear, bilinear, radial, square, conical symmetric/asymmetric, shaped (angular, spherical, dimpled), spiral clockwise/anticlockwise; repeat none/sawtooth/triangular/truncate; offset; adaptive supersampling; dithering; the line stays editable on canvas with draggable end points and colour stops that can be added, moved and recoloured before committing."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/paint_cmds.rs (paint.gradient), crafts/photocraft/crates/ui-egui/src/gradient_ui.rs, crafts/photocraft/crates/compose/src/gradient_fill.rs"
-gap = "five shapes (linear, radial, angle, reflected, diamond); no bilinear/square/conical/shaped/spiral shapes, no on-canvas stop editing after the drag, no sawtooth/triangular repeat"
+ours = "full"
+ours_where = "crafts/photocraft/crates/algo/src/paint.rs (linear, radial, angle, reflected/bilinear, diamond, square, conical symmetric, spirals), crafts/photocraft/crates/algo/src/paint_shaped.rs (shaped angular/spherical/dimpled, repeat none/sawtooth/triangular/truncate, offset), crafts/photocraft/crates/engine/src/paint_cmds.rs (paint.gradient), crafts/photocraft/crates/ui-egui/src/gradient_ui.rs (on-canvas handles and stops), crafts/photocraft/crates/ui-egui/src/panels.rs (Repeat, Offset)"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -369,9 +369,9 @@ name = "Eraser"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-eraser.html"
 behaviour = "Paints transparency on layers with alpha (background colour otherwise); hard-edge option, anti-erase (Alt) restores erased alpha from stored colour values."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/eraser_cmds.rs, crafts/photocraft/crates/ui-egui/src/eraser_ui.rs"
-gap = "no anti-erase mode"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/eraser_cmds.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs (antiErase), crafts/photocraft/crates/paint/src/brush.rs (anti_erase), crafts/photocraft/crates/ui-egui/src/eraser_ui.rs (Anti-erase)"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -441,9 +441,9 @@ name = "Perspective clone"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-perspective-clone.html"
 behaviour = "First define a perspective plane with four corners, then clone so the copied pixels are rescaled to the plane's perspective."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/vp_cmds.rs, crafts/photocraft/crates/ui-egui/src/vp_ui.rs"
-gap = "available inside the Vanishing Point workspace, not as a canvas paint tool"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/perspective_clone_cmds.rs (paint.perspectiveClone), crafts/photocraft/crates/algo/src/vanishing.rs (clone_stroke), crafts/photocraft/crates/ui-egui/src/retouch_ui.rs (Clone Stamp › Perspective: four-corner plane on canvas, plane overlay), crafts/photocraft/crates/engine/src/vp_cmds.rs"
+gap = ""
 priority = 3
 
 [[feature]]

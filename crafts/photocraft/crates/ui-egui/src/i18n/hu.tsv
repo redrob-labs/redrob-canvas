@@ -4350,3 +4350,26 @@ cameraRaw	Yellow	Sárga
 	Popup palette	Felugró paletta
 	Smear	Elkenés
 	Smudge Radius	Maszatolási sugár
+	Shaped Gradient (angular)	Alakzat szerinti átmenet (szögletes)
+	Shaped Gradient (spherical)	Alakzat szerinti átmenet (gömbszerű)
+	Shaped Gradient (dimpled)	Alakzat szerinti átmenet (homorú)
+	Truncate	Levágás
+	Sawtooth wave	Fűrészfog hullám
+	Triangular wave	Háromszög hullám
+	Wheel	Kerék
+	Force	Erő
+	Jitter	Remegés
+	Fade length	Elhalványulás hossza
+	Random amount	Véletlenszerűség
+	Save Preset	Előbeállítás mentése
+	Paint Dynamics Editor	Festési dinamika szerkesztő
+	Color from Gradient	Szín az átmenetből
+	Put this table on the current brush	A táblázat alkalmazása az aktuális ecsetre
+	Save the table as a named dynamics preset	Táblázat mentése névvel ellátott dinamikaként
+	Give the dynamics preset a name first	Először adjon nevet a dinamikának
+	Edit the dynamics table (inputs × outputs)	Dinamika táblázat szerkesztése (bemenetek × kimenetek)
+	Reset Plane	Sík visszaállítása
+	Click four corners to define a perspective plane, then clone along it	Kattintson négy sarokra a perspektíva sík megadásához, majd klónozzon mentén
+	Click corner {n} of 4	Kattintson a {n}. sarokra (4-ből)
+	Perspective plane: corner {n} of 4 set	Perspektíva sík: {n}. sarok beállítva (4-ből)
+	Perspective plane set; {key}-click a source, then paint	Perspektíva sík beállítva; {key}-kattintás a forrásra, majd fessen

@@ -4192,3 +4192,26 @@ curves	Smooth	Vloeiend maken
 	Popup palette	Pop-uppalet
 	Smear	Uitsmeren
 	Smudge Radius	Smeerradius
+	Shaped Gradient (angular)	Vormverloop (hoekig)
+	Shaped Gradient (spherical)	Vormverloop (sferisch)
+	Shaped Gradient (dimpled)	Vormverloop (gedeukt)
+	Truncate	Afkappen
+	Sawtooth wave	Zaagtandgolf
+	Triangular wave	Driehoeksgolf
+	Wheel	Wiel
+	Force	Kracht
+	Jitter	Jitter
+	Fade length	Vervaaglengte
+	Random amount	Willekeurige hoeveelheid
+	Save Preset	Voorinstelling opslaan
+	Paint Dynamics Editor	Dynamiek-editor
+	Color from Gradient	Kleur uit verloop
+	Put this table on the current brush	Deze tabel op het huidige penseel toepassen
+	Save the table as a named dynamics preset	Tabel opslaan als benoemde dynamiekvoorinstelling
+	Give the dynamics preset a name first	Geef de dynamiekvoorinstelling eerst een naam
+	Edit the dynamics table (inputs × outputs)	Dynamiektabel bewerken (invoer × uitvoer)
+	Reset Plane	Vlak herstellen
+	Click four corners to define a perspective plane, then clone along it	Klik vier hoeken om een perspectiefvlak te bepalen en kloon er dan langs
+	Click corner {n} of 4	Klik hoek {n} van 4
+	Perspective plane: corner {n} of 4 set	Perspectiefvlak: hoek {n} van 4 gezet
+	Perspective plane set; {key}-click a source, then paint	Perspectiefvlak gezet; {key}-klik een bron en schilder dan

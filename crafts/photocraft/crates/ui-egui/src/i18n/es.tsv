@@ -4741,3 +4741,26 @@ navigator	Zoom	Zoom
 	Cumulative undo duration	Duración de deshacer acumulativo
 	Popup palette	Paleta emergente
 	Smudge Radius	Radio de difuminado
+	Shaped Gradient (angular)	Degradado con forma (angular)
+	Shaped Gradient (spherical)	Degradado con forma (esférico)
+	Shaped Gradient (dimpled)	Degradado con forma (hundido)
+	Truncate	Truncar
+	Sawtooth wave	Onda de diente de sierra
+	Triangular wave	Onda triangular
+	Wheel	Rueda
+	Force	Fuerza
+	Jitter	Variación
+	Fade length	Longitud del desvanecimiento
+	Random amount	Cantidad aleatoria
+	Save Preset	Guardar ajuste preestablecido
+	Paint Dynamics Editor	Editor de dinámicas de pintura
+	Color from Gradient	Color del degradado
+	Put this table on the current brush	Aplicar esta tabla al pincel actual
+	Save the table as a named dynamics preset	Guardar la tabla como dinámica con nombre
+	Give the dynamics preset a name first	Primero dé un nombre a la dinámica
+	Edit the dynamics table (inputs × outputs)	Editar la tabla de dinámicas (entradas × salidas)
+	Reset Plane	Restablecer plano
+	Click four corners to define a perspective plane, then clone along it	Haga clic en cuatro esquinas para definir un plano de perspectiva y clone sobre él
+	Click corner {n} of 4	Haga clic en la esquina {n} de 4
+	Perspective plane: corner {n} of 4 set	Plano de perspectiva: esquina {n} de 4 definida
+	Perspective plane set; {key}-click a source, then paint	Plano de perspectiva definido; haga {key}-clic en un origen y luego pinte

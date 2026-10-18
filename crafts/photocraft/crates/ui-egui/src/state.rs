@@ -547,6 +547,14 @@ pub struct ToolOptions {
     pub gradient_reverse: bool,
     /// Gradient tool: dither to reduce 8-bit banding (Photoshop default on).
     pub gradient_dither: bool,
+    /// Classic gradient: how the ramp continues past the drag (none | sawtooth | triangular | truncate).
+    #[serde(default = "default_gradient_repeat")]
+    pub gradient_repeat: String,
+    /// Classic gradient: % of the drag held at the start colour before the ramp begins.
+    pub gradient_offset: f32,
+    /// Brush › Color from Gradient: stroke length in pixels of one run through the gradient.
+    #[serde(default = "default_gradient_fade_length")]
+    pub gradient_fade_length: f32,
     /// Gradient tool mode: false = "Gradient" (live: a Gradient Fill layer, editable on canvas),
     /// true = "Classic gradient" (paints the pixels).
     pub gradient_classic: bool,
@@ -589,6 +597,8 @@ pub struct ToolOptions {
     pub type_align: String,
     /// Clone Stamp / Healing Brush.
     pub clone_aligned: bool,
+    /// Clone Stamp › Perspective: clone along a four-corner perspective plane (`paint.perspectiveClone`).
+    pub clone_perspective: bool,
     /// Pattern Stamp: lock the tile origin in document space across strokes.
     pub pattern_stamp_aligned: bool,
     /// Pattern Stamp: jitter each dab's phase (seeded, replayable).
@@ -827,6 +837,14 @@ fn default_wand_criterion() -> String {
     "composite".into()
 }
 
+fn default_gradient_repeat() -> String {
+    "none".into()
+}
+
+fn default_gradient_fade_length() -> f32 {
+    100.0
+}
+
 fn default_eraser_mode() -> String {
     "brush".into()
 }
@@ -880,6 +898,9 @@ impl Default for ToolOptions {
             gradient_style: "linear".into(),
             gradient_reverse: false,
             gradient_dither: true,
+            gradient_repeat: default_gradient_repeat(),
+            gradient_offset: 0.0,
+            gradient_fade_length: default_gradient_fade_length(),
             gradient_classic: false,
             gradient_blend_mode: redrob_photo_color::BlendMode::Normal,
             fill_opacity: 100.0,
@@ -898,6 +919,7 @@ impl Default for ToolOptions {
             type_aa: "sharp".into(),
             type_align: "left".into(),
             clone_aligned: true,
+            clone_perspective: false,
             pattern_stamp_aligned: true,
             pattern_stamp_impressionist: false,
             pattern_stamp_scale: 100.0,
@@ -1363,6 +1385,9 @@ pub struct UiState {
     /// Clone Stamp / Healing source point (⌥-click) and the aligned offset once a stroke started.
     #[serde(default)]
     pub clone_source: Option<[f64; 2]>,
+    /// Clone Stamp › Perspective: the plane's corners clicked so far (four define it).
+    #[serde(default, skip)]
+    pub perspective_corners: Vec<[f64; 2]>,
     #[serde(default)]
     pub clone_offset: Option<[f64; 2]>,
     /// Pattern Stamp aligned origin in document pixels, kept across strokes.

@@ -3041,3 +3041,29 @@ curves	Smooth	平滑
 	Popup palette	彈出調色盤
 	Smear	塗抹
 	Smudge Radius	塗抹半徑
+	Shaped Gradient (angular)	形狀漸層（角度）
+	Shaped Gradient (spherical)	形狀漸層（球面）
+	Shaped Gradient (dimpled)	形狀漸層（凹陷）
+	Truncate	截斷
+	Sawtooth wave	鋸齒波
+	Triangular wave	三角波
+	Repeat	重複
+	Tilt	傾斜
+	Wheel	滾輪
+	Force	力度
+	Aspect Ratio	長寬比
+	Jitter	抖動
+	Fade length	漸隱長度
+	Random amount	隨機量
+	Save Preset	儲存預設集
+	Paint Dynamics Editor	繪畫動態編輯器
+	Color from Gradient	顏色來自漸層
+	Put this table on the current brush	將此表格套用到目前筆刷
+	Save the table as a named dynamics preset	將此表格儲存為具名動態預設集
+	Give the dynamics preset a name first	請先為動態預設集命名
+	Edit the dynamics table (inputs × outputs)	編輯動態表格（輸入 × 輸出）
+	Reset Plane	重設平面
+	Click four corners to define a perspective plane, then clone along it	點按四個角定義透視平面，然後沿該平面仿製
+	Click corner {n} of 4	點按第 {n}/4 個角
+	Perspective plane: corner {n} of 4 set	透視平面：已設定第 {n}/4 個角
+	Perspective plane set; {key}-click a source, then paint	透視平面已設定；{key} 並點按設定來源，然後繪製

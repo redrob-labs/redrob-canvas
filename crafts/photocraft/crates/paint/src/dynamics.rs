@@ -714,11 +714,46 @@ pub struct DabBuilder {
     next_index: u64,
     /// Direction of the previous step, for Fan Corners.
     last_direction: Option<f32>,
+    /// Path length walked so far and the previous step's position, for Colour from gradient.
+    travelled: f64,
+    last_pos: Option<(f64, f64)>,
 }
 
 impl DabBuilder {
     pub fn new(brush: &BrushSettings) -> Self {
-        Self { brush: brush.clone(), seed: brush.seed, stroke_color: None, next_index: 0, last_direction: None }
+        Self { brush: brush.clone(), seed: brush.seed, stroke_color: None, next_index: 0, last_direction: None, travelled: 0.0, last_pos: None }
+    }
+
+    /// Colour from gradient: the stop colour at this point of the stroke.
+    fn gradient_color(&self) -> Option<[f32; 4]> {
+        let b = &self.brush;
+        if b.color_gradient.is_empty() {
+            return None;
+        }
+        let len = f64::from(b.color_gradient_length.max(1.0));
+        let raw = (self.travelled / len) as f32;
+        let t = match b.color_gradient_repeat.as_str() {
+            "sawtooth" => raw.rem_euclid(1.0),
+            "triangular" => {
+                let m = raw.rem_euclid(2.0);
+                if m > 1.0 { 2.0 - m } else { m }
+            }
+            _ => raw.clamp(0.0, 1.0),
+        };
+        let stops = &b.color_gradient;
+        if stops.len() == 1 {
+            return Some(stops[0].1);
+        }
+        if t <= stops[0].0 {
+            return Some(stops[0].1);
+        }
+        for w in stops.windows(2) {
+            if t <= w[1].0 {
+                let k = if w[1].0 > w[0].0 { (t - w[0].0) / (w[1].0 - w[0].0) } else { 0.0 };
+                return Some(std::array::from_fn(|i| w[0].1[i] + (w[1].1[i] - w[0].1[i]) * k));
+            }
+        }
+        stops.last().map(|s| s.1)
     }
 
     pub fn step_len(&self, p: &StrokePoint) -> f64 {
@@ -772,6 +807,11 @@ impl DabBuilder {
             }
         }
         self.last_direction = Some(s.direction);
+        let here = (s.point.x, s.point.y);
+        if let Some((lx, ly)) = self.last_pos {
+            self.travelled += (here.0 - lx).hypot(here.1 - ly);
+        }
+        self.last_pos = Some(here);
         self.build_one(s, out);
     }
 
@@ -873,12 +913,20 @@ impl DabBuilder {
                 opacity = scalar(&tr.opacity, s, r(stream::OPACITY));
                 flow *= scalar(&tr.flow, s, r(stream::FLOW));
             }
+            // Dynamics presets' Force output: how hard the tip is pressed, as a per-dab flow factor.
+            if b.force_dynamic.is_active() {
+                flow *= scalar(&b.force_dynamic, s, r(stream::FORCE));
+            }
+            // Dynamics presets' Hardness output: a per-dab hardness multiplier.
+            let hardness = if b.hardness_dynamic.is_active() { scalar(&b.hardness_dynamic, s, r(stream::HARDNESS)).clamp(0.0, 1.0) } else { 1.0 };
             let (wet, mix) = if tr.enabled { (scalar(&tr.wetness, s, r(stream::WET)), scalar(&tr.mix, s, r(stream::MIX))) } else { (1.0, 1.0) };
             if b.pressure_opacity && !(tr.enabled && (tr.opacity.control != Control::Off || tr.opacity.has_sensors())) {
                 opacity *= s.point.pressure.clamp(0.0, 1.0);
             }
             // Colour.
-            let color = if b.color_dynamics.enabled {
+            let color = if let Some(c) = self.gradient_color() {
+                c
+            } else if b.color_dynamics.enabled {
                 if b.color_dynamics.per_tip { dynamic_color(b, s, seed, i) } else { *self.stroke_color.get_or_insert_with(|| dynamic_color(b, s, seed, 0)) }
             } else {
                 b.color
@@ -906,6 +954,7 @@ impl DabBuilder {
                 wet,
                 mix,
                 cell,
+                hardness,
             });
         }
     }
@@ -962,6 +1011,7 @@ impl DualBuilder {
                 wet: 1.0,
                 mix: 1.0,
                 cell: 0,
+                hardness: 1.0,
             });
         }
     }
@@ -1031,6 +1081,12 @@ impl DabGenerator {
     fn walk(&mut self, pts: &[StrokePoint], dabs: &mut Vec<Dab>, dual: &mut Vec<Dab>) {
         for p in pts {
             let p = apply_pose(&self.builder.brush, *p);
+            // Dynamics presets' Rate output: the airbrush rate follows the sensor at each point.
+            if self.builder.brush.build_up && self.builder.brush.rate_dynamic.is_active() {
+                let b = &self.builder.brush;
+                let k = scalar(&b.rate_dynamic, &StepInput::at(p), rand01(b.seed, self.walker.step, stream::RATE)).max(0.01);
+                self.walker.interval = Some(1000.0 / f64::from((b.build_up_rate * k).clamp(0.1, 1000.0)));
+            }
             let b = &self.builder;
             let len = |q: &StrokePoint| b.step_len(q);
             let mut steps = Vec::new();

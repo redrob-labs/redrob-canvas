@@ -4899,3 +4899,26 @@ shape	Appearance	Aspetto
 	Cumulative undo duration	Durata dell'annulla cumulativo
 	Popup palette	Tavolozza a comparsa
 	Smudge Radius	Raggio sfumino
+	Shaped Gradient (angular)	Gradiente sagomato (angolare)
+	Shaped Gradient (spherical)	Gradiente sagomato (sferico)
+	Shaped Gradient (dimpled)	Gradiente sagomato (incavato)
+	Truncate	Tronca
+	Sawtooth wave	Onda a dente di sega
+	Triangular wave	Onda triangolare
+	Wheel	Rotella
+	Force	Forza
+	Jitter	Tremolio
+	Fade length	Lunghezza dissolvenza
+	Random amount	Quantità casuale
+	Save Preset	Salva predefinito
+	Paint Dynamics Editor	Editor dinamiche di pittura
+	Color from Gradient	Colore dal gradiente
+	Put this table on the current brush	Applica la tabella al pennello corrente
+	Save the table as a named dynamics preset	Salva la tabella come dinamica con nome
+	Give the dynamics preset a name first	Assegna prima un nome alla dinamica
+	Edit the dynamics table (inputs × outputs)	Modifica la tabella delle dinamiche (ingressi × uscite)
+	Reset Plane	Reimposta piano
+	Click four corners to define a perspective plane, then clone along it	Fai clic su quattro angoli per definire un piano prospettico, poi clona lungo di esso
+	Click corner {n} of 4	Fai clic sull’angolo {n} di 4
+	Perspective plane: corner {n} of 4 set	Piano prospettico: angolo {n} di 4 impostato
+	Perspective plane set; {key}-click a source, then paint	Piano prospettico impostato; {key}-clic su una sorgente, poi dipingi

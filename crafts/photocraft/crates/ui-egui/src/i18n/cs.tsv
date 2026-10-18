@@ -4041,3 +4041,27 @@ navigator	Zoom	Zvětšení
 	Popup palette	Vyskakovací paleta
 	Smear	Rozmazání
 	Smudge Radius	Poloměr rozmazání
+	Shaped Gradient (angular)	Tvarovaný přechod (úhlový)
+	Shaped Gradient (spherical)	Tvarovaný přechod (kulový)
+	Shaped Gradient (dimpled)	Tvarovaný přechod (prohloubený)
+	Truncate	Oříznout
+	Sawtooth wave	Pilová vlna
+	Triangular wave	Trojúhelníková vlna
+	Wheel	Kolečko
+	Force	Síla
+	Aspect Ratio	Poměr stran
+	Jitter	Chvění
+	Fade length	Délka vyblednutí
+	Random amount	Míra náhodnosti
+	Save Preset	Uložit přednastavení
+	Paint Dynamics Editor	Editor dynamiky malování
+	Color from Gradient	Barva z přechodu
+	Put this table on the current brush	Použít tabulku na aktuální štětec
+	Save the table as a named dynamics preset	Uložit tabulku jako pojmenovanou dynamiku
+	Give the dynamics preset a name first	Nejprve dynamiku pojmenujte
+	Edit the dynamics table (inputs × outputs)	Upravit tabulku dynamiky (vstupy × výstupy)
+	Reset Plane	Obnovit rovinu
+	Click four corners to define a perspective plane, then clone along it	Klepnutím na čtyři rohy určete perspektivní rovinu a pak podél ní klonujte
+	Click corner {n} of 4	Klepněte na roh {n} ze 4
+	Perspective plane: corner {n} of 4 set	Perspektivní rovina: roh {n} ze 4 nastaven
+	Perspective plane set; {key}-click a source, then paint	Perspektivní rovina nastavena; klepněte se {key} na zdroj a pak malujte

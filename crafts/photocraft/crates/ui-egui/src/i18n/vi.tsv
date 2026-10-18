@@ -3920,3 +3920,27 @@ curves	Smooth	Làm mượt
 	Popup palette	Bảng màu bật lên
 	Smear	Miết
 	Smudge Radius	Bán kính nhòe
+	Shaped Gradient (angular)	Chuyển sắc theo hình (góc)
+	Shaped Gradient (spherical)	Chuyển sắc theo hình (cầu)
+	Shaped Gradient (dimpled)	Chuyển sắc theo hình (lõm)
+	Truncate	Cắt bỏ
+	Sawtooth wave	Sóng răng cưa
+	Triangular wave	Sóng tam giác
+	Wheel	Con lăn
+	Force	Lực
+	Aspect Ratio	Tỷ lệ khung
+	Jitter	Rung
+	Fade length	Độ dài mờ dần
+	Random amount	Mức ngẫu nhiên
+	Save Preset	Lưu cài đặt sẵn
+	Paint Dynamics Editor	Trình chỉnh sửa động lực vẽ
+	Color from Gradient	Màu từ chuyển sắc
+	Put this table on the current brush	Áp dụng bảng này cho cọ hiện tại
+	Save the table as a named dynamics preset	Lưu bảng thành cài đặt động lực có tên
+	Give the dynamics preset a name first	Hãy đặt tên cho cài đặt động lực trước
+	Edit the dynamics table (inputs × outputs)	Sửa bảng động lực (đầu vào × đầu ra)
+	Reset Plane	Đặt lại mặt phẳng
+	Click four corners to define a perspective plane, then clone along it	Nhấp bốn góc để xác định mặt phẳng phối cảnh, rồi nhân bản theo mặt phẳng đó
+	Click corner {n} of 4	Nhấp góc {n}/4
+	Perspective plane: corner {n} of 4 set	Mặt phẳng phối cảnh: đã đặt góc {n}/4
+	Perspective plane set; {key}-click a source, then paint	Đã đặt mặt phẳng phối cảnh; {key}-nhấp một nguồn rồi vẽ

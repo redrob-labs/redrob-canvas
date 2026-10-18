@@ -93,6 +93,7 @@ pub mod vectorscope;
 mod video;
 pub mod warp;
 pub mod wideangle;
+pub mod paint_shaped;
 
 pub use artistic::{GALLERY_CATEGORIES, GalleryEffect, GalleryFilter, GalleryParam, GalleryParamKind};
 pub use image::{Edge, Image};

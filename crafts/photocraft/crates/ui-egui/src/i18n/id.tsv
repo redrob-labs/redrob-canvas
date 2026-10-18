@@ -3430,3 +3430,26 @@ curves	Smooth	Haluskan
 	Popup palette	Palet sembul
 	Smear	Oles
 	Smudge Radius	Radius smudge
+	Shaped Gradient (angular)	Gradien berbentuk (sudut)
+	Shaped Gradient (spherical)	Gradien berbentuk (bola)
+	Shaped Gradient (dimpled)	Gradien berbentuk (cekung)
+	Truncate	Potong
+	Sawtooth wave	Gelombang gigi gergaji
+	Triangular wave	Gelombang segitiga
+	Wheel	Roda
+	Force	Gaya
+	Jitter	Getar
+	Fade length	Panjang pudar
+	Random amount	Jumlah acak
+	Save Preset	Simpan preset
+	Paint Dynamics Editor	Editor dinamika lukis
+	Color from Gradient	Warna dari gradien
+	Put this table on the current brush	Terapkan tabel ini ke kuas saat ini
+	Save the table as a named dynamics preset	Simpan tabel sebagai preset dinamika bernama
+	Give the dynamics preset a name first	Beri nama preset dinamika dulu
+	Edit the dynamics table (inputs × outputs)	Edit tabel dinamika (masukan × keluaran)
+	Reset Plane	Atur ulang bidang
+	Click four corners to define a perspective plane, then clone along it	Klik empat sudut untuk menentukan bidang perspektif, lalu klon di sepanjangnya
+	Click corner {n} of 4	Klik sudut {n} dari 4
+	Perspective plane: corner {n} of 4 set	Bidang perspektif: sudut {n} dari 4 diatur
+	Perspective plane set; {key}-click a source, then paint	Bidang perspektif diatur; {key}-klik sumber, lalu lukis

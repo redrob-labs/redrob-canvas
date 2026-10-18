@@ -3409,3 +3409,28 @@ curves	Smooth	Сгладить
 	Popup palette	Всплывающая палитра
 	Smear	Размазывание
 	Smudge Radius	Радиус смазывания
+	Shaped Gradient (angular)	Градиент по форме (угловой)
+	Shaped Gradient (spherical)	Градиент по форме (сферический)
+	Shaped Gradient (dimpled)	Градиент по форме (вогнутый)
+	Truncate	Обрезать
+	Sawtooth wave	Пилообразная волна
+	Triangular wave	Треугольная волна
+	Direction	Направление
+	Wheel	Колесо
+	Fade	Затухание
+	Force	Сила
+	Jitter	Дрожание
+	Fade length	Длина затухания
+	Random amount	Степень случайности
+	Save Preset	Сохранить набор
+	Paint Dynamics Editor	Редактор динамики рисования
+	Color from Gradient	Цвет из градиента
+	Put this table on the current brush	Применить таблицу к текущей кисти
+	Save the table as a named dynamics preset	Сохранить таблицу как именованный набор динамики
+	Give the dynamics preset a name first	Сначала дайте набору динамики имя
+	Edit the dynamics table (inputs × outputs)	Редактировать таблицу динамики (входы × выходы)
+	Reset Plane	Сбросить плоскость
+	Click four corners to define a perspective plane, then clone along it	Щёлкните четыре угла, чтобы задать плоскость перспективы, затем клонируйте вдоль неё
+	Click corner {n} of 4	Щёлкните угол {n} из 4
+	Perspective plane: corner {n} of 4 set	Плоскость перспективы: задан угол {n} из 4
+	Perspective plane set; {key}-click a source, then paint	Плоскость перспективы задана; щёлкните источник с {key}, затем рисуйте

@@ -3963,3 +3963,27 @@ curves	Smooth	매끄럽게
 	Cumulative undo duration	누적 실행 취소 지속 시간
 	Popup palette	팝업 팔레트
 	Smudge Radius	스머지 반경
+	Shaped Gradient (angular)	모양 그레이디언트(각도)
+	Shaped Gradient (spherical)	모양 그레이디언트(구형)
+	Shaped Gradient (dimpled)	모양 그레이디언트(오목)
+	Truncate	잘라내기
+	Sawtooth wave	톱니파
+	Triangular wave	삼각파
+	Wheel	휠
+	Force	힘
+	Aspect Ratio	종횡비
+	Jitter	지터
+	Fade length	페이드 길이
+	Random amount	무작위 정도
+	Save Preset	사전 설정 저장
+	Paint Dynamics Editor	페인트 다이내믹 편집기
+	Color from Gradient	그레이디언트에서 색상
+	Put this table on the current brush	이 표를 현재 브러시에 적용
+	Save the table as a named dynamics preset	이 표를 이름 있는 다이내믹 사전 설정으로 저장
+	Give the dynamics preset a name first	먼저 다이내믹 사전 설정의 이름을 입력하세요
+	Edit the dynamics table (inputs × outputs)	다이내믹 표 편집(입력 × 출력)
+	Reset Plane	평면 재설정
+	Click four corners to define a perspective plane, then clone along it	네 모서리를 클릭해 원근 평면을 정의한 뒤 그 평면을 따라 복제합니다
+	Click corner {n} of 4	모서리 {n}/4 클릭
+	Perspective plane: corner {n} of 4 set	원근 평면: 모서리 {n}/4 설정됨
+	Perspective plane set; {key}-click a source, then paint	원근 평면 설정됨. {key}-클릭으로 소스를 지정한 뒤 칠하세요

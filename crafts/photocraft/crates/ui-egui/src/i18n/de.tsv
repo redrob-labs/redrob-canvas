@@ -3437,3 +3437,28 @@ curves	Smooth	Glätten
 	Popup palette	Pop-up-Palette
 	Smear	Verschmieren
 	Smudge Radius	Verwischradius
+	Shaped Gradient (angular)	Formverlauf (winklig)
+	Shaped Gradient (spherical)	Formverlauf (sphärisch)
+	Shaped Gradient (dimpled)	Formverlauf (eingedellt)
+	Truncate	Abschneiden
+	Sawtooth wave	Sägezahnwelle
+	Triangular wave	Dreieckwelle
+	Tilt	Neigung
+	Wheel	Rad
+	Force	Kraft
+	Aspect Ratio	Seitenverhältnis
+	Jitter	Zittern
+	Fade length	Verblassungslänge
+	Random amount	Zufallsanteil
+	Save Preset	Vorgabe speichern
+	Paint Dynamics Editor	Malwerkzeug-Dynamik-Editor
+	Color from Gradient	Farbe aus Verlauf
+	Put this table on the current brush	Diese Tabelle auf den aktuellen Pinsel anwenden
+	Save the table as a named dynamics preset	Tabelle als benannte Dynamik-Vorgabe speichern
+	Give the dynamics preset a name first	Geben Sie der Dynamik-Vorgabe zuerst einen Namen
+	Edit the dynamics table (inputs × outputs)	Dynamik-Tabelle bearbeiten (Eingaben × Ausgaben)
+	Reset Plane	Ebene zurücksetzen
+	Click four corners to define a perspective plane, then clone along it	Vier Ecken anklicken, um eine Perspektivebene festzulegen, dann entlang ihr klonen
+	Click corner {n} of 4	Ecke {n} von 4 anklicken
+	Perspective plane: corner {n} of 4 set	Perspektivebene: Ecke {n} von 4 gesetzt
+	Perspective plane set; {key}-click a source, then paint	Perspektivebene gesetzt; mit {key} auf eine Quelle klicken, dann malen

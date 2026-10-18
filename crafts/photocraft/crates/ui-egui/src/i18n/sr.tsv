@@ -4504,3 +4504,26 @@ shape	Appearance	Izgled
 	Popup palette	Iskačuća paleta
 	Smear	Razmazivanje
 	Smudge Radius	Poluprečnik razmazivanja
+	Shaped Gradient (angular)	Градијент по облику (угаони)
+	Shaped Gradient (spherical)	Градијент по облику (сферни)
+	Shaped Gradient (dimpled)	Градијент по облику (удубљени)
+	Truncate	Одсеци
+	Sawtooth wave	Тестерасти талас
+	Triangular wave	Троугаони талас
+	Wheel	Точкић
+	Force	Сила
+	Jitter	Подрхтавање
+	Fade length	Дужина бледења
+	Random amount	Количина случајности
+	Save Preset	Сачувај поставку
+	Paint Dynamics Editor	Уређивач динамике сликања
+	Color from Gradient	Боја из градијента
+	Put this table on the current brush	Примени табелу на тренутну четкицу
+	Save the table as a named dynamics preset	Сачувај табелу као именовану поставку динамике
+	Give the dynamics preset a name first	Прво дајте име поставци динамике
+	Edit the dynamics table (inputs × outputs)	Уреди табелу динамике (улази × излази)
+	Reset Plane	Поништи раван
+	Click four corners to define a perspective plane, then clone along it	Кликните четири угла да одредите раван перспективе, затим клонирајте дуж ње
+	Click corner {n} of 4	Кликните угао {n} од 4
+	Perspective plane: corner {n} of 4 set	Раван перспективе: постављен угао {n} од 4
+	Perspective plane set; {key}-click a source, then paint	Раван перспективе постављена; {key}-кликните извор, затим сликајте

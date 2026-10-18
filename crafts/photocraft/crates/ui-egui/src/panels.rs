@@ -1090,6 +1090,33 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         widgets::vline(ui, 22.0);
                         widgets::toggle(ui, &mut b.pressure_size, tl!("Pressure for Size"));
                         widgets::toggle(ui, &mut b.pressure_opacity, tl!("Pressure for Opacity"));
+                        if app.ui.tool == Tool::Brush {
+                            // Colour from gradient: the stroke runs through the current gradient
+                            // (`brush.colorFromGradient`), one run per fade length.
+                            let mut from_gradient = !b.color_gradient.is_empty();
+                            if widgets::toggle(ui, &mut from_gradient, tl!("Color from Gradient")).changed() {
+                                let p = if from_gradient {
+                                    json!({ "on": true, "length": app.ui.tool_options.gradient_fade_length, "repeat": app.ui.tool_options.gradient_repeat })
+                                } else {
+                                    json!({ "on": false })
+                                };
+                                if let Err(e) = app.run("brush.colorFromGradient", p) {
+                                    app.ui.status = e;
+                                    app.ui.status_error = true;
+                                }
+                            }
+                            if from_gradient {
+                                opt_label(ui, tl!("Fade length"));
+                                if widgets::value_field(ui, &mut app.ui.tool_options.gradient_fade_length, 1.0..=100000.0, "px", 70.0).changed()
+                                    && let Err(e) = app.run(
+                                        "brush.colorFromGradient",
+                                        json!({ "on": true, "length": app.ui.tool_options.gradient_fade_length, "repeat": app.ui.tool_options.gradient_repeat }),
+                                    )
+                                {
+                                    app.ui.status = e;
+                                }
+                            }
+                        }
                     }
                     Tool::MixerBrush => {
                         brush_preset_chip(ui, b, &mut app.ui);
@@ -1329,6 +1356,9 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             ("conicalSymmetric", "cone", tl!("Conical Gradient (symmetric)")),
                             ("spiralClockwise", "shell", tl!("Spiral Gradient (clockwise)")),
                             ("spiralCounterClockwise", "rotate-ccw", tl!("Spiral Gradient (counter-clockwise)")),
+                            ("shapedAngular", "lasso", tl!("Shaped Gradient (angular)")),
+                            ("shapedSpherical", "circle-dot", tl!("Shaped Gradient (spherical)")),
+                            ("shapedDimpled", "circle-dashed", tl!("Shaped Gradient (dimpled)")),
                         ] {
                             if icons::button(ui, icon, 24.0, app.ui.tool_options.gradient_style == style, tip).clicked() {
                                 app.ui.tool_options.gradient_style = style.into();
@@ -1359,6 +1389,16 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                         }
                         widgets::checkbox(ui, &mut app.ui.tool_options.gradient_reverse, tl!("Reverse"));
                         widgets::checkbox(ui, &mut app.ui.tool_options.gradient_dither, tl!("Dither"));
+                        if app.ui.tool_options.gradient_classic {
+                            // Classic gradient only: how the ramp repeats past the drag, and the
+                            // start offset. A live Gradient Fill layer has neither.
+                            opt_label(ui, tl!("Repeat"));
+                            let repeats: [(String, &str); 4] =
+                                [("none".into(), "None"), ("sawtooth".into(), "Sawtooth wave"), ("triangular".into(), "Triangular wave"), ("truncate".into(), "Truncate")];
+                            widgets::dropdown(ui, "gradient-repeat", &mut app.ui.tool_options.gradient_repeat, &repeats, 118.0);
+                            opt_label(ui, tl!("Offset"));
+                            widgets::value_field(ui, &mut app.ui.tool_options.gradient_offset, 0.0..=100.0, "%", 58.0);
+                        }
                         // Live mode: the options also change a selected gradient fill layer.
                         crate::gradient_ui::options_changed(app, &before);
                     }
@@ -1987,7 +2027,9 @@ pub(crate) type SamplerReadouts = ((redrob_photo_doc::DocId, u64), std::sync::Ar
 /// adding, moving or deleting a sampler and every pixel edit bump the revision, so between them
 /// the Info panel reuses them instead of compositing each point through the stack every frame.
 pub(crate) fn sampler_readouts(app: &mut PhotocraftApp) -> std::sync::Arc<Vec<Value>> {
-    let Some(key) = app.session.active().map(|s| (s.doc.id, s.revision)) else { return std::sync::Arc::default() };
+    let Some(key) = app.session.active().map(|s| (s.doc.id, s.revision)) else {
+        return std::sync::Arc::default();
+    };
     if let Some((k, v)) = &app.info_samplers
         && *k == key
     {
@@ -2023,7 +2065,9 @@ fn navigator(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     } else if crate::canvas::navigator_waits_for_gpu(app, idx, &ctx) {
         widgets::checker(ui.painter(), rect, 6.0);
     } else {
-        let Some(tex) = crate::canvas::navigator_texture(app, &ctx, idx) else { return };
+        let Some(tex) = crate::canvas::navigator_texture(app, &ctx, idx) else {
+            return;
+        };
         widgets::checker(ui.painter(), rect, 6.0);
         ui.painter().image(tex, rect, Rect::from_min_max(egui::Pos2::ZERO, pos2(1.0, 1.0)), Color32::WHITE);
     }
@@ -2714,7 +2758,9 @@ fn footer_drop(ui: &egui::Ui, button: &egui::Response, drag: Option<(u64, bool)>
 
 /// While something is dragged over a footer `button`: highlights it, and is true on the release.
 pub(crate) fn dropped_on(ui: &egui::Ui, button: &egui::Response) -> bool {
-    let Some(p) = ui.ctx().input(|i| i.pointer.interact_pos()) else { return false };
+    let Some(p) = ui.ctx().input(|i| i.pointer.interact_pos()) else {
+        return false;
+    };
     if !button.rect.contains(p) {
         return false;
     }
@@ -2818,7 +2864,9 @@ fn eye_sweep(ctx: &egui::Context, l: &Layer, row: Rect, eye: &egui::Response, ac
         ctx.data_mut(|d| d.insert_temp(id, sweep));
         return;
     }
-    let Some(mut sweep) = ctx.data(|d| d.get_temp::<EyeSweep>(id)) else { return };
+    let Some(mut sweep) = ctx.data(|d| d.get_temp::<EyeSweep>(id)) else {
+        return;
+    };
     let (down, pos, delta) = ctx.input(|i| (i.pointer.primary_down(), i.pointer.interact_pos(), i.pointer.delta()));
     if !down {
         ctx.data_mut(|d| d.remove::<EyeSweep>(id));
@@ -4045,7 +4093,9 @@ fn layer_drop_payload(dragged: u64, target: LayerId, position: &str, selected: &
 /// Would this drop move the Background off the bottom, or put a layer below it? Photoshop
 /// refuses both (no drop indicator); ⌥-dragging the Background still copies it above.
 fn background_drop_refused(doc: &redrob_photo_doc::Document, payload: &Value, target: LayerId, position: &str, copy: bool) -> bool {
-    let Some(bg) = doc.layers.first().filter(|b| crate::doc_props_ui::is_background(doc, b)).map(|b| b.id) else { return false };
+    let Some(bg) = doc.layers.first().filter(|b| crate::doc_props_ui::is_background(doc, b)).map(|b| b.id) else {
+        return false;
+    };
     let moves_bg =
         !copy && (payload["layer"].as_u64() == Some(bg.0) || payload["layers"].as_array().is_some_and(|a| a.iter().any(|v| v.as_u64() == Some(bg.0))));
     moves_bg || (target == bg && position == "below")
@@ -4070,7 +4120,9 @@ fn layer_drag_and_drop(
     if resp.drag_started() && !mask_drag {
         ctx.data_mut(|d| d.insert_temp(key, l.id.0));
     }
-    let Some(dragged) = ctx.data(|d| d.get_temp::<u64>(key)) else { return };
+    let Some(dragged) = ctx.data(|d| d.get_temp::<u64>(key)) else {
+        return;
+    };
     let pointer = ctx.input(|i| i.pointer.interact_pos());
     let released = ctx.input(|i| i.pointer.any_released());
     let copy = ctx.input(|i| i.modifiers.alt);
@@ -4121,7 +4173,9 @@ fn layer_drag_and_drop(
     } else {
         "below"
     };
-    let Some(st) = app.session.active() else { return };
+    let Some(st) = app.session.active() else {
+        return;
+    };
     let mut payload = layer_drop_payload(dragged, l.id, position, &st.selected_layers());
     if background_drop_refused(&st.doc, &payload, l.id, position, copy) {
         return;
@@ -4159,12 +4213,16 @@ fn layer_drop_zone(
     position: &'static str,
     actions: &mut Vec<(String, Value)>,
 ) {
-    let Some(dragged) = ctx.data(|d| d.get_temp::<u64>(egui::Id::new("layer-drag"))) else { return };
+    let Some(dragged) = ctx.data(|d| d.get_temp::<u64>(egui::Id::new("layer-drag"))) else {
+        return;
+    };
     let selected = app.session.active().map(|st| st.selected_layers()).unwrap_or_default();
     if target.0 == LayerId(dragged) && selected.len() > 1 && selected.contains(&target.0) {
         return;
     }
-    let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else { return };
+    let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else {
+        return;
+    };
     if !zone.contains(p) {
         return;
     }
@@ -4219,8 +4277,12 @@ fn start_fx_drag(ctx: &egui::Context, layer: LayerId, effect: Option<usize>) {
 
 /// While effects are dragged: their name by the pointer, and the copy cursor while ⌥ is held.
 fn fx_drag_feedback(ctx: &egui::Context, doc: &redrob_photo_doc::Document) {
-    let Some((from, effect)) = ctx.data(|d| d.get_temp::<FxDrag>(fx_drag_key())) else { return };
-    let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else { return };
+    let Some((from, effect)) = ctx.data(|d| d.get_temp::<FxDrag>(fx_drag_key())) else {
+        return;
+    };
+    let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else {
+        return;
+    };
     let label = match effect {
         Some(i) => doc.layer(LayerId(from)).and_then(|l| l.effects.items.get(i)).map_or("", |e| e.label()),
         None => "Effects",
@@ -4246,8 +4308,12 @@ fn fx_drop_action(from: u64, effect: Option<usize>, target: LayerId, copy: bool)
 /// A layer row accepts the fx row being dragged: outlined while the pointer is over it, dropped
 /// on release.
 fn fx_drop(ctx: &egui::Context, ui: &egui::Ui, l: &Layer, rect: Rect, actions: &mut Vec<(String, Value)>) {
-    let Some((from, effect)) = ctx.data(|d| d.get_temp::<FxDrag>(fx_drag_key())) else { return };
-    let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else { return };
+    let Some((from, effect)) = ctx.data(|d| d.get_temp::<FxDrag>(fx_drag_key())) else {
+        return;
+    };
+    let Some(p) = ctx.input(|i| i.pointer.interact_pos()) else {
+        return;
+    };
     if from == l.id.0 || !rect.contains(p) {
         return;
     }
@@ -6112,7 +6178,9 @@ mod compact_visual_regressions {
 
     #[test]
     fn capture_compact_visual_fixtures() {
-        let Some(directory) = std::env::var_os("REDROB_CRAFT_UI_VISUAL_FIXTURES").map(std::path::PathBuf::from) else { return };
+        let Some(directory) = std::env::var_os("REDROB_CRAFT_UI_VISUAL_FIXTURES").map(std::path::PathBuf::from) else {
+            return;
+        };
         std::fs::create_dir_all(&directory).unwrap();
         for kind in crate::theme::ThemeKind::ALL {
             for (width, height) in [(800.0, 480.0), (1280.0, 720.0)] {

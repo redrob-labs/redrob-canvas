@@ -4162,3 +4162,26 @@ cameraData	Lens	Lens
 	Popup palette	Açılır palet
 	Smear	Sürme
 	Smudge Radius	Bulaştırma yarıçapı
+	Shaped Gradient (angular)	Şekilli Gradyan (açısal)
+	Shaped Gradient (spherical)	Şekilli Gradyan (küresel)
+	Shaped Gradient (dimpled)	Şekilli Gradyan (çukur)
+	Truncate	Kes
+	Sawtooth wave	Testere dişi dalga
+	Triangular wave	Üçgen dalga
+	Wheel	Tekerlek
+	Force	Kuvvet
+	Jitter	Titreme
+	Fade length	Soldurma uzunluğu
+	Random amount	Rastgele miktar
+	Save Preset	Ön ayarı kaydet
+	Paint Dynamics Editor	Boyama Dinamikleri Düzenleyicisi
+	Color from Gradient	Gradyandan renk
+	Put this table on the current brush	Bu tabloyu geçerli fırçaya uygula
+	Save the table as a named dynamics preset	Tabloyu adlandırılmış dinamik ön ayarı olarak kaydet
+	Give the dynamics preset a name first	Önce dinamik ön ayarına bir ad verin
+	Edit the dynamics table (inputs × outputs)	Dinamik tablosunu düzenle (girişler × çıkışlar)
+	Reset Plane	Düzlemi sıfırla
+	Click four corners to define a perspective plane, then clone along it	Perspektif düzlemi tanımlamak için dört köşeye tıklayın, sonra onun boyunca klonlayın
+	Click corner {n} of 4	4 köşeden {n}. köşeye tıklayın
+	Perspective plane: corner {n} of 4 set	Perspektif düzlemi: 4 köşeden {n}. ayarlandı
+	Perspective plane set; {key}-click a source, then paint	Perspektif düzlemi ayarlandı; bir kaynağa {key} ile tıklayın, sonra boyayın

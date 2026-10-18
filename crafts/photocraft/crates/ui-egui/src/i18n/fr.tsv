@@ -3443,3 +3443,26 @@ curves	Smooth	Lisser
 	Popup palette	Palette contextuelle
 	Smear	Étalement
 	Smudge Radius	Rayon de maculage
+	Shaped Gradient (angular)	Dégradé selon la forme (angulaire)
+	Shaped Gradient (spherical)	Dégradé selon la forme (sphérique)
+	Shaped Gradient (dimpled)	Dégradé selon la forme (creusé)
+	Truncate	Tronquer
+	Sawtooth wave	Onde en dents de scie
+	Triangular wave	Onde triangulaire
+	Wheel	Molette
+	Force	Force
+	Jitter	Variation
+	Fade length	Longueur du fondu
+	Random amount	Quantité aléatoire
+	Save Preset	Enregistrer le paramètre prédéfini
+	Paint Dynamics Editor	Éditeur de dynamique de la brosse
+	Color from Gradient	Couleur du dégradé
+	Put this table on the current brush	Appliquer ce tableau à la brosse actuelle
+	Save the table as a named dynamics preset	Enregistrer le tableau comme dynamique nommée
+	Give the dynamics preset a name first	Nommez d’abord la dynamique
+	Edit the dynamics table (inputs × outputs)	Modifier le tableau de dynamique (entrées × sorties)
+	Reset Plane	Réinitialiser le plan
+	Click four corners to define a perspective plane, then clone along it	Cliquez quatre coins pour définir un plan de perspective, puis clonez le long de celui-ci
+	Click corner {n} of 4	Cliquez le coin {n} sur 4
+	Perspective plane: corner {n} of 4 set	Plan de perspective : coin {n} sur 4 défini
+	Perspective plane set; {key}-click a source, then paint	Plan de perspective défini ; {key}-cliquez une source, puis peignez

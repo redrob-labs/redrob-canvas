@@ -4131,3 +4131,26 @@ curves	Smooth	Згладити
 	Popup palette	Спливна палітра
 	Smear	Розмазування
 	Smudge Radius	Радіус розмазування
+	Shaped Gradient (angular)	Градієнт за формою (кутовий)
+	Shaped Gradient (spherical)	Градієнт за формою (сферичний)
+	Shaped Gradient (dimpled)	Градієнт за формою (увігнутий)
+	Truncate	Обрізати
+	Sawtooth wave	Пилкоподібна хвиля
+	Triangular wave	Трикутна хвиля
+	Wheel	Колесо
+	Force	Сила
+	Jitter	Тремтіння
+	Fade length	Довжина згасання
+	Random amount	Ступінь випадковості
+	Save Preset	Зберегти набір
+	Paint Dynamics Editor	Редактор динаміки малювання
+	Color from Gradient	Колір із градієнта
+	Put this table on the current brush	Застосувати таблицю до поточного пензля
+	Save the table as a named dynamics preset	Зберегти таблицю як іменований набір динаміки
+	Give the dynamics preset a name first	Спочатку дайте набору динаміки ім’я
+	Edit the dynamics table (inputs × outputs)	Редагувати таблицю динаміки (входи × виходи)
+	Reset Plane	Скинути площину
+	Click four corners to define a perspective plane, then clone along it	Клацніть чотири кути, щоб задати площину перспективи, потім клонуйте вздовж неї
+	Click corner {n} of 4	Клацніть кут {n} з 4
+	Perspective plane: corner {n} of 4 set	Площина перспективи: задано кут {n} з 4
+	Perspective plane set; {key}-click a source, then paint	Площину перспективи задано; клацніть джерело з {key}, потім малюйте

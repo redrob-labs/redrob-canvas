@@ -4222,3 +4222,26 @@ layerLabel	No Color	Sem cor
 	Popup palette	Paleta flutuante
 	Smear	Esfregar
 	Smudge Radius	Raio de borrar
+	Shaped Gradient (angular)	Degradê por forma (angular)
+	Shaped Gradient (spherical)	Degradê por forma (esférico)
+	Shaped Gradient (dimpled)	Degradê por forma (côncavo)
+	Truncate	Truncar
+	Sawtooth wave	Onda dente de serra
+	Triangular wave	Onda triangular
+	Wheel	Roda
+	Force	Força
+	Jitter	Tremulação
+	Fade length	Comprimento do esmaecimento
+	Random amount	Quantidade aleatória
+	Save Preset	Salvar predefinição
+	Paint Dynamics Editor	Editor de dinâmica de pintura
+	Color from Gradient	Cor do degradê
+	Put this table on the current brush	Aplicar esta tabela ao pincel atual
+	Save the table as a named dynamics preset	Salvar a tabela como dinâmica nomeada
+	Give the dynamics preset a name first	Dê um nome à dinâmica primeiro
+	Edit the dynamics table (inputs × outputs)	Editar a tabela de dinâmica (entradas × saídas)
+	Reset Plane	Redefinir plano
+	Click four corners to define a perspective plane, then clone along it	Clique em quatro cantos para definir um plano de perspectiva e clone ao longo dele
+	Click corner {n} of 4	Clique no canto {n} de 4
+	Perspective plane: corner {n} of 4 set	Plano de perspectiva: canto {n} de 4 definido
+	Perspective plane set; {key}-click a source, then paint	Plano de perspectiva definido; {key}-clique em uma origem e pinte

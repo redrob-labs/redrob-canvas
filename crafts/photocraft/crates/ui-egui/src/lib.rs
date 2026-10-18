@@ -103,6 +103,7 @@ pub mod gallery_ui;
 pub mod gpu_canvas;
 pub mod gpu_status;
 pub mod gradient_ui;
+pub mod dynamics_editor_ui;
 pub mod guide_layout_ui;
 pub mod guide_select;
 pub mod hold_keys;
@@ -1967,6 +1968,7 @@ impl eframe::App for PhotocraftApp {
         brush_panel::window(self, &ctx);
         preset_panels::windows(self, &ctx);
         gradient_ui::editor_window(self, &ctx);
+        dynamics_editor_ui::window(self, &ctx);
         type_panels_ui::windows(self, &ctx);
         analysis_ui::windows(self, &ctx);
         timeline_ui::windows(self, &ctx);

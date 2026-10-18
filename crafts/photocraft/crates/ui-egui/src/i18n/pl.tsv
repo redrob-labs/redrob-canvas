@@ -4030,3 +4030,26 @@ curves	Smooth	Wygładź
 	Popup palette	Paleta podręczna
 	Smear	Rozmazywanie
 	Smudge Radius	Promień rozmazywania
+	Shaped Gradient (angular)	Gradient kształtu (kątowy)
+	Shaped Gradient (spherical)	Gradient kształtu (sferyczny)
+	Shaped Gradient (dimpled)	Gradient kształtu (wklęsły)
+	Truncate	Obcięcie
+	Sawtooth wave	Fala piłokształtna
+	Triangular wave	Fala trójkątna
+	Wheel	Kółko
+	Force	Siła
+	Jitter	Drganie
+	Fade length	Długość zanikania
+	Random amount	Losowość
+	Save Preset	Zapisz ustawienie
+	Paint Dynamics Editor	Edytor dynamiki malowania
+	Color from Gradient	Kolor z gradientu
+	Put this table on the current brush	Zastosuj tę tabelę do bieżącego pędzla
+	Save the table as a named dynamics preset	Zapisz tabelę jako nazwaną dynamikę
+	Give the dynamics preset a name first	Najpierw nadaj dynamice nazwę
+	Edit the dynamics table (inputs × outputs)	Edytuj tabelę dynamiki (wejścia × wyjścia)
+	Reset Plane	Resetuj płaszczyznę
+	Click four corners to define a perspective plane, then clone along it	Kliknij cztery narożniki, aby określić płaszczyznę perspektywy, a potem klonuj wzdłuż niej
+	Click corner {n} of 4	Kliknij narożnik {n} z 4
+	Perspective plane: corner {n} of 4 set	Płaszczyzna perspektywy: ustawiono narożnik {n} z 4
+	Perspective plane set; {key}-click a source, then paint	Płaszczyzna perspektywy ustawiona; kliknij źródło z {key}, potem maluj

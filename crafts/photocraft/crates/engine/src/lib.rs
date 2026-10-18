@@ -133,6 +133,9 @@ pub use video_cmds::render_video_with;
 pub mod vp_cmds;
 pub mod warp_cmds;
 pub mod web_cmds;
+// v0.11 parity round (A4): formats, file/edit, scripting, Ink and MyPaint-style brushes.
+pub mod dynamics_extra_cmds;
+pub mod perspective_clone_cmds;
 mod wia_cmds;
 
 use std::sync::Arc;

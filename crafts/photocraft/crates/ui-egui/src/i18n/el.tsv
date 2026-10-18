@@ -4132,3 +4132,26 @@ curves	Smooth	Εξομάλυνση
 	Popup palette	Αναδυόμενη παλέτα
 	Smear	Επάλειψη
 	Smudge Radius	Ακτίνα μουτζούρας
+	Shaped Gradient (angular)	Διαβάθμιση σχήματος (γωνιακή)
+	Shaped Gradient (spherical)	Διαβάθμιση σχήματος (σφαιρική)
+	Shaped Gradient (dimpled)	Διαβάθμιση σχήματος (κοίλη)
+	Truncate	Περικοπή
+	Sawtooth wave	Πριονωτό κύμα
+	Triangular wave	Τριγωνικό κύμα
+	Wheel	Ροδέλα
+	Force	Δύναμη
+	Jitter	Τρέμουλο
+	Fade length	Μήκος ξεθωριάσματος
+	Random amount	Τυχαία ποσότητα
+	Save Preset	Αποθήκευση προεπιλογής
+	Paint Dynamics Editor	Επεξεργαστής δυναμικής ζωγραφικής
+	Color from Gradient	Χρώμα από διαβάθμιση
+	Put this table on the current brush	Εφαρμογή πίνακα στο τρέχον πινέλο
+	Save the table as a named dynamics preset	Αποθήκευση πίνακα ως επώνυμη προεπιλογή δυναμικής
+	Give the dynamics preset a name first	Δώστε πρώτα όνομα στην προεπιλογή δυναμικής
+	Edit the dynamics table (inputs × outputs)	Επεξεργασία πίνακα δυναμικής (είσοδοι × έξοδοι)
+	Reset Plane	Επαναφορά επιπέδου
+	Click four corners to define a perspective plane, then clone along it	Κάντε κλικ σε τέσσερις γωνίες για να ορίσετε επίπεδο προοπτικής και κλωνοποιήστε κατά μήκος του
+	Click corner {n} of 4	Κλικ στη γωνία {n} από 4
+	Perspective plane: corner {n} of 4 set	Επίπεδο προοπτικής: ορίστηκε η γωνία {n} από 4
+	Perspective plane set; {key}-click a source, then paint	Το επίπεδο προοπτικής ορίστηκε· κάντε {key}-κλικ σε πηγή και μετά ζωγραφίστε
