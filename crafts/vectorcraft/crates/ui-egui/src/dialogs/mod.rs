@@ -83,6 +83,7 @@ pub mod script_check;
 mod shapes;
 pub mod shortcut_import;
 pub mod slices;
+pub mod spelling;
 pub mod spot_colors;
 pub(crate) mod svg_options;
 pub mod swatch_conflict;
@@ -252,6 +253,8 @@ registry! {
     SaveStyleLibrary: [save_style_library::KIND] => save_style_library::SPEC,
     Expand: [expand::KIND] => expand::SPEC,
     SpotColors: [spot_colors::KIND] => spot_colors::SPEC,
+    CheckSpelling: [spelling::KIND] => spelling::SPEC,
+    CustomDictionary: [spelling::DICTIONARY_KIND] => spelling::DICTIONARY_SPEC,
     TransformEach: [transform_each::KIND] => transform_each::SPEC,
     WidthPoint: [width_point::KIND] => width_point::SPEC,
     Corners: [corners::KIND] => corners::SPEC,
@@ -474,6 +477,7 @@ pub fn show(app: &mut VectorcraftApp, ctx: &egui::Context) {
         ok = true;
     }
     app.ui.dialog = Some(d);
+    spelling::after_frame(app);
     if cancel {
         self::cancel(app);
     } else if ok && let Err(e) = confirm(app) {

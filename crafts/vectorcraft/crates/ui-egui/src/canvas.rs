@@ -258,6 +258,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         h,
         outline: app.ui.view.outline,
         trim: app.ui.view.trim_view,
+        hairlines: app.ui.view.visible_hairlines,
         ppp,
         hidden: vec![],
         rot: v.rotation,
@@ -308,6 +309,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
             proof: redrob_vector_render::proof::active_proof(),
             overprint_preview: redrob_vector_render::proof::overprint_preview_on(),
             trim: app.ui.view.trim_view,
+            visible_hairlines: key.hairlines,
             tile_edge: redrob_vector_color::Color::from_hex(&app.session.prefs.pattern_tile_edge_color).map_or(opts.tile_edge, |c| {
                 let [r, g, b, _] = c.to_rgba8(1.0);
                 [r, g, b]

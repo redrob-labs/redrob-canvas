@@ -277,9 +277,10 @@ fn doc_to_save(st: &DocState, f: &Format) -> Arc<Document> {
     Arc::new(d)
 }
 
-/// What a format loses against a native file (reported whenever a save writes it).
+/// What a format loses against a native file (reported whenever a save writes it). An SVG save
+/// carries the native document in its editor namespace (`preserveEditing`), so it loses nothing.
 fn fidelity_warning(f: &Format) -> Option<String> {
-    (!is_native(f)).then(|| {
+    (!is_native(f) && !is_svg(f)).then(|| {
         format!(
             "{} keeps the artwork but not everything a Redrob Canvas document holds (editable effects, symbols, swatches, styles): save as Redrob Canvas to keep it all editable",
             f.label
@@ -454,6 +455,9 @@ fn job_for_stamped(s: &Session, st: &DocState, plan: SavePlan, stamped: Option<i
     if is_svg(plan.format) {
         // A save keeps hidden layers (not displayed) unless told otherwise; exports leave them out.
         params.entry("hiddenLayers").or_insert(Value::Bool(true));
+        // A saved SVG is a native document too: the editor's own data rides in its metadata
+        // namespace, so it reopens with nothing lost while any viewer renders the SVG 1.1 body.
+        params.entry("preserveEditing").or_insert(Value::Bool(true));
     }
     let mut params = Value::Object(params);
     if matches!(plan.format.id, "vectorcraft" | "template") {

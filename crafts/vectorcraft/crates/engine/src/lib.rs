@@ -1098,6 +1098,8 @@ pub struct Session {
     pub(crate) batch_stash: Option<Vec<DocState>>,
     /// Where Data Recovery keeps its copies ([`cmd::recovery`]).
     pub recovery: cmd::recovery::Recovery,
+    /// Check Spelling: the session's ignored words and the custom dictionary ([`cmd::spell`]).
+    pub spelling: cmd::spell::Spelling,
     /// While the active tool's actions run: their commands aren't "a command from outside the
     /// tool" ([`Session::after_command`]).
     pub(crate) in_tool_actions: bool,
@@ -1175,6 +1177,7 @@ impl Session {
             note_depth: 1,
             batch_stash: None,
             recovery: Default::default(),
+            spelling: Default::default(),
             in_tool_actions: false,
             envelope_defaults: None,
             liquify_stroke: None,

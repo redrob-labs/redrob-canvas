@@ -196,6 +196,9 @@ pub struct ViewFlags {
     pub snap_to_pixel: bool,
     /// View → Show/Hide Text Threads.
     pub text_threads: bool,
+    /// View › Visible Hairlines: strokes are drawn at least one screen pixel wide.
+    #[serde(default)]
+    pub visible_hairlines: bool,
     /// View → Show/Hide Gradient Annotator.
     pub gradient_annotator: bool,
     /// Type → Show Hidden Characters.
@@ -239,6 +242,7 @@ impl Default for ViewFlags {
             corner_widgets: true,
             snap_to_pixel: false,
             text_threads: true,
+            visible_hairlines: false,
             gradient_annotator: true,
             hidden_chars: false,
             show_handles: true,

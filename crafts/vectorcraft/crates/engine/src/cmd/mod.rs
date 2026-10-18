@@ -75,6 +75,7 @@ mod select;
 pub(crate) mod shaper;
 pub mod shortcutset;
 pub(crate) mod slices;
+pub mod spell;
 mod stroke;
 mod style;
 pub mod stylelib;
@@ -236,6 +237,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(colormgmt::specs());
         v.extend(typemenu::specs());
         v.extend(textedit::specs());
+        v.extend(spell::specs());
         v.extend(inline::specs());
         v.extend(textstyles::specs());
         v.extend(fonts::specs());

@@ -199,6 +199,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{} toggle General › Use Precise Cursors: the drawing tools' pointers become a crosshair → true when on",
     ),
     ("view.textThreads", "Hide Text Threads", "Cmd+Shift+Y", "{} toggle the thread lines between threaded text frames"),
+    (
+        "view.visibleHairlines",
+        "Visible Hairlines",
+        "",
+        "{} toggle View › Visible Hairlines: every stroke draws at least one screen pixel wide, so thin lines stay visible zoomed out",
+    ),
     ("view.gradientAnnotator", "Hide Gradient Annotator", "Cmd+Alt+G", "{} toggle the Gradient tool's annotator"),
     ("type.hiddenCharacters", "Show Hidden Characters", "Cmd+Alt+I", "{} toggle markers for spaces, paragraph ends and story ends"),
     ("type.alignLeft", "Align left", "Cmd+Shift+L", "{} align the selected type's paragraphs (or those the Type tool's selection touches) left"),
@@ -924,6 +930,18 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "{id?} open the link the selected object (or the anchor it is inside) points to in the browser (object.followLink)",
     ),
     (
+        "ui.checkSpelling",
+        "Check Spelling…",
+        "Cmd+I",
+        "{language?: a dictionary code (default: the first English one installed)} run text.spellCheck over the document's type and open Check Spelling (dialog `checkSpelling`: Ignore, Ignore All, Add, Change, Change All over the misspellings found)",
+    ),
+    (
+        "ui.customDictionary",
+        "Edit Custom Dictionary…",
+        "",
+        "{} open the custom spelling dictionary (dialog `customDictionary`: the words text.spellAdd keeps, with Add and Remove)",
+    ),
+    (
         "ui.importWebImage",
         "Import Web Image…",
         "",
@@ -1103,6 +1121,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             })
         }
         "view.textThreads" => flag(&mut app.ui.view.text_threads),
+        "view.visibleHairlines" => flag(&mut app.ui.view.visible_hairlines),
         "type.hiddenCharacters" => flag(&mut app.ui.view.hidden_chars),
         "type.bold" => crate::panels::character::toggle_face(app, Face::Bold),
         "type.italic" => crate::panels::character::toggle_face(app, Face::Italic),
@@ -1324,6 +1343,8 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             app.select_tool(redrob_vector_tools::cropimage::ID);
             Ok(json!({"tool": app.session.tool_id()}))
         }
+        "ui.checkSpelling" => crate::dialogs::spelling::open(app, p),
+        "ui.customDictionary" => crate::dialogs::spelling::open_dictionary(app, p),
         "ui.importWebImage" => {
             let url = s("url").unwrap_or_default().trim().to_string();
             if !(url.starts_with("http://") || url.starts_with("https://")) {
@@ -1622,6 +1643,7 @@ pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
         "view.pixelPreview" => v.pixel_preview,
         "view.trimView" => v.trim_view,
         "view.snapToPixel" => v.snap_to_pixel,
+        "view.visibleHairlines" => v.visible_hairlines,
         // Type on a Path effect of the selected path type.
         "type.pathOptions" if p.get("effect").is_some() => {
             selected_text(true).is_some_and(|t| p.get("effect").and_then(Value::as_str) == Some(t.path_effect.id()))
@@ -2111,6 +2133,8 @@ pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
         "ui.spotColors" => app.session.active().is_some(),
         "ui.menuDialog" | "ui.objectProperties" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
         "ui.importWebImage" => app.session.active().is_some() && app.services.fetch_url.is_some(),
+        "ui.checkSpelling" => app.session.active().is_some(),
+        "ui.customDictionary" => true,
         "ui.followLink" => app.session.active().is_some_and(|st| {
             st.selection.objects.iter().any(|id| {
                 let mut cur = Some(*id);
@@ -2260,7 +2284,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                     json!({"find": "", "replace": "", "in": "text", "scope": "all", "matchCase": false, "wholeWord": false, "exact": false, "includeHidden": false, "includeLocked": false}),
                 ),
                 cp("Find Next", "edit.findNext", json!({"find": ""})),
-                sub("Spelling", vec![todo("Auto Spell Check"), todos("Check Spelling…", "Cmd+I"), todo("Edit Custom Dictionary…")]),
+                sub("Spelling", vec![c("Check Spelling…", "ui.checkSpelling"), c("Edit Custom Dictionary…", "ui.customDictionary")]),
                 Sep,
                 sub(
                     "Edit Colors",
@@ -2728,6 +2752,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Hide Bounding Box", "view.boundingBox"),
                 c("Show Transparency Grid", "view.transparencyGrid"),
                 c("Hide Text Threads", "view.textThreads"),
+                c("Visible Hairlines", "view.visibleHairlines"),
                 c("Hide Gradient Annotator", "view.gradientAnnotator"),
                 c("Hide Corner Widget", "view.cornerWidget"),
                 Sep,

@@ -1942,8 +1942,8 @@ name = "Visible hairlines display mode"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#Visible_Hairlines_Display_Mode"
 behaviour = "A view mode draws every stroke at least one pixel wide so very thin lines stay visible when zoomed out."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/render/src/lib.rs (RenderOptions.visible_hairlines: strokes at least one device pixel), crafts/vectorcraft/crates/ui-egui/src/state.rs (ViewFlags.visible_hairlines), crafts/vectorcraft/crates/ui-egui/src/canvas.rs, crafts/vectorcraft/crates/ui-egui/src/menus.rs (View › Visible Hairlines)"
 gap = ""
 priority = 3
 
@@ -2461,9 +2461,9 @@ name = "Spell check"
 reference = "Inkscape"
 manual = "https://inkscape.org/doc/keys.html"
 behaviour = "Text > Check Spelling walks the document's text with system dictionaries (several languages), offering replacements, ignore and add-to-dictionary."
-ours = "none"
-ours_where = ""
-gap = "Spelling menu items are placeholders"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/spell.rs (hunspell .dic/.aff and system word lists, text.spellCheck/spellReplace/spellIgnore/spellAdd/spellRemove/spellLanguages, custom dictionary file), crafts/vectorcraft/crates/ui-egui/src/dialogs/spelling.rs (Check Spelling: Ignore, Ignore All, Add, Change, Change All, suggestions; Edit Custom Dictionary), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Type › Spelling), apps/redrob-canvas/src/services.rs (Spelling folder)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -3292,9 +3292,9 @@ name = "Native format: SVG with editor namespace"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/saving.html"
 behaviour = "Documents are saved as SVG 1.1 (with SVG 2 features where used) plus editor-specific attributes in a private namespace for live shapes, effects, grids and view state; any SVG viewer renders them."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/format/src/ (native document format), crafts/vectorcraft/crates/svg/src/export.rs"
-gap = "native documents are a separate container format; SVG export is a faithful translation but round-trips only what SVG can express plus a few private attributes"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/fileio/save.rs (Save as SVG embeds the native document in the editor namespace by default: preserveEditing on, no fidelity warning), crafts/vectorcraft/crates/svg/src/export.rs (<vectorcraft:document> metadata), crafts/vectorcraft/crates/svg/src/lib.rs (editing() restores it on open)"
+gap = ""
 priority = 1
 
 [[feature]]

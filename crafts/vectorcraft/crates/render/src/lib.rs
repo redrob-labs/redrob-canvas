@@ -77,6 +77,9 @@ pub fn raster_size(region: Rect, scale: f64) -> Result<(u32, u32), String> {
 pub struct RenderOptions {
     /// Outline (wireframe) view: 1 px black paths, no paint.
     pub outline: bool,
+    /// View › Visible Hairlines: every stroke is drawn at least one device pixel wide, so thin
+    /// lines stay visible zoomed out (off: half a pixel, where they fade).
+    pub visible_hairlines: bool,
     /// Pasteboard colour behind everything (premultiplied RGBA8); `None` = transparent.
     pub background: Option<[u8; 4]>,
     /// Draw artboards as white rectangles (screen view). Export sets this to false.
@@ -197,6 +200,7 @@ impl Default for RenderOptions {
     fn default() -> Self {
         Self {
             outline: false,
+            visible_hairlines: false,
             background: None,
             artboards: false,
             hidden: vec![],
@@ -1471,7 +1475,8 @@ impl Renderer {
         // Keep thin strokes visible when zoomed far out (at least ~1 device pixel); a hairline
         // is one device pixel at any zoom.
         let scale = xf.determinant().abs().sqrt().max(1e-9);
-        let width = if st.hairline { f.px / scale } else { effects::stroke::aligned_width(st, closed).max(f.px * 0.5 / scale) };
+        let least = if f.opts.visible_hairlines { f.px } else { f.px * 0.5 };
+        let width = if st.hairline { f.px / scale } else { effects::stroke::aligned_width(st, closed).max(least / scale) };
         let inside = st.align == StrokeAlign::Inside && closed;
         if inside {
             ctx.set_fill_rule(fill_rule(rule));

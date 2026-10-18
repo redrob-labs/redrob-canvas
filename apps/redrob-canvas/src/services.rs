@@ -570,6 +570,11 @@ pub mod vector {
             app.session
                 .recovery
                 .set_default_folder(sibling("Data Recovery"));
+            if let Some(dir) = sibling("Spelling") {
+                app.session
+                    .spelling
+                    .set_user_dir(std::path::PathBuf::from(dir));
+            }
         }
     }
 

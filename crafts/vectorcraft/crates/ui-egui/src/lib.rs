@@ -320,6 +320,8 @@ pub struct CacheKey {
     pub h: u32,
     pub outline: bool,
     pub trim: bool,
+    /// View › Visible Hairlines ([`redrob_vector_render::RenderOptions::visible_hairlines`]).
+    pub hairlines: bool,
     pub ppp: f32,
     pub hidden: Vec<u64>,
     pub rot: f64,
