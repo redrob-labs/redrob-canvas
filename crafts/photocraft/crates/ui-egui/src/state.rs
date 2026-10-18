@@ -1487,6 +1487,10 @@ pub struct UiState {
     /// Ruler/Count/Note tools, Measurement Log and Notes panels (see `analysis_ui`).
     #[serde(default)]
     pub analysis: crate::analysis_ui::AnalysisUi,
+    /// Procedure Browser, Dashboard, Device Status, Selection Editor, MyPaint Brushes and the
+    /// metadata dialogs (see `extra_panels`).
+    #[serde(default)]
+    pub extra: crate::extra_panels::ExtraPanels,
     /// Assistant tool and the stroke snapping to painting assistants (see `assistant_ui`).
     #[serde(default)]
     pub assistants: crate::assistant_ui::AssistantUi,
@@ -1643,6 +1647,7 @@ impl Default for UiState {
             presets_ui: Default::default(),
             type_panels: Default::default(),
             analysis: Default::default(),
+            extra: Default::default(),
             assistants: Default::default(),
             timeline: Default::default(),
             slices: Default::default(),

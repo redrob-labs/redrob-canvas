@@ -110,6 +110,8 @@ pub mod sampler_cmds;
 pub mod select_extra_cmds;
 pub mod select_refine_cmds;
 pub mod resource_tags_cmds;
+pub mod mypaint_cmds;
+pub mod metadata_cmds;
 pub mod selection_cmds;
 pub mod shortcut_sets;
 pub mod slice_cmds;

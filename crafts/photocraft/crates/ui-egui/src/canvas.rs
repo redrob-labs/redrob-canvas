@@ -5172,6 +5172,8 @@ fn tool_move(app: &mut PhotocraftApp, x: f64, y: f64, pressure: f32, mods: egui:
 
 /// Tool state machine. Shared by mouse input and automation.
 pub fn tool_event(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers) {
+    // Device Status: a press tells which input device is in use (extra_panels.rs).
+    crate::extra_panels::device_seen(app, &ev);
     // A press anywhere but on a guide deselects the selected guide (`guide_select`).
     if let ToolEvent::Down { x, y, .. } = ev
         && app.ui.selected_guide.is_some()

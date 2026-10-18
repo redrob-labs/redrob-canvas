@@ -3121,3 +3121,62 @@ curves	Smooth	平滑
 	Tags:	标签：
 	Add tag	添加标签
 	Remove tag	移除标签
+	View Metadata…	查看元数据…
+	Edit Metadata…	编辑元数据…
+	Edit Metadata	编辑元数据
+	Metadata Viewer	元数据查看器
+	Write Metadata	写入元数据
+	Separate several values with semicolons	多个值用分号分隔
+	Copyrighted	受版权保护
+	Public Domain	公共领域
+	Unknown	未知
+	No tags	无标签
+	XMP	XMP
+	IPTC	IPTC
+	Text	文本
+	Rights	权利
+	IPTC Extension	IPTC 扩展
+	Categories	类别
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	过程浏览器
+	Plug-In Browser	插件浏览器
+	Search procedures	搜索过程
+	{n} procedures	{n} 个过程
+	(no menu)	（无菜单）
+	Menu: {path}	菜单：{path}
+	Parameters	参数
+	Available now	当前可用
+	Not available in the current state	当前状态下不可用
+	Run	运行
+	Select a procedure to read its parameters.	选择一个过程以查看其参数。
+	Dashboard	仪表板
+	Low memory: swap is nearly full. Save your work.	内存不足：交换空间几乎已满。请保存您的工作。
+	Memory	内存
+	Cache	缓存
+	Swap	交换空间
+	Swap: not reported on this platform	交换空间：此平台不报告
+	CPU	CPU
+	CPU renderer	CPU 渲染器
+	uploads	次上传
+	Misc: {jobs} jobs running · {n} samples	其他：{jobs} 个任务运行中 · {n} 个样本
+	Log to File…	记录到文件…
+	Stop Logging	停止记录
+	Device Status	设备状态
+	Core Pointer	核心指针
+	Pen / Tablet	压感笔 / 数位板
+	Brush:	画笔：
+	Pattern:	图案：
+	Gradient:	渐变：
+	Save Device Status	保存设备状态
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	每个设备记住自己的工具、颜色、画笔、图案和渐变；切换设备时随之切换。
+	Selection Editor	选区编辑器
+	No document open.	没有打开的文档。
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	单击以用魔棒选择该处的连续颜色（Shift 添加，Alt 减去）
+	Save to Channel	存储到通道
+	To Path	转为路径
+	Advanced options	高级选项
+	MyPaint Brushes	MyPaint 画笔
+	Import…	导入…
+	No MyPaint brushes yet. Import .myb files to list them here.	还没有 MyPaint 画笔。导入 .myb 文件即可在此列出。
+	No brush matches the filter.	没有画笔符合筛选条件。

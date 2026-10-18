@@ -153,9 +153,9 @@ name = "Selection editor dialog"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-selection-dialog.html"
 behaviour = "Dockable showing the selection as a black and white mask with buttons for all/none/invert, save to channel, to path (with an advanced options dialog), stroke; clicking in the preview with a tool draws selections."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/select_mask_view.rs, crafts/photocraft/crates/ui-egui/src/channels_panel.rs"
-gap = "no dedicated editor dockable; mask view and channel panel cover saving and viewing"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/extra_panels.rs (Window > Selection Editor: mask preview, All/None/Invert, Save to Channel, To Path with advanced options, Stroke, click-to-select), crafts/photocraft/crates/ui-egui/src/select_mask_view.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4293,9 +4293,9 @@ name = "Metadata editor and viewer"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-metadata-editor.html"
 behaviour = "View EXIF, XMP and IPTC tags and edit IPTC/XMP descriptive, rights, GPS and DICOM fields."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/algo/src/exif.rs, crafts/photocraft/crates/engine/src/file_cmds.rs (metadata handling on export), crafts/photocraft/crates/codecs/src/codecs/tiff_exif.rs"
-gap = "metadata is preserved and viewable in file info; no IPTC/XMP editor"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/metadata_cmds.rs (image.metadata.view/edit/fields: EXIF, XMP and IPTC viewer; descriptive, rights, IPTC, IPTC Extension, categories, GPS and DICOM fields written to XMP), crafts/photocraft/crates/ui-egui/src/extra_panels.rs (Image > Metadata > View/Edit Metadata dialogs)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -5109,8 +5109,8 @@ name = "MyPaint Brushes dialog"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-mypaint-brush-dialog.html"
 behaviour = "List of MyPaint brush presets with tags."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/mypaint_cmds.rs (brush.mypaint.import/list: .myb v1-v3 to brush presets, tagged), crafts/photocraft/crates/ui-egui/src/extra_panels.rs (Window > MyPaint Brushes: list with tags, filter, import, tagging)"
 gap = ""
 priority = 3
 
@@ -5217,8 +5217,8 @@ name = "Device Status dialog"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-device-status-dialog.html"
 behaviour = "Per input device: current tool, FG/BG colours, brush, pattern, gradient; save device status."
-ours = "none"
-ours_where = ""
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/extra_panels.rs (Window > Device Status: per device tool, FG/BG, brush, pattern, gradient; switching restores; Save Device Status to preferences), crafts/photocraft/crates/ui-egui/src/canvas.rs (device_seen)"
 gap = ""
 priority = 3
 
@@ -5241,9 +5241,9 @@ name = "Dashboard (memory, swap, CPU, GPU, cache, misc)"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-dashboard-dialog.html"
 behaviour = "Live performance graphs with history, low-swap warning, log to file for profiling."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/gpu_status.rs, crafts/photocraft/crates/ui-egui/src/monitor_status.rs, crafts/photocraft/crates/ui-egui/src/jobs_ui.rs"
-gap = "GPU and job status; no swap/cache graphs or performance log"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/extra_panels.rs (Window > Dashboard: memory, cache, swap, CPU, GPU, misc graphs with history, low-memory warning, log to CSV file), crafts/photocraft/crates/ui-egui/src/gpu_status.rs, crafts/photocraft/crates/ui-egui/src/jobs_ui.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -5289,9 +5289,9 @@ name = "Plug-In Browser and Procedure Browser"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/plug-in-plug-in-details.html"
 behaviour = "Lists installed plug-ins by menu path and every PDB procedure with parameters and description; search field."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/plugin_cmds.rs (plugin.list), crafts/photocraft/crates/engine/src/commands.rs (engine.commands with filter)"
-gap = "command list with search; no procedure documentation browser"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/extra_panels.rs (Help > Procedure Browser and Plug-In Browser: search, grouping by menu path, parameters and availability, Run), crafts/photocraft/crates/engine/src/commands.rs (command_specs), crafts/photocraft/crates/engine/src/plugin_cmds.rs"
+gap = ""
 priority = 3
 
 [[feature]]

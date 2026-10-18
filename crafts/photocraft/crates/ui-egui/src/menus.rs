@@ -101,6 +101,8 @@ pub const UI_COMMANDS: &[(&str, &str, &[&str], Option<&str>)] = &[
     ("help.github", "Redrob Canvas on GitHub", &["Help"], None),
     ("help.reportIssue", "Report an Issue…", &["Help"], None),
     ("help.systemInfo", "System Info…", &["Help"], None),
+    ("help.procedureBrowser", "Procedure Browser", &["Help"], None),
+    ("help.pluginBrowser", "Plug-In Browser", &["Help"], None),
     ("help.about", "About Redrob Canvas", &["Help"], None),
 ];
 
@@ -209,6 +211,11 @@ pub(crate) fn invoke_unguarded(app: &mut PhotocraftApp, ctx: &egui::Context, id:
     }
     // View › Padding Color, Show All.
     if let Some(r) = crate::padding_ui::menu(app, id, &params) {
+        return r;
+    }
+    // Procedure/Plug-In Browser, Dashboard, Device Status, Selection Editor, MyPaint Brushes,
+    // Metadata viewer and editor.
+    if let Some(r) = crate::extra_panels::menu(app, id, &params) {
         return r;
     }
     // Window › Gradients, Patterns, Styles, Shapes, Tool Presets, Clone Source.
@@ -753,7 +760,7 @@ pub fn is_enabled(app: &PhotocraftApp, id: &str) -> bool {
     if let Some(e) = crate::workspace_ui::is_enabled(app, id) {
         return e;
     }
-    if crate::padding_ui::handles(id) {
+    if crate::padding_ui::handles(id) || crate::extra_panels::handles(id) {
         return true;
     }
     if crate::analysis_ui::handles(id) {
@@ -849,7 +856,7 @@ fn checked(app: &PhotocraftApp, id: &str) -> Option<bool> {
     if let Some(c) = crate::analysis_ui::checked(app, id).or_else(|| crate::workspace_ui::checked(app, id)).or_else(|| crate::file_ui::checked(app, id)) {
         return Some(c);
     }
-    if let Some(c) = crate::padding_ui::checked(app, id) {
+    if let Some(c) = crate::padding_ui::checked(app, id).or_else(|| crate::extra_panels::checked(app, id)) {
         return Some(c);
     }
     if let Some(c) = crate::preset_panels::checked(app, id) {
@@ -983,6 +990,7 @@ pub fn is_live(id: &str) -> bool {
         || crate::analysis_ui::handles(id)
         || crate::workspace_ui::handles(id)
         || crate::padding_ui::handles(id)
+        || crate::extra_panels::handles(id)
         || crate::preset_panels::handles(id)
         || crate::type_panels_ui::handles(id)
         || crate::timeline_ui::handles(id)

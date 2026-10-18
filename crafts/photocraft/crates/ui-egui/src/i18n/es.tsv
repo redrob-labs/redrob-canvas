@@ -4801,3 +4801,56 @@ navigator	Zoom	Zoom
 	Tags:	Etiquetas:
 	Add tag	Añadir etiqueta
 	Remove tag	Quitar etiqueta
+	View Metadata…	Ver metadatos…
+	Edit Metadata…	Editar metadatos…
+	Edit Metadata	Editar metadatos
+	Metadata Viewer	Visor de metadatos
+	Write Metadata	Escribir metadatos
+	Separate several values with semicolons	Separe varios valores con punto y coma
+	No tags	Sin etiquetas
+	XMP	XMP
+	IPTC	IPTC
+	Rights	Derechos
+	IPTC Extension	Extensión IPTC
+	Categories	Categorías
+	DICOM	DICOM
+	Procedure Browser	Explorador de procedimientos
+	Plug-In Browser	Explorador de complementos
+	Search procedures	Buscar procedimientos
+	{n} procedures	{n} procedimientos
+	(no menu)	(sin menú)
+	Menu: {path}	Menú: {path}
+	Parameters	Parámetros
+	Available now	Disponible ahora
+	Not available in the current state	No disponible en el estado actual
+	Run	Ejecutar
+	Select a procedure to read its parameters.	Seleccione un procedimiento para leer sus parámetros.
+	Dashboard	Panel de control
+	Low memory: swap is nearly full. Save your work.	Poca memoria: el espacio de intercambio está casi lleno. Guarde su trabajo.
+	Memory	Memoria
+	Cache	Caché
+	Swap	Intercambio
+	Swap: not reported on this platform	Intercambio: no disponible en esta plataforma
+	CPU	CPU
+	CPU renderer	Renderizador CPU
+	uploads	cargas
+	Misc: {jobs} jobs running · {n} samples	Varios: {jobs} tareas en curso · {n} muestras
+	Log to File…	Registrar en archivo…
+	Stop Logging	Detener registro
+	Device Status	Estado del dispositivo
+	Core Pointer	Puntero principal
+	Pen / Tablet	Lápiz / Tableta
+	Brush:	Pincel:
+	Pattern:	Motivo:
+	Gradient:	Degradado:
+	Save Device Status	Guardar estado del dispositivo
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Cada dispositivo recuerda su herramienta, colores, pincel, motivo y degradado; al cambiar de dispositivo cambian con él.
+	Selection Editor	Editor de selección
+	No document open.	No hay ningún documento abierto.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Haga clic para seleccionar el color contiguo con la varita mágica (Mayús añade, Alt resta)
+	Save to Channel	Guardar en canal
+	To Path	A trazado
+	Advanced options	Opciones avanzadas
+	MyPaint Brushes	Pinceles MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Aún no hay pinceles MyPaint. Importe archivos .myb para listarlos aquí.
+	No brush matches the filter.	Ningún pincel coincide con el filtro.

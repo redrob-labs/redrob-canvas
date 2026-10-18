@@ -3494,3 +3494,57 @@ curves	Smooth	Haluskan
 	Tags:	Tag:
 	Add tag	Tambah tag
 	Remove tag	Hapus tag
+	View Metadata…	Lihat Metadata…
+	Edit Metadata…	Edit Metadata…
+	Edit Metadata	Edit Metadata
+	Metadata Viewer	Penampil Metadata
+	Write Metadata	Tulis Metadata
+	Separate several values with semicolons	Pisahkan beberapa nilai dengan titik koma
+	No tags	Tidak ada tag
+	XMP	XMP
+	IPTC	IPTC
+	Text	Teks
+	Rights	Hak
+	IPTC Extension	Ekstensi IPTC
+	Categories	Kategori
+	DICOM	DICOM
+	Procedure Browser	Penjelajah Prosedur
+	Plug-In Browser	Penjelajah Plug-in
+	Search procedures	Cari prosedur
+	{n} procedures	{n} prosedur
+	(no menu)	(tanpa menu)
+	Menu: {path}	Menu: {path}
+	Parameters	Parameter
+	Available now	Tersedia sekarang
+	Not available in the current state	Tidak tersedia dalam keadaan saat ini
+	Run	Jalankan
+	Select a procedure to read its parameters.	Pilih prosedur untuk membaca parameternya.
+	Dashboard	Dasbor
+	Low memory: swap is nearly full. Save your work.	Memori rendah: swap hampir penuh. Simpan pekerjaan Anda.
+	Memory	Memori
+	Cache	Cache
+	Swap	Swap
+	Swap: not reported on this platform	Swap: tidak dilaporkan di platform ini
+	CPU	CPU
+	CPU renderer	Perender CPU
+	uploads	unggahan
+	Misc: {jobs} jobs running · {n} samples	Lainnya: {jobs} pekerjaan berjalan · {n} sampel
+	Log to File…	Catat ke Berkas…
+	Stop Logging	Berhenti Mencatat
+	Device Status	Status Perangkat
+	Core Pointer	Penunjuk Utama
+	Pen / Tablet	Pena / Tablet
+	Brush:	Kuas:
+	Pattern:	Pola:
+	Gradient:	Gradien:
+	Save Device Status	Simpan Status Perangkat
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Setiap perangkat mengingat alat, warna, kuas, pola dan gradiennya; berganti perangkat menggantinya.
+	Selection Editor	Editor Seleksi
+	No document open.	Tidak ada dokumen terbuka.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Klik untuk memilih warna bersebelahan dengan Tongkat Ajaib (Shift menambah, Alt mengurangi)
+	Save to Channel	Simpan ke Kanal
+	To Path	Ke Jalur
+	Advanced options	Opsi lanjutan
+	MyPaint Brushes	Kuas MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Belum ada kuas MyPaint. Impor berkas .myb untuk menampilkannya di sini.
+	No brush matches the filter.	Tidak ada kuas yang cocok dengan filter.

@@ -4194,3 +4194,57 @@ curves	Smooth	Згладити
 	Tags:	Теги:
 	Add tag	Додати тег
 	Remove tag	Видалити тег
+	View Metadata…	Перегляд метаданих…
+	Edit Metadata…	Редагувати метадані…
+	Edit Metadata	Редагувати метадані
+	Metadata Viewer	Переглядач метаданих
+	Write Metadata	Записати метадані
+	Separate several values with semicolons	Кілька значень розділяйте крапкою з комою
+	No tags	Немає тегів
+	XMP	XMP
+	IPTC	IPTC
+	Text	Текст
+	Rights	Права
+	IPTC Extension	Розширення IPTC
+	Categories	Категорії
+	DICOM	DICOM
+	Procedure Browser	Оглядач процедур
+	Plug-In Browser	Оглядач модулів
+	Search procedures	Пошук процедур
+	{n} procedures	{n} процедур
+	(no menu)	(без меню)
+	Menu: {path}	Меню: {path}
+	Parameters	Параметри
+	Available now	Доступно зараз
+	Not available in the current state	Недоступно в поточному стані
+	Run	Виконати
+	Select a procedure to read its parameters.	Виберіть процедуру, щоб побачити її параметри.
+	Dashboard	Панель моніторингу
+	Low memory: swap is nearly full. Save your work.	Мало пам'яті: підкачка майже заповнена. Збережіть роботу.
+	Memory	Пам'ять
+	Cache	Кеш
+	Swap	Підкачка
+	Swap: not reported on this platform	Підкачка: не повідомляється на цій платформі
+	CPU	CPU
+	CPU renderer	Рендеринг на CPU
+	uploads	завантажень
+	Misc: {jobs} jobs running · {n} samples	Інше: виконується завдань: {jobs} · вибірок: {n}
+	Log to File…	Записувати у файл…
+	Stop Logging	Зупинити запис
+	Device Status	Стан пристроїв
+	Core Pointer	Основний вказівник
+	Pen / Tablet	Перо / планшет
+	Brush:	Пензель:
+	Pattern:	Візерунок:
+	Gradient:	Градієнт:
+	Save Device Status	Зберегти стан пристроїв
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Кожен пристрій пам'ятає свій інструмент, кольори, пензель, візерунок і градієнт; зміна пристрою змінює і їх.
+	Selection Editor	Редактор виділення
+	No document open.	Немає відкритого документа.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Клацніть, щоб виділити суміжний колір чарівною паличкою (Shift додає, Alt віднімає)
+	Save to Channel	Зберегти в канал
+	To Path	У контур
+	Advanced options	Додаткові параметри
+	MyPaint Brushes	Пензлі MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Пензлів MyPaint ще немає. Імпортуйте файли .myb, щоб побачити їх тут.
+	No brush matches the filter.	Немає пензлів, що відповідають фільтру.

@@ -4410,3 +4410,57 @@ cameraRaw	Yellow	Sárga
 	Tags:	Címkék:
 	Add tag	Címke hozzáadása
 	Remove tag	Címke eltávolítása
+	View Metadata…	Metaadatok megtekintése…
+	Edit Metadata…	Metaadatok szerkesztése…
+	Edit Metadata	Metaadatok szerkesztése
+	Metadata Viewer	Metaadat-megjelenítő
+	Write Metadata	Metaadatok írása
+	Separate several values with semicolons	Több értéket pontosvesszővel válasszon el
+	No tags	Nincs címke
+	XMP	XMP
+	IPTC	IPTC
+	Text	Szöveg
+	Rights	Jogok
+	IPTC Extension	IPTC-kiterjesztés
+	Categories	Kategóriák
+	DICOM	DICOM
+	Procedure Browser	Eljárásböngésző
+	Plug-In Browser	Bővítményböngésző
+	Search procedures	Eljárások keresése
+	{n} procedures	{n} eljárás
+	(no menu)	(nincs menü)
+	Menu: {path}	Menü: {path}
+	Parameters	Paraméterek
+	Available now	Most elérhető
+	Not available in the current state	A jelenlegi állapotban nem érhető el
+	Run	Futtatás
+	Select a procedure to read its parameters.	Válasszon eljárást a paraméterei megtekintéséhez.
+	Dashboard	Műszerfal
+	Low memory: swap is nearly full. Save your work.	Kevés a memória: a lapozófájl majdnem megtelt. Mentse a munkáját.
+	Memory	Memória
+	Cache	Gyorsítótár
+	Swap	Lapozófájl
+	Swap: not reported on this platform	Lapozófájl: ezen a platformon nem jelentett
+	CPU	CPU
+	CPU renderer	CPU-renderelő
+	uploads	feltöltés
+	Misc: {jobs} jobs running · {n} samples	Egyéb: {jobs} futó feladat · {n} minta
+	Log to File…	Naplózás fájlba…
+	Stop Logging	Naplózás leállítása
+	Device Status	Eszközállapot
+	Core Pointer	Fő mutató
+	Pen / Tablet	Toll / Tábla
+	Brush:	Ecset:
+	Pattern:	Minta:
+	Gradient:	Színátmenet:
+	Save Device Status	Eszközállapot mentése
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Minden eszköz megjegyzi az eszközét, színeit, ecsetét, mintáját és színátmenetét; eszközváltásnál ezek is váltanak.
+	Selection Editor	Kijelölésszerkesztő
+	No document open.	Nincs megnyitott dokumentum.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Kattintson a szomszédos szín kijelöléséhez a varázspálcával (Shift hozzáad, Alt kivon)
+	Save to Channel	Mentés csatornába
+	To Path	Útvonalba
+	Advanced options	Speciális beállítások
+	MyPaint Brushes	MyPaint-ecsetek
+	No MyPaint brushes yet. Import .myb files to list them here.	Még nincs MyPaint-ecset. Importáljon .myb fájlokat, hogy itt megjelenjenek.
+	No brush matches the filter.	Egyik ecset sem felel meg a szűrőnek.

@@ -3473,3 +3473,57 @@ curves	Smooth	Сгладить
 	Tags:	Теги:
 	Add tag	Добавить тег
 	Remove tag	Удалить тег
+	View Metadata…	Просмотр метаданных…
+	Edit Metadata…	Изменить метаданные…
+	Edit Metadata	Изменить метаданные
+	Metadata Viewer	Просмотр метаданных
+	Write Metadata	Записать метаданные
+	Separate several values with semicolons	Несколько значений разделяйте точкой с запятой
+	No tags	Нет тегов
+	XMP	XMP
+	IPTC	IPTC
+	Text	Текст
+	Rights	Права
+	IPTC Extension	Расширение IPTC
+	Categories	Категории
+	DICOM	DICOM
+	Procedure Browser	Браузер процедур
+	Plug-In Browser	Браузер модулей
+	Search procedures	Поиск процедур
+	{n} procedures	{n} процедур
+	(no menu)	(без меню)
+	Menu: {path}	Меню: {path}
+	Parameters	Параметры
+	Available now	Доступно сейчас
+	Not available in the current state	Недоступно в текущем состоянии
+	Run	Выполнить
+	Select a procedure to read its parameters.	Выберите процедуру, чтобы увидеть её параметры.
+	Dashboard	Панель мониторинга
+	Low memory: swap is nearly full. Save your work.	Мало памяти: подкачка почти заполнена. Сохраните работу.
+	Memory	Память
+	Cache	Кэш
+	Swap	Подкачка
+	Swap: not reported on this platform	Подкачка: не сообщается на этой платформе
+	CPU	CPU
+	CPU renderer	Рендеринг на CPU
+	uploads	загрузок
+	Misc: {jobs} jobs running · {n} samples	Прочее: выполняется задач: {jobs} · выборок: {n}
+	Log to File…	Записывать в файл…
+	Stop Logging	Остановить запись
+	Device Status	Состояние устройств
+	Core Pointer	Основной указатель
+	Pen / Tablet	Перо / планшет
+	Brush:	Кисть:
+	Pattern:	Узор:
+	Gradient:	Градиент:
+	Save Device Status	Сохранить состояние устройств
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Каждое устройство помнит свой инструмент, цвета, кисть, узор и градиент; смена устройства меняет и их.
+	Selection Editor	Редактор выделения
+	No document open.	Нет открытого документа.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Щёлкните, чтобы выделить смежный цвет волшебной палочкой (Shift добавляет, Alt вычитает)
+	Save to Channel	Сохранить в канал
+	To Path	В контур
+	Advanced options	Дополнительные параметры
+	MyPaint Brushes	Кисти MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Кистей MyPaint пока нет. Импортируйте файлы .myb, чтобы они появились здесь.
+	No brush matches the filter.	Нет кистей, подходящих под фильтр.

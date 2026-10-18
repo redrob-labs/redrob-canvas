@@ -4285,3 +4285,57 @@ layerLabel	No Color	Sem cor
 	Tags:	Tags:
 	Add tag	Adicionar tag
 	Remove tag	Remover tag
+	View Metadata…	Ver metadados…
+	Edit Metadata…	Editar metadados…
+	Edit Metadata	Editar metadados
+	Metadata Viewer	Visualizador de metadados
+	Write Metadata	Gravar metadados
+	Separate several values with semicolons	Separe vários valores com ponto e vírgula
+	No tags	Sem tags
+	XMP	XMP
+	IPTC	IPTC
+	Text	Texto
+	Rights	Direitos
+	IPTC Extension	Extensão IPTC
+	Categories	Categorias
+	DICOM	DICOM
+	Procedure Browser	Navegador de procedimentos
+	Plug-In Browser	Navegador de plug-ins
+	Search procedures	Pesquisar procedimentos
+	{n} procedures	{n} procedimentos
+	(no menu)	(sem menu)
+	Menu: {path}	Menu: {path}
+	Parameters	Parâmetros
+	Available now	Disponível agora
+	Not available in the current state	Indisponível no estado atual
+	Run	Executar
+	Select a procedure to read its parameters.	Selecione um procedimento para ler seus parâmetros.
+	Dashboard	Painel
+	Low memory: swap is nearly full. Save your work.	Pouca memória: o swap está quase cheio. Salve seu trabalho.
+	Memory	Memória
+	Cache	Cache
+	Swap	Swap
+	Swap: not reported on this platform	Swap: não informado nesta plataforma
+	CPU	CPU
+	CPU renderer	Renderizador CPU
+	uploads	envios
+	Misc: {jobs} jobs running · {n} samples	Diversos: {jobs} tarefas em execução · {n} amostras
+	Log to File…	Registrar em arquivo…
+	Stop Logging	Parar registro
+	Device Status	Status do dispositivo
+	Core Pointer	Ponteiro principal
+	Pen / Tablet	Caneta / Mesa
+	Brush:	Pincel:
+	Pattern:	Padrão:
+	Gradient:	Degradê:
+	Save Device Status	Salvar status do dispositivo
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Cada dispositivo lembra sua ferramenta, cores, pincel, padrão e degradê; trocar de dispositivo os troca.
+	Selection Editor	Editor de seleção
+	No document open.	Nenhum documento aberto.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Clique para selecionar a cor contígua com a Varinha Mágica (Shift adiciona, Alt subtrai)
+	Save to Channel	Salvar em canal
+	To Path	Para demarcador
+	Advanced options	Opções avançadas
+	MyPaint Brushes	Pincéis MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Ainda não há pincéis MyPaint. Importe arquivos .myb para listá-los aqui.
+	No brush matches the filter.	Nenhum pincel corresponde ao filtro.

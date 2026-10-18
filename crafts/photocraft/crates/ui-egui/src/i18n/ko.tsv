@@ -4028,3 +4028,61 @@ curves	Smooth	매끄럽게
 	Tags:	태그:
 	Add tag	태그 추가
 	Remove tag	태그 제거
+	View Metadata…	메타데이터 보기…
+	Edit Metadata…	메타데이터 편집…
+	Edit Metadata	메타데이터 편집
+	Metadata Viewer	메타데이터 뷰어
+	Write Metadata	메타데이터 쓰기
+	Separate several values with semicolons	값이 여러 개면 세미콜론으로 구분합니다
+	Copyrighted	저작권 있음
+	Public Domain	퍼블릭 도메인
+	Unknown	알 수 없음
+	No tags	태그 없음
+	XMP	XMP
+	IPTC	IPTC
+	Rights	권리
+	IPTC Extension	IPTC 확장
+	Categories	카테고리
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	프로시저 브라우저
+	Plug-In Browser	플러그인 브라우저
+	Search procedures	프로시저 검색
+	{n} procedures	프로시저 {n}개
+	(no menu)	(메뉴 없음)
+	Menu: {path}	메뉴: {path}
+	Parameters	매개 변수
+	Available now	지금 사용 가능
+	Not available in the current state	현재 상태에서는 사용할 수 없음
+	Run	실행
+	Select a procedure to read its parameters.	프로시저를 선택하면 매개 변수를 볼 수 있습니다.
+	Dashboard	대시보드
+	Low memory: swap is nearly full. Save your work.	메모리 부족: 스왑이 거의 가득 찼습니다. 작업을 저장하세요.
+	Memory	메모리
+	Cache	캐시
+	Swap	스왑
+	Swap: not reported on this platform	스왑: 이 플랫폼에서는 보고되지 않음
+	CPU	CPU
+	CPU renderer	CPU 렌더러
+	uploads	업로드
+	Misc: {jobs} jobs running · {n} samples	기타: 실행 중인 작업 {jobs}개 · 샘플 {n}개
+	Log to File…	파일에 기록…
+	Stop Logging	기록 중지
+	Device Status	장치 상태
+	Core Pointer	기본 포인터
+	Pen / Tablet	펜 / 태블릿
+	Brush:	브러시:
+	Pattern:	패턴:
+	Gradient:	그레이디언트:
+	Save Device Status	장치 상태 저장
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	장치마다 도구, 색상, 브러시, 패턴, 그레이디언트를 기억하며 장치를 바꾸면 함께 바뀝니다.
+	Selection Editor	선택 영역 편집기
+	No document open.	열린 문서가 없습니다.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	클릭하면 자동 선택 도구로 그 위치의 연속된 색을 선택합니다 (Shift 추가, Alt 빼기)
+	Save to Channel	채널에 저장
+	To Path	패스로
+	Advanced options	고급 옵션
+	MyPaint Brushes	MyPaint 브러시
+	Import…	가져오기…
+	No MyPaint brushes yet. Import .myb files to list them here.	MyPaint 브러시가 아직 없습니다. .myb 파일을 가져오면 여기에 표시됩니다.
+	No brush matches the filter.	필터와 일치하는 브러시가 없습니다.

@@ -4225,3 +4225,57 @@ cameraData	Lens	Lens
 	Tags:	Etiketler:
 	Add tag	Etiket ekle
 	Remove tag	Etiketi kaldır
+	View Metadata…	Meta Verileri Görüntüle…
+	Edit Metadata…	Meta Verileri Düzenle…
+	Edit Metadata	Meta Verileri Düzenle
+	Metadata Viewer	Meta Veri Görüntüleyici
+	Write Metadata	Meta Verileri Yaz
+	Separate several values with semicolons	Birden çok değeri noktalı virgülle ayırın
+	No tags	Etiket yok
+	XMP	XMP
+	IPTC	IPTC
+	Text	Metin
+	Rights	Haklar
+	IPTC Extension	IPTC Uzantısı
+	Categories	Kategoriler
+	DICOM	DICOM
+	Procedure Browser	Yordam Tarayıcısı
+	Plug-In Browser	Eklenti Tarayıcısı
+	Search procedures	Yordam ara
+	{n} procedures	{n} yordam
+	(no menu)	(menü yok)
+	Menu: {path}	Menü: {path}
+	Parameters	Parametreler
+	Available now	Şimdi kullanılabilir
+	Not available in the current state	Geçerli durumda kullanılamaz
+	Run	Çalıştır
+	Select a procedure to read its parameters.	Parametrelerini okumak için bir yordam seçin.
+	Dashboard	Gösterge Paneli
+	Low memory: swap is nearly full. Save your work.	Bellek az: takas alanı neredeyse dolu. Çalışmanızı kaydedin.
+	Memory	Bellek
+	Cache	Önbellek
+	Swap	Takas
+	Swap: not reported on this platform	Takas: bu platformda bildirilmiyor
+	CPU	CPU
+	CPU renderer	CPU işleyici
+	uploads	yükleme
+	Misc: {jobs} jobs running · {n} samples	Diğer: {jobs} iş çalışıyor · {n} örnek
+	Log to File…	Dosyaya Günlükle…
+	Stop Logging	Günlüklemeyi Durdur
+	Device Status	Aygıt Durumu
+	Core Pointer	Ana İşaretçi
+	Pen / Tablet	Kalem / Tablet
+	Brush:	Fırça:
+	Pattern:	Desen:
+	Gradient:	Gradyan:
+	Save Device Status	Aygıt Durumunu Kaydet
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Her aygıt aracını, renklerini, fırçasını, desenini ve gradyanını hatırlar; aygıt değiştirmek bunları da değiştirir.
+	Selection Editor	Seçim Düzenleyici
+	No document open.	Açık belge yok.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Oradaki bitişik rengi Sihirli Değnek ile seçmek için tıklayın (Shift ekler, Alt çıkarır)
+	Save to Channel	Kanala Kaydet
+	To Path	Yola
+	Advanced options	Gelişmiş seçenekler
+	MyPaint Brushes	MyPaint Fırçaları
+	No MyPaint brushes yet. Import .myb files to list them here.	Henüz MyPaint fırçası yok. Burada listelemek için .myb dosyalarını içe aktarın.
+	No brush matches the filter.	Filtreyle eşleşen fırça yok.

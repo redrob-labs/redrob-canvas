@@ -4101,3 +4101,59 @@ navigator	Zoom	Zvětšení
 	Tags:	Štítky:
 	Add tag	Přidat štítek
 	Remove tag	Odebrat štítek
+	View Metadata…	Zobrazit metadata…
+	Edit Metadata…	Upravit metadata…
+	Edit Metadata	Upravit metadata
+	Metadata Viewer	Prohlížeč metadat
+	Write Metadata	Zapsat metadata
+	Separate several values with semicolons	Více hodnot oddělte středníky
+	No tags	Žádné značky
+	XMP	XMP
+	IPTC	IPTC
+	Text	Text
+	Rights	Práva
+	IPTC Extension	Rozšíření IPTC
+	Categories	Kategorie
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	Prohlížeč procedur
+	Plug-In Browser	Prohlížeč zásuvných modulů
+	Search procedures	Hledat procedury
+	{n} procedures	{n} procedur
+	(no menu)	(bez nabídky)
+	Menu: {path}	Nabídka: {path}
+	Parameters	Parametry
+	Available now	Nyní dostupné
+	Not available in the current state	V aktuálním stavu nedostupné
+	Run	Spustit
+	Select a procedure to read its parameters.	Vyberte proceduru pro zobrazení jejích parametrů.
+	Dashboard	Nástěnka
+	Low memory: swap is nearly full. Save your work.	Málo paměti: odkládací prostor je téměř plný. Uložte svou práci.
+	Memory	Paměť
+	Cache	Mezipaměť
+	Swap	Odkládací prostor
+	Swap: not reported on this platform	Odkládací prostor: na této platformě není hlášen
+	CPU	CPU
+	CPU renderer	Vykreslování CPU
+	uploads	nahrání
+	Misc: {jobs} jobs running · {n} samples	Ostatní: {jobs} běžících úloh · {n} vzorků
+	Log to File…	Zapisovat do souboru…
+	Stop Logging	Zastavit zápis
+	Device Status	Stav zařízení
+	Core Pointer	Hlavní ukazatel
+	Pen / Tablet	Pero / tablet
+	Brush:	Štětec:
+	Pattern:	Vzorek:
+	Gradient:	Přechod:
+	Save Device Status	Uložit stav zařízení
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Každé zařízení si pamatuje svůj nástroj, barvy, štětec, vzorek a přechod; přepnutí zařízení je přepne.
+	Selection Editor	Editor výběru
+	No document open.	Není otevřen žádný dokument.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Klepnutím vyberte souvislou barvu kouzelnou hůlkou (Shift přidá, Alt odebere)
+	Save to Channel	Uložit do kanálu
+	To Path	Na cestu
+	Advanced options	Pokročilé volby
+	MyPaint Brushes	Štětce MyPaint
+	Import…	Importovat…
+	No MyPaint brushes yet. Import .myb files to list them here.	Žádné štětce MyPaint. Importujte soubory .myb a objeví se zde.
+	No brush matches the filter.	Filtru neodpovídá žádný štětec.

@@ -3502,3 +3502,59 @@ curves	Smooth	Glätten
 	Tags:	Tags:
 	Add tag	Tag hinzufügen
 	Remove tag	Tag entfernen
+	View Metadata…	Metadaten anzeigen…
+	Edit Metadata…	Metadaten bearbeiten…
+	Edit Metadata	Metadaten bearbeiten
+	Metadata Viewer	Metadaten-Betrachter
+	Write Metadata	Metadaten schreiben
+	Separate several values with semicolons	Mehrere Werte mit Semikolons trennen
+	No tags	Keine Tags
+	XMP	XMP
+	IPTC	IPTC
+	Text	Text
+	Rights	Rechte
+	IPTC Extension	IPTC-Erweiterung
+	Categories	Kategorien
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	Prozedurbrowser
+	Plug-In Browser	Plug-in-Browser
+	Search procedures	Prozeduren suchen
+	{n} procedures	{n} Prozeduren
+	(no menu)	(kein Menü)
+	Menu: {path}	Menü: {path}
+	Parameters	Parameter
+	Available now	Jetzt verfügbar
+	Not available in the current state	Im aktuellen Zustand nicht verfügbar
+	Run	Ausführen
+	Select a procedure to read its parameters.	Prozedur auswählen, um ihre Parameter zu lesen.
+	Dashboard	Dashboard
+	Low memory: swap is nearly full. Save your work.	Wenig Speicher: Die Auslagerung ist fast voll. Speichern Sie Ihre Arbeit.
+	Memory	Speicher
+	Cache	Cache
+	Swap	Auslagerung
+	Swap: not reported on this platform	Auslagerung: auf dieser Plattform nicht gemeldet
+	CPU	CPU
+	CPU renderer	CPU-Renderer
+	uploads	Uploads
+	Misc: {jobs} jobs running · {n} samples	Sonstiges: {jobs} laufende Aufträge · {n} Messwerte
+	Log to File…	In Datei protokollieren…
+	Stop Logging	Protokollierung beenden
+	Device Status	Gerätestatus
+	Core Pointer	Hauptzeiger
+	Pen / Tablet	Stift / Tablett
+	Brush:	Pinsel:
+	Pattern:	Muster:
+	Gradient:	Verlauf:
+	Save Device Status	Gerätestatus speichern
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Jedes Gerät merkt sich Werkzeug, Farben, Pinsel, Muster und Verlauf; ein Gerätewechsel wechselt sie mit.
+	Selection Editor	Auswahleditor
+	No document open.	Kein Dokument geöffnet.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Klicken, um die zusammenhängende Farbe dort mit dem Zauberstab auszuwählen (Umschalt fügt hinzu, Alt zieht ab)
+	Save to Channel	In Kanal speichern
+	To Path	In Pfad
+	Advanced options	Erweiterte Optionen
+	MyPaint Brushes	MyPaint-Pinsel
+	Import…	Importieren…
+	No MyPaint brushes yet. Import .myb files to list them here.	Noch keine MyPaint-Pinsel. .myb-Dateien importieren, um sie hier aufzulisten.
+	No brush matches the filter.	Kein Pinsel entspricht dem Filter.

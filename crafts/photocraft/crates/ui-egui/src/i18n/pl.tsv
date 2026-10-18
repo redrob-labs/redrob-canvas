@@ -4094,3 +4094,57 @@ curves	Smooth	Wygładź
 	Tags:	Tagi:
 	Add tag	Dodaj tag
 	Remove tag	Usuń tag
+	View Metadata…	Pokaż metadane…
+	Edit Metadata…	Edytuj metadane…
+	Edit Metadata	Edytuj metadane
+	Metadata Viewer	Przeglądarka metadanych
+	Write Metadata	Zapisz metadane
+	Separate several values with semicolons	Kilka wartości oddziel średnikami
+	No tags	Brak znaczników
+	XMP	XMP
+	IPTC	IPTC
+	Text	Tekst
+	Rights	Prawa
+	IPTC Extension	Rozszerzenie IPTC
+	Categories	Kategorie
+	DICOM	DICOM
+	Procedure Browser	Przeglądarka procedur
+	Plug-In Browser	Przeglądarka wtyczek
+	Search procedures	Szukaj procedur
+	{n} procedures	{n} procedur
+	(no menu)	(bez menu)
+	Menu: {path}	Menu: {path}
+	Parameters	Parametry
+	Available now	Dostępne teraz
+	Not available in the current state	Niedostępne w bieżącym stanie
+	Run	Uruchom
+	Select a procedure to read its parameters.	Wybierz procedurę, aby odczytać jej parametry.
+	Dashboard	Pulpit
+	Low memory: swap is nearly full. Save your work.	Mało pamięci: przestrzeń wymiany jest prawie pełna. Zapisz pracę.
+	Memory	Pamięć
+	Cache	Pamięć podręczna
+	Swap	Przestrzeń wymiany
+	Swap: not reported on this platform	Przestrzeń wymiany: niedostępna na tej platformie
+	CPU	CPU
+	CPU renderer	Renderer CPU
+	uploads	przesłań
+	Misc: {jobs} jobs running · {n} samples	Inne: {jobs} zadań w toku · {n} próbek
+	Log to File…	Zapisuj do pliku…
+	Stop Logging	Zatrzymaj zapisywanie
+	Device Status	Stan urządzeń
+	Core Pointer	Wskaźnik główny
+	Pen / Tablet	Pióro / tablet
+	Brush:	Pędzel:
+	Pattern:	Wzorek:
+	Gradient:	Gradient:
+	Save Device Status	Zapisz stan urządzeń
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Każde urządzenie pamięta swoje narzędzie, kolory, pędzel, wzorek i gradient; zmiana urządzenia zmienia je.
+	Selection Editor	Edytor zaznaczenia
+	No document open.	Brak otwartego dokumentu.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Kliknij, aby zaznaczyć sąsiadujący kolor różdżką (Shift dodaje, Alt odejmuje)
+	Save to Channel	Zapisz do kanału
+	To Path	Do ścieżki
+	Advanced options	Opcje zaawansowane
+	MyPaint Brushes	Pędzle MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Brak pędzli MyPaint. Zaimportuj pliki .myb, aby je tu wyświetlić.
+	No brush matches the filter.	Żaden pędzel nie pasuje do filtru.

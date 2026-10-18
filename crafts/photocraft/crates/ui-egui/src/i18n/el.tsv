@@ -4195,3 +4195,58 @@ curves	Smooth	Εξομάλυνση
 	Tags:	Ετικέτες:
 	Add tag	Προσθήκη ετικέτας
 	Remove tag	Αφαίρεση ετικέτας
+	View Metadata…	Προβολή μεταδεδομένων…
+	Edit Metadata…	Επεξεργασία μεταδεδομένων…
+	Edit Metadata	Επεξεργασία μεταδεδομένων
+	Metadata Viewer	Προβολή μεταδεδομένων
+	Write Metadata	Εγγραφή μεταδεδομένων
+	Separate several values with semicolons	Χωρίστε πολλές τιμές με άνω τελείες
+	No tags	Χωρίς ετικέτες
+	XMP	XMP
+	IPTC	IPTC
+	Text	Κείμενο
+	Rights	Δικαιώματα
+	IPTC Extension	Επέκταση IPTC
+	Categories	Κατηγορίες
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	Περιηγητής διαδικασιών
+	Plug-In Browser	Περιηγητής πρόσθετων
+	Search procedures	Αναζήτηση διαδικασιών
+	{n} procedures	{n} διαδικασίες
+	(no menu)	(χωρίς μενού)
+	Menu: {path}	Μενού: {path}
+	Parameters	Παράμετροι
+	Available now	Διαθέσιμο τώρα
+	Not available in the current state	Μη διαθέσιμο στην τρέχουσα κατάσταση
+	Run	Εκτέλεση
+	Select a procedure to read its parameters.	Επιλέξτε διαδικασία για να δείτε τις παραμέτρους της.
+	Dashboard	Πίνακας ελέγχου
+	Low memory: swap is nearly full. Save your work.	Λίγη μνήμη: το swap είναι σχεδόν γεμάτο. Αποθηκεύστε την εργασία σας.
+	Memory	Μνήμη
+	Cache	Προσωρινή μνήμη
+	Swap	Swap
+	Swap: not reported on this platform	Swap: δεν αναφέρεται σε αυτήν την πλατφόρμα
+	CPU	CPU
+	CPU renderer	Απόδοση CPU
+	uploads	μεταφορτώσεις
+	Misc: {jobs} jobs running · {n} samples	Διάφορα: {jobs} εργασίες σε εξέλιξη · {n} δείγματα
+	Log to File…	Καταγραφή σε αρχείο…
+	Stop Logging	Διακοπή καταγραφής
+	Device Status	Κατάσταση συσκευών
+	Core Pointer	Κύριος δείκτης
+	Pen / Tablet	Γραφίδα / Ταμπλέτα
+	Brush:	Πινέλο:
+	Pattern:	Μοτίβο:
+	Gradient:	Διαβάθμιση:
+	Save Device Status	Αποθήκευση κατάστασης συσκευών
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Κάθε συσκευή θυμάται το εργαλείο, τα χρώματα, το πινέλο, το μοτίβο και τη διαβάθμισή της· η αλλαγή συσκευής τα αλλάζει.
+	Selection Editor	Επεξεργαστής επιλογής
+	No document open.	Δεν υπάρχει ανοιχτό έγγραφο.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Κλικ για επιλογή του συνεχόμενου χρώματος με το μαγικό ραβδί (Shift προσθέτει, Alt αφαιρεί)
+	Save to Channel	Αποθήκευση σε κανάλι
+	To Path	Σε διαδρομή
+	Advanced options	Προχωρημένες επιλογές
+	MyPaint Brushes	Πινέλα MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Δεν υπάρχουν πινέλα MyPaint ακόμη. Εισαγάγετε αρχεία .myb για να εμφανιστούν εδώ.
+	No brush matches the filter.	Κανένα πινέλο δεν ταιριάζει στο φίλτρο.

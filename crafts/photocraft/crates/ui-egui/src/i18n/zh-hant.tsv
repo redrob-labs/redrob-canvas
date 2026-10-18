@@ -3106,3 +3106,62 @@ curves	Smooth	平滑
 	Tags:	標籤：
 	Add tag	新增標籤
 	Remove tag	移除標籤
+	View Metadata…	檢視中繼資料…
+	Edit Metadata…	編輯中繼資料…
+	Edit Metadata	編輯中繼資料
+	Metadata Viewer	中繼資料檢視器
+	Write Metadata	寫入中繼資料
+	Separate several values with semicolons	多個值以分號分隔
+	Copyrighted	受版權保護
+	Public Domain	公共領域
+	Unknown	未知
+	No tags	無標籤
+	XMP	XMP
+	IPTC	IPTC
+	Text	文字
+	Rights	權利
+	IPTC Extension	IPTC 延伸
+	Categories	類別
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	程序瀏覽器
+	Plug-In Browser	外掛程式瀏覽器
+	Search procedures	搜尋程序
+	{n} procedures	{n} 個程序
+	(no menu)	（無選單）
+	Menu: {path}	選單：{path}
+	Parameters	參數
+	Available now	目前可用
+	Not available in the current state	目前狀態下無法使用
+	Run	執行
+	Select a procedure to read its parameters.	選擇程序以閱讀其參數。
+	Dashboard	儀表板
+	Low memory: swap is nearly full. Save your work.	記憶體不足：置換空間幾乎已滿。請儲存您的工作。
+	Memory	記憶體
+	Cache	快取
+	Swap	置換空間
+	Swap: not reported on this platform	置換空間：此平台不提供
+	CPU	CPU
+	CPU renderer	CPU 渲染器
+	uploads	次上傳
+	Misc: {jobs} jobs running · {n} samples	其他：{jobs} 個工作執行中 · {n} 個樣本
+	Log to File…	記錄到檔案…
+	Stop Logging	停止記錄
+	Device Status	裝置狀態
+	Core Pointer	核心指標
+	Pen / Tablet	數位筆 / 繪圖板
+	Brush:	筆刷：
+	Pattern:	圖樣：
+	Gradient:	漸層：
+	Save Device Status	儲存裝置狀態
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	每個裝置記住自己的工具、顏色、筆刷、圖樣和漸層；切換裝置時隨之切換。
+	Selection Editor	選取範圍編輯器
+	No document open.	沒有開啟的文件。
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	按一下以用魔術棒選取該處的連續顏色（Shift 加入，Alt 減去）
+	Save to Channel	儲存到色版
+	To Path	轉為路徑
+	Advanced options	進階選項
+	MyPaint Brushes	MyPaint 筆刷
+	Import…	匯入…
+	No MyPaint brushes yet. Import .myb files to list them here.	還沒有 MyPaint 筆刷。匯入 .myb 檔案即可在此列出。
+	No brush matches the filter.	沒有筆刷符合篩選條件。

@@ -3507,3 +3507,57 @@ curves	Smooth	Lisser
 	Tags:	Étiquettes :
 	Add tag	Ajouter une étiquette
 	Remove tag	Retirer l'étiquette
+	View Metadata…	Afficher les métadonnées…
+	Edit Metadata…	Modifier les métadonnées…
+	Edit Metadata	Modifier les métadonnées
+	Metadata Viewer	Visionneuse de métadonnées
+	Write Metadata	Écrire les métadonnées
+	Separate several values with semicolons	Séparez plusieurs valeurs par des points-virgules
+	No tags	Aucune balise
+	XMP	XMP
+	IPTC	IPTC
+	Text	Texte
+	Rights	Droits
+	IPTC Extension	Extension IPTC
+	Categories	Catégories
+	DICOM	DICOM
+	Procedure Browser	Navigateur de procédures
+	Plug-In Browser	Navigateur de greffons
+	Search procedures	Rechercher des procédures
+	{n} procedures	{n} procédures
+	(no menu)	(sans menu)
+	Menu: {path}	Menu : {path}
+	Parameters	Paramètres
+	Available now	Disponible maintenant
+	Not available in the current state	Indisponible dans l'état actuel
+	Run	Exécuter
+	Select a procedure to read its parameters.	Sélectionnez une procédure pour lire ses paramètres.
+	Dashboard	Tableau de bord
+	Low memory: swap is nearly full. Save your work.	Mémoire faible : l'espace d'échange est presque plein. Enregistrez votre travail.
+	Memory	Mémoire
+	Cache	Cache
+	Swap	Échange
+	Swap: not reported on this platform	Échange : non signalé sur cette plateforme
+	CPU	CPU
+	CPU renderer	Rendu CPU
+	uploads	envois
+	Misc: {jobs} jobs running · {n} samples	Divers : {jobs} tâches en cours · {n} échantillons
+	Log to File…	Journaliser dans un fichier…
+	Stop Logging	Arrêter la journalisation
+	Device Status	État des périphériques
+	Core Pointer	Pointeur principal
+	Pen / Tablet	Stylet / Tablette
+	Brush:	Brosse :
+	Pattern:	Motif :
+	Gradient:	Dégradé :
+	Save Device Status	Enregistrer l'état des périphériques
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Chaque périphérique mémorise son outil, ses couleurs, sa brosse, son motif et son dégradé ; changer de périphérique les change.
+	Selection Editor	Éditeur de sélection
+	No document open.	Aucun document ouvert.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Cliquez pour sélectionner la couleur contiguë avec la baguette magique (Maj ajoute, Alt soustrait)
+	Save to Channel	Enregistrer dans un canal
+	To Path	Vers un chemin
+	Advanced options	Options avancées
+	MyPaint Brushes	Brosses MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Aucune brosse MyPaint pour l'instant. Importez des fichiers .myb pour les lister ici.
+	No brush matches the filter.	Aucune brosse ne correspond au filtre.

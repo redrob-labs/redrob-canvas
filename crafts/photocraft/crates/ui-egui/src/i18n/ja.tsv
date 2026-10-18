@@ -4169,3 +4169,57 @@ curves	Smooth	スムーズ
 	Tags:	タグ:
 	Add tag	タグを追加
 	Remove tag	タグを削除
+	View Metadata…	メタデータを表示…
+	Edit Metadata…	メタデータを編集…
+	Edit Metadata	メタデータを編集
+	Metadata Viewer	メタデータビューア
+	Write Metadata	メタデータを書き込む
+	Separate several values with semicolons	複数の値はセミコロンで区切ります
+	No tags	タグなし
+	XMP	XMP
+	IPTC	IPTC
+	Text	テキスト
+	Rights	権利
+	IPTC Extension	IPTC 拡張
+	Categories	カテゴリ
+	DICOM	DICOM
+	Procedure Browser	プロシージャブラウザ
+	Plug-In Browser	プラグインブラウザ
+	Search procedures	プロシージャを検索
+	{n} procedures	{n} 件のプロシージャ
+	(no menu)	(メニューなし)
+	Menu: {path}	メニュー: {path}
+	Parameters	パラメーター
+	Available now	現在実行可能
+	Not available in the current state	現在の状態では実行できません
+	Run	実行
+	Select a procedure to read its parameters.	プロシージャを選ぶとパラメーターを読めます。
+	Dashboard	ダッシュボード
+	Low memory: swap is nearly full. Save your work.	メモリ不足: スワップがほぼ満杯です。作業を保存してください。
+	Memory	メモリ
+	Cache	キャッシュ
+	Swap	スワップ
+	Swap: not reported on this platform	スワップ: このプラットフォームでは取得できません
+	CPU	CPU
+	CPU renderer	CPU レンダラー
+	uploads	アップロード
+	Misc: {jobs} jobs running · {n} samples	その他: 実行中のジョブ {jobs} 件 · サンプル {n} 件
+	Log to File…	ファイルに記録…
+	Stop Logging	記録を停止
+	Device Status	デバイスの状態
+	Core Pointer	コアポインター
+	Pen / Tablet	ペン / タブレット
+	Brush:	ブラシ:
+	Pattern:	パターン:
+	Gradient:	グラデーション:
+	Save Device Status	デバイスの状態を保存
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	各デバイスはツール、色、ブラシ、パターン、グラデーションを記憶し、デバイスを切り替えると一緒に切り替わります。
+	Selection Editor	選択範囲エディター
+	No document open.	ドキュメントが開かれていません。
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	クリックすると自動選択ツールでその位置の連続した色を選択します (Shift で追加、Alt で削除)
+	Save to Channel	チャンネルに保存
+	To Path	パスへ
+	Advanced options	詳細オプション
+	MyPaint Brushes	MyPaint ブラシ
+	No MyPaint brushes yet. Import .myb files to list them here.	MyPaint ブラシはまだありません。.myb ファイルを読み込むとここに表示されます。
+	No brush matches the filter.	絞り込みに一致するブラシがありません。

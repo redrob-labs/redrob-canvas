@@ -3984,3 +3984,59 @@ curves	Smooth	Làm mượt
 	Tags:	Thẻ:
 	Add tag	Thêm thẻ
 	Remove tag	Xóa thẻ
+	View Metadata…	Xem siêu dữ liệu…
+	Edit Metadata…	Sửa siêu dữ liệu…
+	Edit Metadata	Sửa siêu dữ liệu
+	Metadata Viewer	Trình xem siêu dữ liệu
+	Write Metadata	Ghi siêu dữ liệu
+	Separate several values with semicolons	Phân tách nhiều giá trị bằng dấu chấm phẩy
+	No tags	Không có thẻ
+	XMP	XMP
+	IPTC	IPTC
+	Text	Văn bản
+	Rights	Quyền
+	IPTC Extension	Phần mở rộng IPTC
+	Categories	Danh mục
+	GPS	GPS
+	DICOM	DICOM
+	Procedure Browser	Trình duyệt thủ tục
+	Plug-In Browser	Trình duyệt plug-in
+	Search procedures	Tìm thủ tục
+	{n} procedures	{n} thủ tục
+	(no menu)	(không có menu)
+	Menu: {path}	Menu: {path}
+	Parameters	Tham số
+	Available now	Hiện khả dụng
+	Not available in the current state	Không khả dụng ở trạng thái hiện tại
+	Run	Chạy
+	Select a procedure to read its parameters.	Chọn một thủ tục để đọc tham số của nó.
+	Dashboard	Bảng điều khiển
+	Low memory: swap is nearly full. Save your work.	Bộ nhớ thấp: swap gần đầy. Hãy lưu công việc.
+	Memory	Bộ nhớ
+	Cache	Bộ nhớ đệm
+	Swap	Swap
+	Swap: not reported on this platform	Swap: không được báo cáo trên nền tảng này
+	CPU	CPU
+	CPU renderer	Bộ kết xuất CPU
+	uploads	lần tải lên
+	Misc: {jobs} jobs running · {n} samples	Khác: {jobs} công việc đang chạy · {n} mẫu
+	Log to File…	Ghi vào tệp…
+	Stop Logging	Dừng ghi
+	Device Status	Trạng thái thiết bị
+	Core Pointer	Con trỏ chính
+	Pen / Tablet	Bút / Bảng vẽ
+	Brush:	Cọ:
+	Pattern:	Mẫu:
+	Gradient:	Chuyển sắc:
+	Save Device Status	Lưu trạng thái thiết bị
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Mỗi thiết bị nhớ công cụ, màu, cọ, mẫu và chuyển sắc của nó; đổi thiết bị sẽ đổi chúng.
+	Selection Editor	Trình sửa vùng chọn
+	No document open.	Không có tài liệu nào mở.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Nhấp để chọn màu liền kề tại đó bằng Đũa thần (Shift thêm, Alt bớt)
+	Save to Channel	Lưu vào kênh
+	To Path	Thành đường dẫn
+	Advanced options	Tùy chọn nâng cao
+	MyPaint Brushes	Cọ MyPaint
+	Import…	Nhập…
+	No MyPaint brushes yet. Import .myb files to list them here.	Chưa có cọ MyPaint. Nhập tệp .myb để liệt kê ở đây.
+	No brush matches the filter.	Không có cọ nào khớp bộ lọc.

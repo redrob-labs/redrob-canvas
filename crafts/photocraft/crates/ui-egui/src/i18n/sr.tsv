@@ -4564,3 +4564,57 @@ shape	Appearance	Izgled
 	Tags:	Ознаке:
 	Add tag	Додај ознаку
 	Remove tag	Уклони ознаку
+	View Metadata…	Прикажи метаподатке…
+	Edit Metadata…	Уреди метаподатке…
+	Edit Metadata	Уреди метаподатке
+	Metadata Viewer	Преглед метаподатака
+	Write Metadata	Упиши метаподатке
+	Separate several values with semicolons	Више вредности раздвојите тачка-зарезом
+	No tags	Нема ознака
+	XMP	XMP
+	IPTC	IPTC
+	Text	Текст
+	Rights	Права
+	IPTC Extension	IPTC проширење
+	Categories	Категорије
+	DICOM	DICOM
+	Procedure Browser	Прегледач процедура
+	Plug-In Browser	Прегледач додатака
+	Search procedures	Претражи процедуре
+	{n} procedures	{n} процедура
+	(no menu)	(без менија)
+	Menu: {path}	Мени: {path}
+	Parameters	Параметри
+	Available now	Доступно сада
+	Not available in the current state	Није доступно у тренутном стању
+	Run	Покрени
+	Select a procedure to read its parameters.	Изаберите процедуру да прочитате њене параметре.
+	Dashboard	Контролна табла
+	Low memory: swap is nearly full. Save your work.	Мало меморије: swap је скоро пун. Сачувајте рад.
+	Memory	Меморија
+	Cache	Кеш
+	Swap	Swap
+	Swap: not reported on this platform	Swap: није доступно на овој платформи
+	CPU	CPU
+	CPU renderer	CPU рендерер
+	uploads	отпремања
+	Misc: {jobs} jobs running · {n} samples	Разно: {jobs} послова у току · {n} узорака
+	Log to File…	Бележи у датотеку…
+	Stop Logging	Заустави бележење
+	Device Status	Стање уређаја
+	Core Pointer	Основни показивач
+	Pen / Tablet	Оловка / таблет
+	Brush:	Четкица:
+	Pattern:	Шаблон:
+	Gradient:	Прелив:
+	Save Device Status	Сачувај стање уређаја
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Сваки уређај памти свој алат, боје, четкицу, шаблон и прелив; промена уређаја мења и њих.
+	Selection Editor	Уређивач избора
+	No document open.	Нема отвореног документа.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Кликните да изаберете суседну боју чаробним штапићем (Shift додаје, Alt одузима)
+	Save to Channel	Сачувај у канал
+	To Path	У путању
+	Advanced options	Напредне опције
+	MyPaint Brushes	MyPaint четкице
+	No MyPaint brushes yet. Import .myb files to list them here.	Још нема MyPaint четкица. Увезите .myb датотеке да се овде прикажу.
+	No brush matches the filter.	Ниједна четкица не одговара филтеру.

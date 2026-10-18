@@ -4255,3 +4255,57 @@ curves	Smooth	Vloeiend maken
 	Tags:	Tags:
 	Add tag	Tag toevoegen
 	Remove tag	Tag verwijderen
+	View Metadata…	Metadata weergeven…
+	Edit Metadata…	Metadata bewerken…
+	Edit Metadata	Metadata bewerken
+	Metadata Viewer	Metadataweergave
+	Write Metadata	Metadata schrijven
+	Separate several values with semicolons	Scheid meerdere waarden met puntkomma's
+	No tags	Geen tags
+	XMP	XMP
+	IPTC	IPTC
+	Text	Tekst
+	Rights	Rechten
+	IPTC Extension	IPTC-uitbreiding
+	Categories	Categorieën
+	DICOM	DICOM
+	Procedure Browser	Procedurebrowser
+	Plug-In Browser	Plug-inbrowser
+	Search procedures	Procedures zoeken
+	{n} procedures	{n} procedures
+	(no menu)	(geen menu)
+	Menu: {path}	Menu: {path}
+	Parameters	Parameters
+	Available now	Nu beschikbaar
+	Not available in the current state	Niet beschikbaar in de huidige toestand
+	Run	Uitvoeren
+	Select a procedure to read its parameters.	Selecteer een procedure om de parameters te lezen.
+	Dashboard	Dashboard
+	Low memory: swap is nearly full. Save your work.	Weinig geheugen: swap is bijna vol. Sla uw werk op.
+	Memory	Geheugen
+	Cache	Cache
+	Swap	Swap
+	Swap: not reported on this platform	Swap: niet gerapporteerd op dit platform
+	CPU	CPU
+	CPU renderer	CPU-renderer
+	uploads	uploads
+	Misc: {jobs} jobs running · {n} samples	Overig: {jobs} taken actief · {n} metingen
+	Log to File…	Loggen naar bestand…
+	Stop Logging	Loggen stoppen
+	Device Status	Apparaatstatus
+	Core Pointer	Hoofdaanwijzer
+	Pen / Tablet	Pen / Tablet
+	Brush:	Penseel:
+	Pattern:	Patroon:
+	Gradient:	Verloop:
+	Save Device Status	Apparaatstatus opslaan
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Elk apparaat onthoudt zijn gereedschap, kleuren, penseel, patroon en verloop; wisselen van apparaat wisselt ze mee.
+	Selection Editor	Selectie-editor
+	No document open.	Geen document geopend.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Klik om de aaneengesloten kleur daar met de toverstaf te selecteren (Shift voegt toe, Alt trekt af)
+	Save to Channel	Opslaan in kanaal
+	To Path	Naar pad
+	Advanced options	Geavanceerde opties
+	MyPaint Brushes	MyPaint-penselen
+	No MyPaint brushes yet. Import .myb files to list them here.	Nog geen MyPaint-penselen. Importeer .myb-bestanden om ze hier te tonen.
+	No brush matches the filter.	Geen penseel komt overeen met het filter.

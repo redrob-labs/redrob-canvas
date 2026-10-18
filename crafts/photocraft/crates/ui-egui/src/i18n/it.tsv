@@ -4959,3 +4959,56 @@ shape	Appearance	Aspetto
 	Tags:	Tag:
 	Add tag	Aggiungi tag
 	Remove tag	Rimuovi tag
+	View Metadata…	Visualizza metadati…
+	Edit Metadata…	Modifica metadati…
+	Edit Metadata	Modifica metadati
+	Metadata Viewer	Visualizzatore metadati
+	Write Metadata	Scrivi metadati
+	Separate several values with semicolons	Separa più valori con punto e virgola
+	No tags	Nessun tag
+	XMP	XMP
+	IPTC	IPTC
+	Rights	Diritti
+	IPTC Extension	Estensione IPTC
+	Categories	Categorie
+	DICOM	DICOM
+	Procedure Browser	Browser delle procedure
+	Plug-In Browser	Browser dei plug-in
+	Search procedures	Cerca procedure
+	{n} procedures	{n} procedure
+	(no menu)	(nessun menu)
+	Menu: {path}	Menu: {path}
+	Parameters	Parametri
+	Available now	Disponibile ora
+	Not available in the current state	Non disponibile nello stato attuale
+	Run	Esegui
+	Select a procedure to read its parameters.	Seleziona una procedura per leggerne i parametri.
+	Dashboard	Pannello di controllo
+	Low memory: swap is nearly full. Save your work.	Memoria scarsa: lo swap è quasi pieno. Salva il tuo lavoro.
+	Memory	Memoria
+	Cache	Cache
+	Swap	Swap
+	Swap: not reported on this platform	Swap: non riportato su questa piattaforma
+	CPU	CPU
+	CPU renderer	Renderer CPU
+	uploads	caricamenti
+	Misc: {jobs} jobs running · {n} samples	Varie: {jobs} lavori in corso · {n} campioni
+	Log to File…	Registra su file…
+	Stop Logging	Interrompi registrazione
+	Device Status	Stato dispositivi
+	Core Pointer	Puntatore principale
+	Pen / Tablet	Penna / Tavoletta
+	Brush:	Pennello:
+	Pattern:	Motivo:
+	Gradient:	Gradiente:
+	Save Device Status	Salva stato dispositivi
+	Each device remembers its tool, colours, brush, pattern and gradient; switching devices switches them.	Ogni dispositivo ricorda strumento, colori, pennello, motivo e gradiente; cambiando dispositivo cambiano anch'essi.
+	Selection Editor	Editor di selezione
+	No document open.	Nessun documento aperto.
+	Click to select the contiguous colour there with the Magic Wand (Shift adds, Alt subtracts)	Clic per selezionare il colore contiguo con la bacchetta magica (Maiusc aggiunge, Alt sottrae)
+	Save to Channel	Salva nel canale
+	To Path	In tracciato
+	Advanced options	Opzioni avanzate
+	MyPaint Brushes	Pennelli MyPaint
+	No MyPaint brushes yet. Import .myb files to list them here.	Nessun pennello MyPaint. Importa file .myb per elencarli qui.
+	No brush matches the filter.	Nessun pennello corrisponde al filtro.
