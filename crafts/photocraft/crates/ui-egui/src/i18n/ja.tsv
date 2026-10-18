@@ -4409,3 +4409,59 @@ curves	Smooth	スムーズ
 	Replace the segment with two copies of itself	セグメントを自身の 2 つのコピーに置き換えます
 	Flip the whole gradient end to end	グラデーション全体を反転します
 	Save as POV-Ray…	POV-Ray 形式で保存…
+	Add scene at playhead	再生ヘッドにシーンを追加
+	Add to favourites	お気に入りに追加
+	After	後
+	Arithmetic	算術
+	Attach audio…	オーディオを添付…
+	Before	前
+	Binary	バイナリ
+	Blend details	ブレンド詳細
+	Blend mode	ブレンドモード
+	Blend mode and opacity	ブレンドモードと不透明度
+	Capture now	今キャプチャ
+	Clone previous keyframe here	前のキーフレームをここにクローン
+	Comment	コメント
+	Display settings	表示設定
+	Duplicate keyframe	キーフレームを複製
+	Duplicate keyframe here	ここにキーフレームを複製
+	End	終了
+	Export timelapse…	タイムラプスを書き出し…
+	Favourites	お気に入り
+	Frame rate	フレームレート
+	HSX	HSX
+	Hidden	非表示
+	Key the active layer:	アクティブレイヤーにキーを設定:
+	Misc	その他
+	Mute audio	オーディオをミュート
+	Negative	ネガティブ
+	New keyframe	新規キーフレーム
+	New keyframe here	ここに新規キーフレーム
+	Next tint	次の色味
+	No animated layers: add a keyframe to the active layer to animate it.	アニメーションレイヤーがありません。アクティブレイヤーにキーフレームを追加するとアニメーションになります。
+	No animation curves yet.	アニメーションカーブはまだありません。
+	No scenes yet.	シーンはまだありません。
+	Opacity per frame	フレームごとの不透明度
+	Previous tint	前の色味
+	Quadratic	二次
+	Recorder	レコーダー
+	Remove from favourites	お気に入りから削除
+	Remove keyframe	キーフレームを削除
+	Remove scene	シーンを削除
+	Scale X	拡大縮小 X
+	Scale Y	拡大縮小 Y
+	Scene name	シーン名
+	Show onion skins	オニオンスキンを表示
+	Start	開始
+	Start recording	録画を開始
+	Stop recording	録画を停止
+	Storyboard	ストーリーボード
+	Thumbnail size	サムネイルサイズ
+	frames	フレーム
+	opacity	不透明度
+	rotation	回転
+	scaleX	拡大縮小 X
+	scaleY	拡大縮小 Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{dir} に {count} 枚のスナップショット

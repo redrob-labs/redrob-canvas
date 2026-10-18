@@ -4739,3 +4739,56 @@ shape	Appearance	Izgled
 	Replace the segment with two copies of itself	Замени сегмент са две његове копије
 	Flip the whole gradient end to end	Обрни цео прелив
 	Save as POV-Ray…	Сачувај као POV-Ray…
+	Add scene at playhead	Додај сцену на позицији репродукције
+	Add to favourites	Додај у омиљене
+	Arithmetic	Аритметички
+	Attach audio…	Приложи звук…
+	Binary	Бинарни
+	Blend details	Детаљи мешања
+	Blend mode	Режим мешања
+	Blend mode and opacity	Режим мешања и провидност
+	Capture now	Сними сада
+	Clone previous keyframe here	Клонирај овде претходни кључни кадар
+	Comment	Коментар
+	Display settings	Подешавања приказа
+	Duplicate keyframe	Дуплирај кључни кадар
+	Duplicate keyframe here	Дуплирај кључни кадар овде
+	End	Крај
+	Export timelapse…	Извези тајмлапс…
+	Favourites	Омиљени
+	Frame rate	Број кадрова
+	HSX	HSX
+	Key the active layer:	Кључ за активни слој:
+	Misc	Разно
+	Mute audio	Утишај звук
+	Negative	Негативни
+	New keyframe	Нови кључни кадар
+	New keyframe here	Нови кључни кадар овде
+	Next tint	Боја следећих
+	No animated layers: add a keyframe to the active layer to animate it.	Нема анимираних слојева: додајте кључни кадар активном слоју да га анимирате.
+	No animation curves yet.	Још нема кривих анимације.
+	No scenes yet.	Још нема сцена.
+	Opacity per frame	Провидност по кадру
+	Previous tint	Боја претходних
+	Quadratic	Квадратни
+	Recorder	Снимач
+	Remove from favourites	Уклони из омиљених
+	Remove keyframe	Уклони кључни кадар
+	Remove scene	Уклони сцену
+	Scale X	Размера X
+	Scale Y	Размера Y
+	Scene name	Назив сцене
+	Show onion skins	Прикажи паус папир
+	Start	Почетак
+	Start recording	Почни снимање
+	Stop recording	Заустави снимање
+	Storyboard	Сториборд
+	Thumbnail size	Величина сличице
+	frames	кадрова
+	opacity	провидност
+	rotation	ротација
+	scaleX	размера X
+	scaleY	размера Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} снимака у {dir}

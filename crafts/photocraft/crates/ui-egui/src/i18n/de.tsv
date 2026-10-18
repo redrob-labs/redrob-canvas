@@ -3745,3 +3745,60 @@ curves	Smooth	Glätten
 	Replace the segment with two copies of itself	Ersetzt das Segment durch zwei Kopien von sich
 	Flip the whole gradient end to end	Kehrt den ganzen Verlauf um
 	Save as POV-Ray…	Als POV-Ray speichern…
+	Add scene at playhead	Szene am Abspielkopf hinzufügen
+	Add to favourites	Zu Favoriten hinzufügen
+	After	Danach
+	Arithmetic	Arithmetisch
+	Attach audio…	Audio anhängen…
+	Before	Davor
+	Binary	Binär
+	Blend details	Mischdetails
+	Blend mode	Mischmodus
+	Blend mode and opacity	Mischmodus und Deckkraft
+	Capture now	Jetzt aufnehmen
+	Clone previous keyframe here	Vorheriges Schlüsselbild hierher klonen
+	Comment	Kommentar
+	Display settings	Anzeigeeinstellungen
+	Duplicate keyframe	Schlüsselbild duplizieren
+	Duplicate keyframe here	Schlüsselbild hierher duplizieren
+	Duration	Dauer
+	End	Ende
+	Export timelapse…	Zeitraffer exportieren…
+	Favourites	Favoriten
+	Frame rate	Bildrate
+	HSX	HSX
+	Hidden	Ausgeblendet
+	Key the active layer:	Aktive Ebene keyen:
+	Misc	Sonstige
+	Mute audio	Audio stummschalten
+	Negative	Negativ
+	New keyframe	Neues Schlüsselbild
+	New keyframe here	Neues Schlüsselbild hier
+	Next tint	Farbton danach
+	No animated layers: add a keyframe to the active layer to animate it.	Keine animierten Ebenen: fügen Sie der aktiven Ebene ein Schlüsselbild hinzu, um sie zu animieren.
+	No animation curves yet.	Noch keine Animationskurven.
+	No scenes yet.	Noch keine Szenen.
+	Opacity per frame	Deckkraft pro Bild
+	Previous tint	Farbton davor
+	Quadratic	Quadratisch
+	Recorder	Rekorder
+	Remove from favourites	Aus Favoriten entfernen
+	Remove keyframe	Schlüsselbild entfernen
+	Remove scene	Szene entfernen
+	Scale X	Skalierung X
+	Scale Y	Skalierung Y
+	Scene name	Szenenname
+	Show onion skins	Zwiebelhaut anzeigen
+	Start	Anfang
+	Start recording	Aufnahme starten
+	Stop recording	Aufnahme stoppen
+	Storyboard	Storyboard
+	Thumbnail size	Miniaturgröße
+	frames	Bilder
+	opacity	Deckkraft
+	rotation	Drehung
+	scaleX	Skalierung X
+	scaleY	Skalierung Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} Schnappschüsse in {dir}

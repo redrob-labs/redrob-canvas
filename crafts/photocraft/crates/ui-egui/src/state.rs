@@ -888,6 +888,10 @@ fn default_layer_filter_mode() -> redrob_photo_color::BlendMode {
     redrob_photo_color::BlendMode::Normal
 }
 
+fn default_blend_favourites() -> Vec<redrob_photo_color::BlendMode> {
+    crate::blend_menu_ui::DEFAULT_FAVOURITES.to_vec()
+}
+
 fn one_u32() -> u32 {
     1
 }
@@ -1477,6 +1481,17 @@ pub struct UiState {
     /// Layers panel blend-mode filter.
     #[serde(default = "default_layer_filter_mode")]
     pub layer_filter_mode: redrob_photo_color::BlendMode,
+    /// Layers panel: the blend modes starred as favourites (grouped blend menu).
+    #[serde(default = "default_blend_favourites")]
+    pub blend_favourites: Vec<redrob_photo_color::BlendMode>,
+    /// Layers panel: colour-label filter (empty = all) and the display settings of the rows.
+    #[serde(default)]
+    pub layer_filter_labels: Vec<String>,
+    #[serde(default)]
+    pub layer_display: crate::layer_filter_ui::LayerDisplay,
+    /// Animation docker state (keyframe table, onion skin, curves, storyboard, recorder).
+    #[serde(default)]
+    pub animation: crate::animation_ui::AnimationUi,
     /// Actions panel: which row is selected and which are expanded. The list lives on the session.
     #[serde(default)]
     pub actions: crate::actions::ActionsUi,
@@ -1663,6 +1678,10 @@ impl Default for UiState {
             layer_filter_by: Default::default(),
             layer_filter_name: String::new(),
             layer_filter_mode: default_layer_filter_mode(),
+            blend_favourites: default_blend_favourites(),
+            layer_filter_labels: Vec::new(),
+            layer_display: Default::default(),
+            animation: Default::default(),
             pen: None,
             stroke_editor: None,
             direct_selection: Default::default(),

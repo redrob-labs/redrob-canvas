@@ -27,6 +27,8 @@ pub mod artboard_ui;
 pub mod assistant_ui;
 pub(crate) mod background_redraw;
 mod blend_keys;
+pub mod animation_ui;
+pub mod blend_menu_ui;
 pub(crate) mod blend_preview;
 pub mod blur_pins;
 mod brand;

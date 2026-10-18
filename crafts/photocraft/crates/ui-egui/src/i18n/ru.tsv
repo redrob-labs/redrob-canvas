@@ -3651,3 +3651,59 @@ curves	Smooth	Сгладить
 	Replace the segment with two copies of itself	Заменить сегмент двумя его копиями
 	Flip the whole gradient end to end	Перевернуть весь градиент
 	Save as POV-Ray…	Сохранить как POV-Ray…
+	Add scene at playhead	Добавить сцену на позиции воспроизведения
+	Add to favourites	Добавить в избранное
+	After	После
+	Arithmetic	Арифметические
+	Attach audio…	Прикрепить звук…
+	Before	До
+	Binary	Двоичные
+	Blend details	Подробности смешивания
+	Blend mode	Режим смешивания
+	Blend mode and opacity	Режим смешивания и непрозрачность
+	Capture now	Снять сейчас
+	Clone previous keyframe here	Клонировать сюда предыдущий ключевой кадр
+	Comment	Комментарий
+	Display settings	Параметры отображения
+	Duplicate keyframe	Дублировать ключевой кадр
+	Duplicate keyframe here	Дублировать ключевой кадр сюда
+	End	Конец
+	Export timelapse…	Экспортировать таймлапс…
+	Favourites	Избранное
+	Frame rate	Частота кадров
+	HSX	HSX
+	Hidden	Скрыто
+	Key the active layer:	Ключ для активного слоя:
+	Misc	Прочие
+	Mute audio	Выключить звук
+	Negative	Негативные
+	New keyframe	Новый ключевой кадр
+	New keyframe here	Новый ключевой кадр здесь
+	Next tint	Оттенок следующих
+	No animated layers: add a keyframe to the active layer to animate it.	Нет анимированных слоёв: добавьте ключевой кадр активному слою, чтобы анимировать его.
+	No animation curves yet.	Кривых анимации пока нет.
+	No scenes yet.	Сцен пока нет.
+	Opacity per frame	Непрозрачность по кадрам
+	Previous tint	Оттенок предыдущих
+	Quadratic	Квадратичные
+	Recorder	Запись
+	Remove from favourites	Убрать из избранного
+	Remove keyframe	Удалить ключевой кадр
+	Remove scene	Удалить сцену
+	Scale X	Масштаб X
+	Scale Y	Масштаб Y
+	Scene name	Название сцены
+	Show onion skins	Показывать кальку
+	Start	Начало
+	Start recording	Начать запись
+	Stop recording	Остановить запись
+	Storyboard	Раскадровка
+	Thumbnail size	Размер миниатюр
+	frames	кадров
+	opacity	непрозрачность
+	rotation	поворот
+	scaleX	масштаб X
+	scaleY	масштаб Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} снимков в {dir}

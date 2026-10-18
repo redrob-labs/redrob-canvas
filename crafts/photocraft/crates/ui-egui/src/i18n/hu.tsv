@@ -4585,3 +4585,56 @@ cameraRaw	Yellow	Sárga
 	Replace the segment with two copies of itself	A szakaszt két másolatával helyettesíti
 	Flip the whole gradient end to end	Az egész színátmenetet megfordítja
 	Save as POV-Ray…	Mentés POV-Ray-ként…
+	Add scene at playhead	Jelenet hozzáadása a lejátszófejnél
+	Add to favourites	Hozzáadás a kedvencekhez
+	Arithmetic	Aritmetikai
+	Attach audio…	Hang csatolása…
+	Binary	Bináris
+	Blend details	Keverési részletek
+	Blend mode	Keverési mód
+	Blend mode and opacity	Keverési mód és átlátszatlanság
+	Capture now	Rögzítés most
+	Clone previous keyframe here	Előző kulcskép klónozása ide
+	Comment	Megjegyzés
+	Display settings	Megjelenítési beállítások
+	Duplicate keyframe	Kulcskép duplikálása
+	Duplicate keyframe here	Kulcskép duplikálása ide
+	End	Vége
+	Export timelapse…	Timelapse exportálása…
+	Favourites	Kedvencek
+	Frame rate	Képkockasebesség
+	HSX	HSX
+	Key the active layer:	Kulcs az aktív rétegen:
+	Misc	Egyéb
+	Mute audio	Hang némítása
+	Negative	Negatív
+	New keyframe	Új kulcskép
+	New keyframe here	Új kulcskép ide
+	Next tint	Következő árnyalat
+	No animated layers: add a keyframe to the active layer to animate it.	Nincs animált réteg: adjon kulcsképet az aktív réteghez az animáláshoz.
+	No animation curves yet.	Még nincsenek animációs görbék.
+	No scenes yet.	Még nincsenek jelenetek.
+	Opacity per frame	Átlátszatlanság képkockánként
+	Previous tint	Előző árnyalat
+	Quadratic	Kvadratikus
+	Recorder	Rögzítő
+	Remove from favourites	Eltávolítás a kedvencekből
+	Remove keyframe	Kulcskép eltávolítása
+	Remove scene	Jelenet eltávolítása
+	Scale X	Méretezés X
+	Scale Y	Méretezés Y
+	Scene name	Jelenet neve
+	Show onion skins	Hagymahéj megjelenítése
+	Start	Kezdet
+	Start recording	Felvétel indítása
+	Stop recording	Felvétel leállítása
+	Storyboard	Storyboard
+	Thumbnail size	Bélyegkép mérete
+	frames	képkocka
+	opacity	átlátszatlanság
+	rotation	forgatás
+	scaleX	méretezés X
+	scaleY	méretezés Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} pillanatkép itt: {dir}

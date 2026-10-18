@@ -3750,3 +3750,59 @@ curves	Smooth	Lisser
 	Replace the segment with two copies of itself	Remplace le segment par deux copies de lui-même
 	Flip the whole gradient end to end	Retourne tout le dégradé
 	Save as POV-Ray…	Enregistrer en POV-Ray…
+	Add scene at playhead	Ajouter une scène à la tête de lecture
+	Add to favourites	Ajouter aux favoris
+	After	Après
+	Arithmetic	Arithmétique
+	Attach audio…	Joindre un son…
+	Before	Avant
+	Binary	Binaire
+	Blend details	Détails du fondu
+	Blend mode	Mode de fusion
+	Blend mode and opacity	Mode de fusion et opacité
+	Capture now	Capturer maintenant
+	Clone previous keyframe here	Cloner ici l’image clé précédente
+	Comment	Commentaire
+	Display settings	Paramètres d’affichage
+	Duplicate keyframe	Dupliquer l’image clé
+	Duplicate keyframe here	Dupliquer l’image clé ici
+	End	Fin
+	Export timelapse…	Exporter le timelapse…
+	Favourites	Favoris
+	Frame rate	Cadence
+	HSX	HSX
+	Hidden	Masqué
+	Key the active layer:	Clé sur le calque actif :
+	Misc	Divers
+	Mute audio	Couper le son
+	Negative	Négatif
+	New keyframe	Nouvelle image clé
+	New keyframe here	Nouvelle image clé ici
+	Next tint	Teinte suivante
+	No animated layers: add a keyframe to the active layer to animate it.	Aucun calque animé : ajoutez une image clé au calque actif pour l’animer.
+	No animation curves yet.	Pas encore de courbes d’animation.
+	No scenes yet.	Pas encore de scènes.
+	Opacity per frame	Opacité par image
+	Previous tint	Teinte précédente
+	Quadratic	Quadratique
+	Recorder	Enregistreur
+	Remove from favourites	Retirer des favoris
+	Remove keyframe	Supprimer l’image clé
+	Remove scene	Supprimer la scène
+	Scale X	Échelle X
+	Scale Y	Échelle Y
+	Scene name	Nom de la scène
+	Show onion skins	Afficher la pelure d’oignon
+	Start	Début
+	Start recording	Démarrer l’enregistrement
+	Stop recording	Arrêter l’enregistrement
+	Storyboard	Storyboard
+	Thumbnail size	Taille des vignettes
+	frames	images
+	opacity	opacité
+	rotation	rotation
+	scaleX	échelle X
+	scaleY	échelle Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} instantanés dans {dir}

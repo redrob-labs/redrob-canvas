@@ -5343,3 +5343,56 @@ shape	Appearance	Aspetto
 	Replace the segment with two copies of itself	Sostituisce il segmento con due copie di se stesso
 	Flip the whole gradient end to end	Capovolge l'intero gradiente
 	Save as POV-Ray…	Salva come POV-Ray…
+	Add scene at playhead	Aggiungi scena alla testina
+	Add to favourites	Aggiungi ai preferiti
+	Arithmetic	Aritmetici
+	Attach audio…	Allega audio…
+	Binary	Binari
+	Blend details	Dettagli di fusione
+	Blend mode	Metodo di fusione
+	Blend mode and opacity	Metodo di fusione e opacità
+	Capture now	Cattura ora
+	Clone previous keyframe here	Clona qui il fotogramma chiave precedente
+	Comment	Commento
+	Display settings	Impostazioni di visualizzazione
+	Duplicate keyframe	Duplica fotogramma chiave
+	Duplicate keyframe here	Duplica fotogramma chiave qui
+	End	Fine
+	Export timelapse…	Esporta timelapse…
+	Favourites	Preferiti
+	Frame rate	Frequenza fotogrammi
+	HSX	HSX
+	Key the active layer:	Chiave sul livello attivo:
+	Misc	Varie
+	Mute audio	Silenzia audio
+	Negative	Negativi
+	New keyframe	Nuovo fotogramma chiave
+	New keyframe here	Nuovo fotogramma chiave qui
+	Next tint	Tinta successiva
+	No animated layers: add a keyframe to the active layer to animate it.	Nessun livello animato: aggiungi un fotogramma chiave al livello attivo per animarlo.
+	No animation curves yet.	Ancora nessuna curva di animazione.
+	No scenes yet.	Ancora nessuna scena.
+	Opacity per frame	Opacità per fotogramma
+	Previous tint	Tinta precedente
+	Quadratic	Quadratici
+	Recorder	Registratore
+	Remove from favourites	Rimuovi dai preferiti
+	Remove keyframe	Rimuovi fotogramma chiave
+	Remove scene	Rimuovi scena
+	Scale X	Scala X
+	Scale Y	Scala Y
+	Scene name	Nome della scena
+	Show onion skins	Mostra onion skin
+	Start	Inizio
+	Start recording	Avvia registrazione
+	Stop recording	Ferma registrazione
+	Storyboard	Storyboard
+	Thumbnail size	Dimensione miniature
+	frames	fotogrammi
+	opacity	opacità
+	rotation	rotazione
+	scaleX	scala X
+	scaleY	scala Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} istantanee in {dir}

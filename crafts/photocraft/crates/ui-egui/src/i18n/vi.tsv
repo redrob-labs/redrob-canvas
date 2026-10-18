@@ -4161,3 +4161,59 @@ curves	Smooth	Làm mượt
 	Replace the segment with two copies of itself	Thay đoạn bằng hai bản sao của nó
 	Flip the whole gradient end to end	Đảo ngược toàn bộ chuyển sắc
 	Save as POV-Ray…	Lưu dạng POV-Ray…
+	Add scene at playhead	Thêm cảnh tại đầu phát
+	Add to favourites	Thêm vào mục ưa thích
+	After	Sau
+	Arithmetic	Số học
+	Attach audio…	Đính kèm âm thanh…
+	Before	Trước
+	Binary	Nhị phân
+	Blend details	Chi tiết hòa trộn
+	Blend mode	Chế độ hòa trộn
+	Blend mode and opacity	Chế độ hòa trộn và độ mờ
+	Capture now	Chụp ngay
+	Clone previous keyframe here	Nhân bản khung hình khóa trước vào đây
+	Comment	Ghi chú
+	Display settings	Thiết lập hiển thị
+	Duplicate keyframe	Nhân đôi khung hình khóa
+	Duplicate keyframe here	Nhân đôi khung hình khóa vào đây
+	End	Kết thúc
+	Export timelapse…	Xuất timelapse…
+	Favourites	Ưa thích
+	Frame rate	Tốc độ khung hình
+	HSX	HSX
+	Hidden	Ẩn
+	Key the active layer:	Đặt khóa cho lớp đang chọn:
+	Misc	Khác
+	Mute audio	Tắt tiếng
+	Negative	Âm bản
+	New keyframe	Khung hình khóa mới
+	New keyframe here	Khung hình khóa mới tại đây
+	Next tint	Màu phủ khung sau
+	No animated layers: add a keyframe to the active layer to animate it.	Không có lớp hoạt ảnh: thêm khung hình khóa cho lớp đang chọn để tạo hoạt ảnh.
+	No animation curves yet.	Chưa có đường cong hoạt ảnh.
+	No scenes yet.	Chưa có cảnh nào.
+	Opacity per frame	Độ mờ theo khung hình
+	Previous tint	Màu phủ khung trước
+	Quadratic	Bậc hai
+	Recorder	Trình ghi
+	Remove from favourites	Bỏ khỏi mục ưa thích
+	Remove keyframe	Xóa khung hình khóa
+	Remove scene	Xóa cảnh
+	Scale X	Tỉ lệ X
+	Scale Y	Tỉ lệ Y
+	Scene name	Tên cảnh
+	Show onion skins	Hiện giấy bóng kính
+	Start	Bắt đầu
+	Start recording	Bắt đầu ghi
+	Stop recording	Dừng ghi
+	Storyboard	Bảng phân cảnh
+	Thumbnail size	Kích cỡ hình thu nhỏ
+	frames	khung hình
+	opacity	độ mờ
+	rotation	xoay
+	scaleX	tỉ lệ X
+	scaleY	tỉ lệ Y
+	x	x
+	y	y
+	{count} snapshots in {dir}	{count} ảnh chụp trong {dir}
