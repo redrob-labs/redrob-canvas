@@ -4507,3 +4507,25 @@ lighting	Light	Світло
 @msg	select an object	виділіть об’єкт
 @msg	the copied object is no longer in this document	скопійованого об’єкта більше немає в цьому документі
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	«Імітувати» друкує накладання так, як його показує перегляд накладання; кольороподіл завжди зберігає його. Набір зводить прозорість перед друком (файли PostScript завжди зводять її).
+	Arrange in Grid	Розставити за сіткою
+	Arrange in Circle	Розставити по колу
+	Dynamic Offset	Динамічний зсув
+	Fill Between Paths	Заливка між контурами
+	Linked Offset	Пов'язаний зсув
+	Linked Offset Distance	Відстань пов'язаного зсуву
+	Remove Overlaps	Усунути перекриття
+	Unlink Live Object	Від'єднати живий об'єкт
+	Create Anchor	Створити посилання
+	Follow Link	Перейти за посиланням
+	Select All Anchors	Вибрати всі опорні точки
+	Invert Anchor Selection	Інвертувати вибір опорних точок
+	Aspect ratio:	Співвідношення сторін:
+	Clip path	Контур відсікання
+	DPI:	DPI:
+	Effect knots	Вузли ефектів
+	Highlight color:	Колір підсвічування:
+	Interactivity	Інтерактивність
+	Link target:	Ціль посилання:
+	Link title:	Заголовок посилання:
+	Path outline	Контур шляху
+	Transform handles	Маніпулятори трансформації

@@ -4509,3 +4509,25 @@ theme	Appearance	Giao diện
 @msg	select an object	hãy chọn một đối tượng
 @msg	the copied object is no longer in this document	đối tượng đã sao chép không còn trong tài liệu này
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	Mô phỏng in các in chồng như Xem trước in chồng hiển thị; tách màu luôn giữ chúng. Một cài đặt sẵn làm phẳng độ trong suốt trước khi in (tệp PostScript luôn làm phẳng nó).
+	Arrange in Grid	Sắp xếp theo lưới
+	Arrange in Circle	Sắp xếp theo vòng tròn
+	Dynamic Offset	Dịch chuyển động
+	Fill Between Paths	Tô giữa các đường
+	Linked Offset	Dịch chuyển liên kết
+	Linked Offset Distance	Khoảng dịch chuyển liên kết
+	Remove Overlaps	Bỏ chồng lấn
+	Unlink Live Object	Bỏ liên kết đối tượng động
+	Create Anchor	Tạo liên kết
+	Follow Link	Mở liên kết
+	Select All Anchors	Chọn tất cả điểm neo
+	Invert Anchor Selection	Đảo chọn điểm neo
+	Aspect ratio:	Tỷ lệ khung hình:
+	Clip path	Đường cắt
+	DPI:	DPI:
+	Effect knots	Nút hiệu ứng
+	Highlight color:	Màu nổi bật:
+	Interactivity	Tương tác
+	Link target:	Đích liên kết:
+	Link title:	Tiêu đề liên kết:
+	Path outline	Đường viền đường dẫn
+	Transform handles	Tay cầm biến đổi

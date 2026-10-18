@@ -4951,3 +4951,25 @@ mark-style	Japanese	Japonské
 @msg	select a clone	vyberte klon
 @msg	select an object	vyberte objekt
 @msg	the copied object is no longer in this document	zkopírovaný objekt už v tomto dokumentu není
+	Arrange in Grid	Uspořádat do mřížky
+	Arrange in Circle	Uspořádat do kruhu
+	Dynamic Offset	Dynamický posun
+	Fill Between Paths	Vyplnit mezi cestami
+	Linked Offset	Propojený posun
+	Linked Offset Distance	Vzdálenost propojeného posunu
+	Remove Overlaps	Odstranit překrytí
+	Unlink Live Object	Odpojit živý objekt
+	Create Anchor	Vytvořit odkaz
+	Follow Link	Otevřít odkaz
+	Select All Anchors	Vybrat všechny kotevní body
+	Invert Anchor Selection	Invertovat výběr kotevních bodů
+	Aspect ratio:	Poměr stran:
+	Clip path	Ořezová cesta
+	DPI:	DPI:
+	Effect knots	Uzly efektů
+	Highlight color:	Barva zvýraznění:
+	Interactivity	Interaktivita
+	Link target:	Cíl odkazu:
+	Link title:	Název odkazu:
+	Path outline	Obrys cesty
+	Transform handles	Úchyty transformace

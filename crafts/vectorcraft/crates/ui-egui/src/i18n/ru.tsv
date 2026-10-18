@@ -4523,3 +4523,25 @@ lighting	Light	Свет
 @msg	select an object	выделите объект
 @msg	the copied object is no longer in this document	скопированного объекта больше нет в этом документе
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	«Имитировать» печатает наложение так, как его показывает просмотр наложения; цветоделение всегда сохраняет его. Набор сводит прозрачность перед печатью (файлы PostScript всегда сводят её).
+	Arrange in Grid	Расставить по сетке
+	Arrange in Circle	Расставить по кругу
+	Dynamic Offset	Динамическое смещение
+	Fill Between Paths	Заливка между контурами
+	Linked Offset	Связанное смещение
+	Linked Offset Distance	Расстояние связанного смещения
+	Remove Overlaps	Убрать перекрытия
+	Unlink Live Object	Отвязать живой объект
+	Create Anchor	Создать ссылку
+	Follow Link	Перейти по ссылке
+	Select All Anchors	Выделить все опорные точки
+	Invert Anchor Selection	Инвертировать выделение опорных точек
+	Aspect ratio:	Соотношение сторон:
+	Clip path	Обтравочный контур
+	DPI:	DPI:
+	Effect knots	Узлы эффектов
+	Highlight color:	Цвет подсветки:
+	Interactivity	Интерактивность
+	Link target:	Цель ссылки:
+	Link title:	Заголовок ссылки:
+	Path outline	Контур пути
+	Transform handles	Манипуляторы трансформации

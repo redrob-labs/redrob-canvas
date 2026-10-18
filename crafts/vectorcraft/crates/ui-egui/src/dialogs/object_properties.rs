@@ -169,7 +169,9 @@ pub(crate) fn params(d: &Dialog, xml_id: bool) -> [(&'static str, Value); 2] {
         "events": events,
         "highlight": if highlight.trim().is_empty() { Value::Null } else { json!(highlight.trim()) },
     });
-    if d.bool("image") && let Some(o) = attrs.as_object_mut() {
+    if d.bool("image")
+        && let Some(o) = attrs.as_object_mut()
+    {
         let dpi = d.str("dpi");
         o.insert("dpi".into(), dpi.trim().parse::<f64>().ok().filter(|v| *v > 0.0).map_or(Value::Null, |v| json!(v)));
         let par = d.str("preserveAspectRatio");

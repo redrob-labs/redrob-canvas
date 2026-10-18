@@ -381,7 +381,7 @@ struct Importer {
     /// Each `<a>`'s target and title, by id ([`prepass`]).
     link_extras: HashMap<String, (String, String)>,
     /// Object Properties read from elements, by id ([`prepass`]).
-    properties: HashMap<String, (Vec<(String, String)>, Option<String>, Option<String>)>,
+    properties: HashMap<String, (Vec<(String, String)>, Option<String>, Option<String>, Option<f64>)>,
     /// Ids of the `<g>` elements marked as layers ([`marked_layer`]).
     sublayers: HashSet<String>,
     /// The groups made of them, made sublayers where they sit in a layer ([`promote_sublayers`]).
@@ -505,8 +505,8 @@ struct Found {
     /// Each `<a>`'s target and title, by id.
     link_extras: HashMap<String, (String, String)>,
     /// Object Properties read from elements, by id: event attributes, highlight colour, an
-    /// image's preserveAspectRatio.
-    properties: HashMap<String, (Vec<(String, String)>, Option<String>, Option<String>)>,
+    /// image's preserveAspectRatio and DPI.
+    properties: HashMap<String, (Vec<(String, String)>, Option<String>, Option<String>, Option<f64>)>,
     warnings: Vec<String>,
 }
 
@@ -645,7 +645,7 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
             found.links.insert(id, url.to_string());
         }
     }
-    if ["onclick", "onmouse", "onload", "onfocus", "data-vc-highlight", "preserveAspectRatio"].iter().any(|t| svg.contains(t)) {
+    if ["onclick", "onmouse", "onload", "onfocus", "data-vc-highlight", "data-vc-dpi", "preserveAspectRatio"].iter().any(|t| svg.contains(t)) {
         for e in elements().filter(|e| OBJECT_ELEMENTS.contains(&e.tag_name().name())) {
             let events: Vec<(String, String)> = e
                 .attributes()
@@ -656,8 +656,9 @@ fn prepass<'s>(svg: &'s str, xml: &roxmltree::Document, opts: &ImportOptions) ->
                 .collect();
             let highlight = e.attribute("data-vc-highlight").map(str::to_string);
             let par = e.attribute("preserveAspectRatio").filter(|_| e.tag_name().name() == "image").filter(|p| *p != "none").map(str::to_string);
-            if !events.is_empty() || highlight.is_some() || par.is_some() {
-                found.properties.insert(edits.id(svg, e), (events, highlight, par));
+            let dpi = e.attribute("data-vc-dpi").and_then(|v| v.trim().parse::<f64>().ok()).filter(|d| d.is_finite() && *d > 0.0);
+            if !events.is_empty() || highlight.is_some() || par.is_some() || dpi.is_some() {
+                found.properties.insert(edits.id(svg, e), (events, highlight, par, dpi));
             }
         }
     }
@@ -951,7 +952,7 @@ impl Importer {
             n.edit_attrs(|a| a.data = data.clone());
         }
         // Object Properties: event attributes, the highlight colour, an image's aspect handling.
-        if let Some((events, highlight, par)) = self.properties.get(id) {
+        if let Some((events, highlight, par, dpi)) = self.properties.get(id) {
             n.edit_attrs(|a| {
                 if a.events.is_empty() {
                     a.events.clone_from(events);
@@ -961,6 +962,9 @@ impl Importer {
                 }
                 if a.preserve_aspect_ratio.is_none() {
                     a.preserve_aspect_ratio.clone_from(par);
+                }
+                if a.dpi.is_none() {
+                    a.dpi = *dpi;
                 }
             });
         }

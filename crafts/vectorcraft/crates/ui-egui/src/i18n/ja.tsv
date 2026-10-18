@@ -4536,3 +4536,25 @@ lighting	Light	ライト
 @msg	select an object	オブジェクトを選択してください
 @msg	the copied object is no longer in this document	コピーしたオブジェクトはこのドキュメントにもうありません
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	「シミュレート」はオーバープリントプレビューの表示どおりにオーバープリントをプリントします。分版では常に保持されます。プリセットはプリント前に透明部分を分割・統合します（PostScript ファイルでは常に分割・統合されます）。
+	Arrange in Grid	グリッドに配置
+	Arrange in Circle	円形に配置
+	Dynamic Offset	ダイナミックオフセット
+	Fill Between Paths	パス間を塗りつぶす
+	Linked Offset	リンクオフセット
+	Linked Offset Distance	リンクオフセットの距離
+	Remove Overlaps	重なりを解消
+	Unlink Live Object	ライブオブジェクトのリンクを解除
+	Create Anchor	アンカーを作成
+	Follow Link	リンクを開く
+	Select All Anchors	すべてのアンカーポイントを選択
+	Invert Anchor Selection	アンカーポイントの選択を反転
+	Aspect ratio:	縦横比:
+	Clip path	クリップパス
+	DPI:	DPI:
+	Effect knots	効果ノット
+	Highlight color:	ハイライト色:
+	Interactivity	インタラクティビティ
+	Link target:	リンクターゲット:
+	Link title:	リンクタイトル:
+	Path outline	パスのアウトライン
+	Transform handles	変形ハンドル

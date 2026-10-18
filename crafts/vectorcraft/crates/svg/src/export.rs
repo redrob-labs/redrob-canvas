@@ -664,6 +664,9 @@ impl Writer<'_> {
             if let Some(h) = &a.highlight {
                 out.push_str(&format!(" data-vc-highlight=\"{}\"", xml_attr_escape(h)));
             }
+            if let Some(dpi) = a.dpi.filter(|d| d.is_finite() && *d > 0.0) {
+                out.push_str(&format!(" data-vc-dpi=\"{}\"", fmt_num(dpi, 3)));
+            }
         }
         out
     }
@@ -1470,7 +1473,8 @@ impl Writer<'_> {
         match n.url().filter(|_| n.visible && !self.anonymous) {
             Some(url) => {
                 let a = n.extras().attrs.as_deref();
-                let target = a.map(|a| a.url_target.as_str()).filter(|t| !t.is_empty()).map(|t| format!(" target=\"{}\"", xml_escape(t))).unwrap_or_default();
+                let target =
+                    a.map(|a| a.url_target.as_str()).filter(|t| !t.is_empty()).map(|t| format!(" target=\"{}\"", xml_escape(t))).unwrap_or_default();
                 let title = a.map(|a| a.url_title.as_str()).filter(|t| !t.is_empty());
                 self.line(&format!("<a xlink:href=\"{}\"{target}>", xml_escape(url)));
                 self.depth += 1;

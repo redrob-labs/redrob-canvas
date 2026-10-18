@@ -4542,3 +4542,25 @@ lighting	Light	Luce
 @msg	select an object	seleziona un oggetto
 @msg	the copied object is no longer in this document	l’oggetto copiato non è più in questo documento
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	«Simula» stampa le sovrastampe come le mostra l’Anteprima sovrastampa; le separazioni le mantengono sempre. Una preimpostazione converte la trasparenza prima della stampa (i file PostScript la convertono sempre).
+	Arrange in Grid	Disponi in griglia
+	Arrange in Circle	Disponi in cerchio
+	Dynamic Offset	Scostamento dinamico
+	Fill Between Paths	Riempi tra tracciati
+	Linked Offset	Scostamento collegato
+	Linked Offset Distance	Distanza dello scostamento collegato
+	Remove Overlaps	Rimuovi sovrapposizioni
+	Unlink Live Object	Scollega oggetto dinamico
+	Create Anchor	Crea ancora
+	Follow Link	Segui collegamento
+	Select All Anchors	Seleziona tutti i punti di ancoraggio
+	Invert Anchor Selection	Inverti selezione punti di ancoraggio
+	Aspect ratio:	Proporzioni:
+	Clip path	Tracciato di ritaglio
+	DPI:	DPI:
+	Effect knots	Nodi effetto
+	Highlight color:	Colore di evidenziazione:
+	Interactivity	Interattività
+	Link target:	Destinazione collegamento:
+	Link title:	Titolo collegamento:
+	Path outline	Contorno tracciato
+	Transform handles	Maniglie di trasformazione

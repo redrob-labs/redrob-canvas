@@ -2154,9 +2154,9 @@ name = "Object properties (id, label, title, description, hyperlink, interactivi
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Object_Properties"
 behaviour = "A dialog sets the SVG id, label, title and description, hide/lock flags, preserve aspect ratio for images, DPI, a hyperlink (wraps in an anchor; 1.4 adds Create Anchor), highlight colour, and JavaScript event handlers (onclick, onmouseover...)."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/dialogs/object_properties.rs (id, label, title, description, hyperlink, hide, lock), crafts/vectorcraft/crates/doc/src/node.rs (ObjectAttributes title/description), crafts/vectorcraft/crates/engine/src/cmd/attributes.rs, crafts/vectorcraft/crates/svg/src/export.rs (<title>, <desc>, <a>), crafts/vectorcraft/crates/svg/src/import.rs (title/desc read back)"
-gap = "no JavaScript event attributes, highlight colour, DPI or preserve-aspect-ratio"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/node.rs (ObjectAttributes events/highlight/dpi/preserve_aspect_ratio/url_target/url_title), crafts/vectorcraft/crates/engine/src/cmd/attributes.rs (attributes.set events/highlight/dpi/preserveAspectRatio, object.createAnchor, object.followLink), crafts/vectorcraft/crates/ui-egui/src/dialogs/object_properties.rs (Interactivity section, highlight, DPI, aspect ratio), crafts/vectorcraft/crates/svg/src/export.rs, crafts/vectorcraft/crates/svg/src/import.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -2300,9 +2300,9 @@ name = "Hyperlinks (anchor elements)"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Create_Anchor_.28Hyperlink.29_.2F_Object_Properties"
 behaviour = "Object > Create Anchor wraps the selection in an a element whose href, target and title are edited in Object Properties; Follow Link opens it."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/ui-egui/src/panels/attributes.rs (Image Map URL/target), crafts/vectorcraft/crates/svg/src/export.rs"
-gap = "links are an image-map attribute exported to SVG anchors and HTML maps; no anchor element in the layer tree"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/engine/src/cmd/attributes.rs (object.createAnchor wraps the selection in an Anchor group with href/target/title, object.followLink), crafts/vectorcraft/crates/ui-egui/src/menus.rs (Object › Create Anchor, Follow Link opens the URL), crafts/vectorcraft/crates/ui-egui/src/dialogs/object_properties.rs (link target/title), crafts/vectorcraft/crates/svg/src/export.rs (<a target> + <title>), crafts/vectorcraft/crates/svg/src/import.rs"
+gap = ""
 priority = 3
 
 [[feature]]

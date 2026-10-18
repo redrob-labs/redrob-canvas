@@ -917,6 +917,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
         "",
         "{plane?: left|right|ground (default: the active plane)} open the plane's options, as double-clicking its plane widget does (dialog `perspectivePlane`: location (pt along the plane's normal), objects: none|move|copy): OK runs perspective.plane.move",
     ),
+    (
+        "ui.followLink",
+        "Follow Link",
+        "",
+        "{id?} open the link the selected object (or the anchor it is inside) points to in the browser (object.followLink)",
+    ),
 ];
 
 /// Canonical panel id for `window.panel`: a dock tab's or an icon panel's id or display label,
@@ -1312,6 +1318,18 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
             app.select_tool(redrob_vector_tools::cropimage::ID);
             Ok(json!({"tool": app.session.tool_id()}))
         }
+        "ui.followLink" => match app.run("object.followLink", p.clone()) {
+            Ok(r) => {
+                let url = r.get("url").and_then(Value::as_str).unwrap_or("").to_string();
+                if url.is_empty() {
+                    Err("the selected object has no link".into())
+                } else {
+                    app.open_url(&url);
+                    Ok(r)
+                }
+            }
+            Err(e) => Err(e),
+        },
         "ui.paramDialog" => {
             let cmd = s("command").unwrap_or_default();
             let mut fields = p.get("params").and_then(Value::as_object).cloned().unwrap_or_default();
@@ -2053,6 +2071,18 @@ pub fn enabled(app: &VectorcraftApp, id: &str) -> bool {
         "ui.expandDialog" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
         "ui.spotColors" => app.session.active().is_some(),
         "ui.menuDialog" | "ui.objectProperties" => app.session.active().is_some_and(|d| !d.selection.is_empty()),
+        "ui.followLink" => app.session.active().is_some_and(|st| {
+            st.selection.objects.iter().any(|id| {
+                let mut cur = Some(*id);
+                while let Some(n) = cur {
+                    if st.doc.node(n).is_some_and(|n| n.url().is_some()) {
+                        return true;
+                    }
+                    cur = st.doc.parent_of(n);
+                }
+                false
+            })
+        }),
         "ui.dxfOptionsDialog" => app.session.active().is_some(),
         "links.editOriginal" | "links.reveal" => selected_image(app, |im| im.link.is_some()) || selected_placed(app),
         "ui.placementOptionsDialog" => selected_image(app, |_| true) || selected_placed(app),
@@ -2273,6 +2303,8 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                     ],
                 ),
                 c("Object Properties…", "ui.objectProperties"),
+                c("Create Anchor", "object.createAnchor"),
+                c("Follow Link", "ui.followLink"),
                 Sep,
                 c("Expand…", "ui.expandDialog"),
                 c("Expand Appearance", "effect.expandAppearance"),

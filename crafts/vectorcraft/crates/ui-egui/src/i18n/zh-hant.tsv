@@ -3896,3 +3896,25 @@ lighting	Light	光源
 	Select an object to edit its SVG filter.	選取物件以編輯其 SVG 濾鏡。
 	Open a document to see its element tree.	開啟文件以檢視其元素樹。
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	「模擬」依疊印預視所示列印疊印；分色一律保留疊印。預設集在列印前平面化透明度（PostScript 檔案一律平面化）。
+	Arrange in Grid	排列成網格
+	Arrange in Circle	排列成圓形
+	Dynamic Offset	動態偏移
+	Fill Between Paths	填滿路徑之間
+	Linked Offset	連結偏移
+	Linked Offset Distance	連結偏移距離
+	Remove Overlaps	移除重疊
+	Unlink Live Object	取消連結即時物件
+	Create Anchor	建立錨點
+	Follow Link	開啟連結
+	Select All Anchors	選取所有錨點
+	Invert Anchor Selection	反轉錨點選取
+	Aspect ratio:	外觀比例:
+	Clip path	剪裁路徑
+	DPI:	DPI:
+	Effect knots	效果控制點
+	Highlight color:	醒目提示色彩:
+	Interactivity	互動性
+	Link target:	連結目標:
+	Link title:	連結標題:
+	Path outline	路徑外框
+	Transform handles	變形控點

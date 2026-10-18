@@ -4796,3 +4796,25 @@ mark-style	Japanese	Japońskie
 @msg	select a clone	zaznacz klon
 @msg	select an object	zaznacz obiekt
 @msg	the copied object is no longer in this document	skopiowanego obiektu nie ma już w tym dokumencie
+	Arrange in Grid	Rozmieść w siatce
+	Arrange in Circle	Rozmieść w okręgu
+	Dynamic Offset	Dynamiczne odsunięcie
+	Fill Between Paths	Wypełnij między ścieżkami
+	Linked Offset	Powiązane odsunięcie
+	Linked Offset Distance	Odległość powiązanego odsunięcia
+	Remove Overlaps	Usuń nakładanie
+	Unlink Live Object	Odłącz obiekt dynamiczny
+	Create Anchor	Utwórz odnośnik
+	Follow Link	Otwórz odnośnik
+	Select All Anchors	Zaznacz wszystkie punkty kontrolne
+	Invert Anchor Selection	Odwróć zaznaczenie punktów kontrolnych
+	Aspect ratio:	Proporcje:
+	Clip path	Ścieżka przycinania
+	DPI:	DPI:
+	Effect knots	Węzły efektów
+	Highlight color:	Kolor podświetlenia:
+	Interactivity	Interaktywność
+	Link target:	Cel odnośnika:
+	Link title:	Tytuł odnośnika:
+	Path outline	Kontur ścieżki
+	Transform handles	Uchwyty przekształcania

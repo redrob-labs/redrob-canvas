@@ -8,8 +8,8 @@ use redrob_vector_doc::{Document, ImageMap, Node, NodeKind, ObjectAttributes};
 use redrob_vector_geom::FillRule;
 use serde_json::{Value, json};
 
-use super::overprint::{AttributesInfo, apply_overprint, edit_counted, overprint_jobs};
 use super::edit::selected_roots;
+use super::overprint::{AttributesInfo, apply_overprint, edit_counted, overprint_jobs};
 use super::path::paths_in;
 use super::*;
 
@@ -176,14 +176,16 @@ impl Edits {
             highlight: match p.get("highlight") {
                 None => None,
                 Some(Value::Null) => Some(None),
-                Some(v) => Some(Some(
-                    color_value(v).map(|c| c.to_hex()).ok_or_else(|| bad(C, "`highlight` must be a colour such as \"#ff8800\" or null"))?,
-                )),
+                Some(v) => {
+                    Some(Some(color_value(v).map(|c| c.to_hex()).ok_or_else(|| bad(C, "`highlight` must be a colour such as \"#ff8800\" or null"))?))
+                }
             },
             dpi: match p.get("dpi") {
                 None => None,
                 Some(Value::Null) => Some(None),
-                Some(v) => Some(Some(v.as_f64().filter(|d| d.is_finite() && *d > 0.0).ok_or_else(|| bad(C, "`dpi` must be a positive number or null"))?)),
+                Some(v) => {
+                    Some(Some(v.as_f64().filter(|d| d.is_finite() && *d > 0.0).ok_or_else(|| bad(C, "`dpi` must be a positive number or null"))?))
+                }
             },
             preserve_aspect_ratio: match p.get("preserveAspectRatio") {
                 None => None,
@@ -267,7 +269,10 @@ fn set(s: &mut Session, p: &Value) -> Result<Value> {
     let jobs = overprint_jobs(s, p, C, ["overprintFill", "overprintStroke"])?;
     let edits = Edits::parse(p)?;
     if jobs.is_empty() && edits.is_empty() {
-        return Err(bad(C, "give overprintFill, overprintStroke, showCenter, imageMap, url, urlTarget, urlTitle, events, highlight, dpi, preserveAspectRatio, note, title or description"));
+        return Err(bad(
+            C,
+            "give overprintFill, overprintStroke, showCenter, imageMap, url, urlTarget, urlTitle, events, highlight, dpi, preserveAspectRatio, note, title or description",
+        ));
     }
     let ids = targets(s, p)?;
     let changed = edit_counted(s, "Attributes", |d| {

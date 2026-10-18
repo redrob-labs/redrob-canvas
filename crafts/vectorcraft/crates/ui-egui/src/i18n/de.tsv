@@ -4497,3 +4497,25 @@ theme	Appearance	Erscheinungsbild
 @msg	select an object	wählen Sie ein Objekt aus
 @msg	the copied object is no longer in this document	das kopierte Objekt ist nicht mehr in diesem Dokument
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	„Simulieren“ druckt Überdrucken so, wie es die Überdruckenvorschau zeigt; Separationen behalten es immer. Eine Vorgabe reduziert die Transparenz vor dem Drucken (PostScript-Dateien reduzieren sie immer).
+	Arrange in Grid	In Raster anordnen
+	Arrange in Circle	Im Kreis anordnen
+	Dynamic Offset	Dynamischer Versatz
+	Fill Between Paths	Zwischen Pfaden füllen
+	Linked Offset	Verknüpfter Versatz
+	Linked Offset Distance	Abstand des verknüpften Versatzes
+	Remove Overlaps	Überlappungen entfernen
+	Unlink Live Object	Live-Objekt trennen
+	Create Anchor	Anker erstellen
+	Follow Link	Link folgen
+	Select All Anchors	Alle Ankerpunkte auswählen
+	Invert Anchor Selection	Ankerpunktauswahl umkehren
+	Aspect ratio:	Seitenverhältnis:
+	Clip path	Clip-Pfad
+	DPI:	DPI:
+	Effect knots	Effektknoten
+	Highlight color:	Hervorhebungsfarbe:
+	Interactivity	Interaktivität
+	Link target:	Linkziel:
+	Link title:	Linktitel:
+	Path outline	Pfadkontur
+	Transform handles	Transformationsgriffe

@@ -4966,3 +4966,25 @@ theme	Appearance	Apparence
 @msg	select a clone	sélectionnez un clone
 @msg	select an object	sélectionnez un objet
 @msg	the copied object is no longer in this document	l’objet copié n’est plus dans ce document
+	Arrange in Grid	Disposer en grille
+	Arrange in Circle	Disposer en cercle
+	Dynamic Offset	Décalage dynamique
+	Fill Between Paths	Remplir entre les chemins
+	Linked Offset	Décalage lié
+	Linked Offset Distance	Distance du décalage lié
+	Remove Overlaps	Supprimer les chevauchements
+	Unlink Live Object	Délier l'objet dynamique
+	Create Anchor	Créer une ancre
+	Follow Link	Suivre le lien
+	Select All Anchors	Sélectionner tous les points d'ancrage
+	Invert Anchor Selection	Inverser la sélection des points d'ancrage
+	Aspect ratio:	Rapport d'aspect :
+	Clip path	Chemin de découpe
+	DPI:	PPP :
+	Effect knots	Poignées d'effet
+	Highlight color:	Couleur de surbrillance :
+	Interactivity	Interactivité
+	Link target:	Cible du lien :
+	Link title:	Titre du lien :
+	Path outline	Contour du chemin
+	Transform handles	Poignées de transformation

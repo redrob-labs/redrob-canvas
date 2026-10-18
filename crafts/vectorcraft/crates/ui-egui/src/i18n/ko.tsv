@@ -4506,3 +4506,25 @@ lighting	Light	광원
 @msg	select an object	개체를 선택하세요
 @msg	the copied object is no longer in this document	복사한 개체가 이 문서에 더 이상 없습니다
 	Simulate prints overprints as Overprint Preview shows them; separations always keep them. A preset flattens transparency before printing (PostScript files always flatten it).	‘시뮬레이션’은 겹쳐찍기 미리 보기에 표시되는 대로 겹쳐찍기를 인쇄하고, 분판은 항상 겹쳐찍기를 유지합니다. 사전 설정은 인쇄 전에 투명도를 병합합니다 (PostScript 파일은 항상 병합합니다).
+	Arrange in Grid	격자로 배치
+	Arrange in Circle	원형으로 배치
+	Dynamic Offset	동적 오프셋
+	Fill Between Paths	경로 사이 채우기
+	Linked Offset	연결된 오프셋
+	Linked Offset Distance	연결된 오프셋 거리
+	Remove Overlaps	겹침 제거
+	Unlink Live Object	라이브 오브젝트 연결 해제
+	Create Anchor	앵커 만들기
+	Follow Link	링크 열기
+	Select All Anchors	모든 기준점 선택
+	Invert Anchor Selection	기준점 선택 반전
+	Aspect ratio:	가로세로 비율:
+	Clip path	클립 경로
+	DPI:	DPI:
+	Effect knots	효과 노브
+	Highlight color:	강조 색상:
+	Interactivity	상호작용
+	Link target:	링크 대상:
+	Link title:	링크 제목:
+	Path outline	경로 외곽선
+	Transform handles	변형 핸들

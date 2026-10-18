@@ -4918,3 +4918,25 @@ imageTrace	Outline	Körvonal
 @msg	select a clone	jelölj ki egy klónt
 @msg	select an object	jelölj ki egy objektumot
 @msg	the copied object is no longer in this document	a másolt objektum már nincs ebben a dokumentumban
+	Arrange in Grid	Rácsba rendezés
+	Arrange in Circle	Körbe rendezés
+	Dynamic Offset	Dinamikus eltolás
+	Fill Between Paths	Kitöltés útvonalak között
+	Linked Offset	Csatolt eltolás
+	Linked Offset Distance	Csatolt eltolás távolsága
+	Remove Overlaps	Átfedések eltávolítása
+	Unlink Live Object	Élő objektum leválasztása
+	Create Anchor	Hivatkozás létrehozása
+	Follow Link	Hivatkozás követése
+	Select All Anchors	Minden horgonypont kijelölése
+	Invert Anchor Selection	Horgonypont-kijelölés megfordítása
+	Aspect ratio:	Oldalarány:
+	Clip path	Vágóútvonal
+	DPI:	DPI:
+	Effect knots	Effektcsomók
+	Highlight color:	Kiemelés színe:
+	Interactivity	Interaktivitás
+	Link target:	Hivatkozás célja:
+	Link title:	Hivatkozás címe:
+	Path outline	Útvonal körvonala
+	Transform handles	Átalakítási fogantyúk
