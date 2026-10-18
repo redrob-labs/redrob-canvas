@@ -470,6 +470,18 @@ pub struct GridPrefs {
     pub gap_x: f64,
     #[serde(default)]
     pub gap_y: f64,
+    /// Where the grid's lines start (a gridline crossing), in document coordinates.
+    #[serde(default, skip_serializing_if = "skip::is_default")]
+    pub origin: Point,
+    /// The grid's own colour (`#rrggbb`); `None`: the preferences' grid colour.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub color: Option<String>,
+    /// Drawn and snapped to (View › Show Grid shows every visible grid).
+    #[serde(default = "yes", skip_serializing_if = "skip::is_true")]
+    pub visible: bool,
+    /// The grid's name in the Grids panel (empty: unnamed).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub name: String,
 }
 
 fn default_grid_angle() -> f64 {
@@ -478,7 +490,19 @@ fn default_grid_angle() -> f64 {
 
 impl Default for GridPrefs {
     fn default() -> Self {
-        Self { spacing: 72.0, subdivisions: 8, kind: GridKind::Rectangular, angle_x: 30.0, angle_z: 30.0, gap_x: 0.0, gap_y: 0.0 }
+        Self {
+            spacing: 72.0,
+            subdivisions: 8,
+            kind: GridKind::Rectangular,
+            angle_x: 30.0,
+            angle_z: 30.0,
+            gap_x: 0.0,
+            gap_y: 0.0,
+            origin: Point::ZERO,
+            color: None,
+            visible: true,
+            name: String::new(),
+        }
     }
 }
 
@@ -511,8 +535,15 @@ impl GridPrefs {
     }
 
     /// `p` snapped to the grid: the nearest crossing of two gridline families (rectangular and
-    /// modular grids: the subdivisions' crossings; axonometric: a vertical line with an angled one).
+    /// modular grids: the subdivisions' crossings; axonometric: a vertical line with an angled one),
+    /// the grid's origin taken into account.
     pub fn snap_point(&self, p: Point) -> Point {
+        let o = self.origin.to_vec2();
+        self.snap_point_at_origin(p - o) + o
+    }
+
+    /// [`GridPrefs::snap_point`] for a grid whose origin is (0, 0).
+    fn snap_point_at_origin(&self, p: Point) -> Point {
         let s = self.step();
         if s <= 0.0 {
             return p;
@@ -686,6 +717,9 @@ pub struct Document {
     pub variables: Shared<Variables>,
     #[serde(default)]
     pub grid: GridPrefs,
+    /// Further grids of the document (the Grids panel): drawn and snapped to with `grid`.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub extra_grids: Vec<GridPrefs>,
     #[serde(default = "ppi72")]
     pub raster_effects_ppi: f64,
     #[serde(default)]
@@ -827,6 +861,7 @@ impl Document {
             saved_selections: Default::default(),
             variables: Default::default(),
             grid: GridPrefs::default(),
+            extra_grids: vec![],
             raster_effects_ppi: 72.0,
             images: BTreeMap::new(),
             patterns: vec![],
@@ -1861,3 +1896,31 @@ mod tests_lookups;
 mod tests_slices;
 #[cfg(test)]
 mod tests_units;
+
+impl Document {
+    /// Every grid of the document: the main one (Preferences › Guides & Grid, or the one the file
+    /// keeps) first, then the Grids panel's.
+    pub fn grids(&self) -> impl Iterator<Item = &GridPrefs> {
+        std::iter::once(&self.grid).chain(self.extra_grids.iter())
+    }
+
+    /// Grid `i` of [`Document::grids`], mutable.
+    pub fn grid_mut(&mut self, i: usize) -> Option<&mut GridPrefs> {
+        if i == 0 { Some(&mut self.grid) } else { self.extra_grids.get_mut(i - 1) }
+    }
+
+    /// `p` snapped to the nearest gridline crossing of any visible grid (Snap to Grid).
+    pub fn snap_grids(&self, p: Point) -> Point {
+        let mut best = p;
+        let mut best_d = f64::INFINITY;
+        for g in self.grids().filter(|g| g.visible) {
+            let q = g.snap_point(p);
+            let d = q.distance(p);
+            if d < best_d {
+                best = q;
+                best_d = d;
+            }
+        }
+        best
+    }
+}

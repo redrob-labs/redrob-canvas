@@ -117,7 +117,7 @@ impl MoveSnap {
         if cx.snap_to_grid
             && let Some(b) = self.bounds
         {
-            d += grid_pull(b + d, cx.grid_step());
+            d += grid_pull(cx.doc, b + d);
         }
         if let Some(t) = points {
             let (q, ov) = t.snap_point(start + d, cx.tol(cx.snap_tolerance));
@@ -157,11 +157,24 @@ impl MoveSnap {
 
 /// The shift that lands `r` on the grid (a gridline every `step`), on each axis by whichever of its
 /// two edges and its centre is nearest a gridline, however far that is.
-fn grid_pull(r: Rect, step: f64) -> Vec2 {
-    let pull = |vs: [f64; 3]| {
-        vs.iter().map(|v| redrob_vector_geom::snap::snap_to_grid(*v, step, 0.0) - v).min_by(|a, b| a.abs().total_cmp(&b.abs())).unwrap_or(0.0)
-    };
-    Vec2::new(pull([r.x0, r.center().x, r.x1]), pull([r.y0, r.center().y, r.y1]))
+/// How far the bounds `r` move so an edge or the centre lands on a gridline crossing of the
+/// document's grids (every grid, with its kind and origin): the smallest pull along each axis.
+fn grid_pull(doc: &redrob_vector_doc::Document, r: Rect) -> Vec2 {
+    let xs = [r.x0, r.center().x, r.x1];
+    let ys = [r.y0, r.center().y, r.y1];
+    let (mut dx, mut dy) = (f64::INFINITY, f64::INFINITY);
+    for x in xs {
+        for y in ys {
+            let q = doc.snap_grids(Point::new(x, y));
+            if (q.x - x).abs() < dx.abs() {
+                dx = q.x - x;
+            }
+            if (q.y - y).abs() < dy.abs() {
+                dy = q.y - y;
+            }
+        }
+    }
+    Vec2::new(if dx.is_finite() { dx } else { 0.0 }, if dy.is_finite() { dy } else { 0.0 })
 }
 
 pub fn matrix_json(a: Affine) -> Value {

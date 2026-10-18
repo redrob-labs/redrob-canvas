@@ -4226,3 +4226,15 @@ lighting	Light	光源
 	Touch	触控
 	Liquify Tools	液化工具
 	Disabled	禁用
+	Grids	网格
+	Main Grid	主网格
+	Add Grid	添加网格
+	Remove Grid	移除网格
+	Grid Options	网格选项
+	Kind:	种类：
+	Subdivisions:	细分：
+	Angles:	角度：
+	Gaps:	间距：
+	Origin:	原点：
+	Own color	自定颜色
+	Open a document to edit its grids.	打开文档以编辑其网格。

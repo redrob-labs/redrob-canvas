@@ -4013,3 +4013,15 @@ lighting	Light	光源
 	Touch	觸控
 	Liquify Tools	液化工具
 	Disabled	停用
+	Grids	格線
+	Main Grid	主格線
+	Add Grid	新增格線
+	Remove Grid	移除格線
+	Grid Options	格線選項
+	Kind:	種類：
+	Subdivisions:	細分：
+	Angles:	角度：
+	Gaps:	間距：
+	Origin:	原點：
+	Own color	自訂顏色
+	Open a document to edit its grids.	開啟文件以編輯其格線。

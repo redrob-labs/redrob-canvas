@@ -276,7 +276,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     let grid_look = app.ui.view.grid.then(|| LineLook::grid(&app.session.prefs));
     let grids_in_back = app.session.prefs.grids_in_back;
     if let Some(look) = grid_look.filter(|_| grids_in_back) {
-        grid(&painter, &xf, &doc.grid, look);
+        grids(&painter, &xf, &doc, look);
     }
 
     // Artwork raster.
@@ -431,7 +431,7 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
         split_and_xray(app, ui, &painter, rect, &doc, &key, w, h, &v, ppp);
     }
     if let Some(look) = grid_look.filter(|_| !grids_in_back) {
-        grid(&painter, &xf, &doc.grid, look);
+        grids(&painter, &xf, &doc, look);
     }
     // The pixel grid (Guides & Grid › Show Pixel Grid (Above 600% Zoom)): in Pixel Preview from
     // 600% zoom, a line at every document pixel over the art, so the pixels it rasterizes to show.
@@ -1124,6 +1124,32 @@ fn textured_quad(p: &egui::Painter, tex: egui::TextureId, quad: &[Pos2], (u, v):
     p.add(Shape::mesh(mesh));
 }
 
+/// A view whose document coordinates are taken relative to a grid's origin, so gridlines computed
+/// from (0, 0) land where the grid starts.
+struct OriginXf<'a> {
+    xf: &'a Xf,
+    origin: redrob_vector_geom::Vec2,
+}
+
+impl OriginXf<'_> {
+    fn to_doc(&self, p: Pos2) -> Point {
+        self.xf.to_doc(p) - self.origin
+    }
+    fn to_screen(&self, p: Point) -> Pos2 {
+        self.xf.to_screen(p + self.origin)
+    }
+    fn quad(&self, r: Rect) -> Vec<Pos2> {
+        self.xf.quad(r + self.origin)
+    }
+}
+
+impl std::ops::Deref for OriginXf<'_> {
+    type Target = Xf;
+    fn deref(&self) -> &Xf {
+        self.xf
+    }
+}
+
 /// The zoom the pixel grid shows from in Pixel Preview (600%), and its colour: a translucent grey,
 /// so the art's pixels read through it.
 const PIXEL_GRID_ZOOM: f64 = 6.0;
@@ -1164,11 +1190,21 @@ fn pref_color(hex: &str, fallback: Color32) -> Color32 {
 /// (left out when they would crowd). In the Dots style, a dot where gridlines cross the
 /// subdivisions instead. An axonometric grid draws the vertical lines and two angled families;
 /// a modular grid draws blocks with gaps between them (Preferences › Guides & Grid › Grid Kind).
+/// Every visible grid of the document, each in its own colour when it has one.
+fn grids(p: &egui::Painter, xf: &Xf, doc: &redrob_vector_doc::Document, look: LineLook) {
+    for g in doc.grids().filter(|g| g.visible) {
+        let color = g.color.as_deref().and_then(redrob_vector_color::Color::from_hex).map_or(look.color, |c| crate::panels::c32(&c));
+        grid(p, xf, g, LineLook { color, ..look });
+    }
+}
+
 fn grid(p: &egui::Painter, xf: &Xf, g: &redrob_vector_doc::GridPrefs, look: LineLook) {
     let (spacing, subdiv) = (g.spacing, g.subdivisions);
     let r = xf.rect;
-    // The view in document space: the box round the canvas's corners (the view may be rotated;
-    // the painter clips to the canvas).
+    // The grid's lines start at its origin: the view is taken relative to it and the lines put
+    // back (the view may be rotated; the painter clips to the canvas).
+    let origin = g.origin.to_vec2();
+    let xf = &OriginXf { xf, origin };
     let corners = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom()].map(|c| xf.to_doc(c));
     let view = corners.iter().fold(Rect::from_points(corners[0], corners[0]), |b, c| b.union_pt(*c));
     let sub = spacing / subdiv.max(1) as f64;

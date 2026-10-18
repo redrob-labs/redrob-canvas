@@ -4641,3 +4641,15 @@ lighting	Light	Свет
 	Touch	Сенсорный ввод
 	Liquify Tools	Инструменты пластики
 	Disabled	Отключено
+	Grids	Сетки
+	Main Grid	Основная сетка
+	Add Grid	Добавить сетку
+	Remove Grid	Удалить сетку
+	Grid Options	Параметры сетки
+	Kind:	Вид:
+	Subdivisions:	Подразделения:
+	Angles:	Углы:
+	Gaps:	Промежутки:
+	Origin:	Начало:
+	Own color	Свой цвет
+	Open a document to edit its grids.	Откройте документ, чтобы изменить его сетки.

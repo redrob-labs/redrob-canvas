@@ -2998,9 +2998,9 @@ name = "Grids: rectangular, axonometric, modular"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.4#Grids"
 behaviour = "Document Properties defines any number of grids: rectangular (origin, spacing, major line every N, colours, dots or lines, visible/enabled), axonometric (angles for isometric drawing), and in 1.4 modular (block grids with gaps and margins); # toggles the grid, snapping to grid lines and intersections."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/doc/src/lib.rs (GridPrefs, GridKind), crafts/vectorcraft/crates/engine/src/cmd/prefscmds.rs (gridKind, gridAngleX/Z, gridGapX/Y), crafts/vectorcraft/crates/ui-egui/src/canvas.rs (grid), crafts/vectorcraft/crates/tools/src/guides.rs (snap_point)"
-gap = "one grid per document chosen in Preferences (rectangular, axonometric with two angles, modular with gaps), drawn and snapped to; no several grids per document, no per-grid origin or colours, and selection moves still snap to the rectangular step"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/doc/src/lib.rs (GridPrefs: kind, spacing, subdivisions, angles, gaps, origin, color, visible, name; Document::extra_grids, grids, snap_grids), crafts/vectorcraft/crates/engine/src/cmd/gridcmds.rs (grid.list/add/set/remove), crafts/vectorcraft/crates/ui-egui/src/panels/grids.rs (Grids panel), crafts/vectorcraft/crates/ui-egui/src/canvas.rs (every visible grid drawn with its origin and colour), crafts/vectorcraft/crates/tools/src/guides.rs, crafts/vectorcraft/crates/tools/src/select.rs (moves snap to every grid's crossings)"
+gap = ""
 priority = 2
 
 [[feature]]

@@ -5083,3 +5083,15 @@ theme	Appearance	Apparence
 	Touch	Tactile
 	Liquify Tools	Outils de fluidité
 	Disabled	Désactivé
+	Grids	Grilles
+	Main Grid	Grille principale
+	Add Grid	Ajouter une grille
+	Remove Grid	Supprimer la grille
+	Grid Options	Options de grille
+	Kind:	Type :
+	Subdivisions:	Subdivisions :
+	Angles:	Angles :
+	Gaps:	Écarts :
+	Origin:	Origine :
+	Own color	Couleur propre
+	Open a document to edit its grids.	Ouvrez un document pour modifier ses grilles.

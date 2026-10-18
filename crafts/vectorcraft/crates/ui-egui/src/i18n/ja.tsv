@@ -4654,3 +4654,15 @@ lighting	Light	ライト
 	Touch	タッチ
 	Liquify Tools	リキッドツール
 	Disabled	無効
+	Grids	グリッド
+	Main Grid	メイングリッド
+	Add Grid	グリッドを追加
+	Remove Grid	グリッドを削除
+	Grid Options	グリッドオプション
+	Kind:	種類:
+	Subdivisions:	分割数:
+	Angles:	角度:
+	Gaps:	間隔:
+	Origin:	原点:
+	Own color	独自の色
+	Open a document to edit its grids.	グリッドを編集するドキュメントを開いてください。

@@ -535,6 +535,7 @@ impl Prefs {
             angle_z: self.grid_angle_z,
             gap_x: self.grid_gap_x,
             gap_y: self.grid_gap_y,
+            ..GridPrefs::default()
         }
     }
 }

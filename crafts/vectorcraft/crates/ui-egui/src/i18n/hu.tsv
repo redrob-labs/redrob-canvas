@@ -5035,3 +5035,15 @@ imageTrace	Outline	Körvonal
 	Touch	Érintés
 	Liquify Tools	Folyósító eszközök
 	Disabled	Letiltva
+	Grids	Rácsok
+	Main Grid	Fő rács
+	Add Grid	Rács hozzáadása
+	Remove Grid	Rács eltávolítása
+	Grid Options	Rácsbeállítások
+	Kind:	Fajta:
+	Subdivisions:	Felosztások:
+	Angles:	Szögek:
+	Gaps:	Hézagok:
+	Origin:	Origó:
+	Own color	Saját szín
+	Open a document to edit its grids.	Nyisson meg egy dokumentumot a rácsai szerkesztéséhez.

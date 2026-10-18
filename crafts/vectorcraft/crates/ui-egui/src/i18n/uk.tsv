@@ -4625,3 +4625,15 @@ lighting	Light	Світло
 	Touch	Сенсорне введення
 	Liquify Tools	Інструменти пластики
 	Disabled	Вимкнено
+	Grids	Сітки
+	Main Grid	Основна сітка
+	Add Grid	Додати сітку
+	Remove Grid	Видалити сітку
+	Grid Options	Параметри сітки
+	Kind:	Вид:
+	Subdivisions:	Поділки:
+	Angles:	Кути:
+	Gaps:	Проміжки:
+	Origin:	Початок:
+	Own color	Власний колір
+	Open a document to edit its grids.	Відкрийте документ, щоб змінити його сітки.

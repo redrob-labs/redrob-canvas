@@ -930,7 +930,7 @@ impl PointSnap {
             return (keep(Point::new(p.x.round(), p.y.round())), vec![]);
         }
         if cx.snap_to_grid {
-            return (keep(cx.doc.grid.snap_point(p)), vec![]);
+            return (keep(cx.doc.snap_grids(p)), vec![]);
         }
         match &self.targets {
             Some((t, tol)) => t.snap_from(p, from, cx.tol(*tol)),

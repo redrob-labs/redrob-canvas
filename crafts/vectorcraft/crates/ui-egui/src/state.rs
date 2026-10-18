@@ -156,6 +156,7 @@ pub const ICON_PANELS: &[(&str, &str, &str)] = &[
     (crate::panels::variables::ID, "Variables", "chart-column"),
     (crate::panels::filter_editor::ID, "Filter Editor", "dc-fx"),
     (crate::panels::filter_gallery::ID, "Filter Gallery", "dc-fx"),
+    (crate::panels::grids::ID, "Grids", "layout-grid"),
     (crate::panels::xml_editor::ID, "XML Editor", "dc-list-view"),
 ];
 

@@ -4624,3 +4624,15 @@ lighting	Light	광원
 	Touch	터치
 	Liquify Tools	리퀴파이 도구
 	Disabled	사용 안 함
+	Grids	그리드
+	Main Grid	기본 그리드
+	Add Grid	그리드 추가
+	Remove Grid	그리드 제거
+	Grid Options	그리드 옵션
+	Kind:	종류:
+	Subdivisions:	분할:
+	Angles:	각도:
+	Gaps:	간격:
+	Origin:	원점:
+	Own color	고유 색상
+	Open a document to edit its grids.	그리드를 편집할 문서를 여세요.

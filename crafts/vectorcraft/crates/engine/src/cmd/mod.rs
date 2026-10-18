@@ -23,15 +23,16 @@ mod effectcmd;
 pub mod expand;
 pub(crate) mod fileinfo;
 pub mod fileio;
+mod filtercmds;
 pub mod findfiles;
 pub mod flatten;
-mod filtercmds;
 mod floodfill;
 pub mod fontfiles;
 mod fonts;
 pub(crate) mod freeform;
 pub(crate) mod gradient;
 pub(crate) mod graph;
+mod gridcmds;
 mod halftone;
 pub mod help;
 pub mod importmatches;
@@ -295,6 +296,7 @@ pub fn command_specs() -> &'static [CommandSpec] {
         v.extend(shortcutset::specs());
         v.extend(importmatches::specs());
         v.extend(filtercmds::specs());
+        v.extend(gridcmds::specs());
         v
     })
 }
