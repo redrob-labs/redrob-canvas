@@ -341,7 +341,9 @@ impl State {
                 if let (Some(a), Some(b), Some(c)) = (a, b, c)
                     && let Some(bp) = arc_3point(a, b, c, id == 14 && self.int(&mut r, 16) == Some(0))
                 {
-                    if id == 14 { self.filled(bp) } else {
+                    if id == 14 {
+                        self.filled(bp)
+                    } else {
                         let st = self.stroke();
                         self.b.path(bp, None, Some(st), false);
                     }
@@ -819,10 +821,10 @@ fn clear_text(st: &mut State, text: &str) {
             "CELLARRAY" => st.b.warn("cell arrays (raster cells) aren't read: they are left out"),
             "VDCTYPE" | "INTEGERPREC" | "REALPREC" | "INDEXPREC" | "COLRPREC" | "COLRINDEXPREC" | "MAXCOLRINDEX" | "SCALEMODE" | "VDCINTEGERPREC"
             | "VDCREALPREC" | "BACKCOLR" | "CLIPRECT" | "CLIP" | "TRANSPARENCY" | "AUXCOLR" | "FONTLIST" | "CHARSETLIST" | "CHARCODING"
-            | "MFDEFAULTS" | "BEGMFDEFAULTS" | "ENDMFDEFAULTS" | "TEXTFONTINDEX" | "TEXTPREC" | "CHAREXPAN" | "CHARSPACE" | "CHARORI" | "TEXTPATH"
-            | "TEXTALIGN" | "CHARSETINDEX" | "ALTCHARSETINDEX" | "MARKERTYPE" | "MARKERSIZE" | "MARKERCOLR" | "HATCHINDEX" | "PATINDEX"
-            | "EDGETYPE" | "FILLREFPT" | "PATTABLE" | "PATSIZE" | "ASF" | "LINECAP" | "LINEJOIN" | "EDGECAP" | "EDGEJOIN" | "MITRELIMIT"
-            | "BEGAPS" | "ENDAPS" | "BEGAPSBODY" | "APSATTR" | "MARKER" | "POLYMARKER" | "APPLDATA" | "ESCAPE" | "MESSAGE" => {}
+            | "MFDEFAULTS" | "BEGMFDEFAULTS" | "ENDMFDEFAULTS" | "TEXTFONTINDEX" | "TEXTPREC" | "CHAREXPAN" | "CHARSPACE" | "CHARORI"
+            | "TEXTPATH" | "TEXTALIGN" | "CHARSETINDEX" | "ALTCHARSETINDEX" | "MARKERTYPE" | "MARKERSIZE" | "MARKERCOLR" | "HATCHINDEX"
+            | "PATINDEX" | "EDGETYPE" | "FILLREFPT" | "PATTABLE" | "PATSIZE" | "ASF" | "LINECAP" | "LINEJOIN" | "EDGECAP" | "EDGEJOIN"
+            | "MITRELIMIT" | "BEGAPS" | "ENDAPS" | "BEGAPSBODY" | "APSATTR" | "MARKER" | "POLYMARKER" | "APPLDATA" | "ESCAPE" | "MESSAGE" => {}
             _ => st.skipped += 1,
         }
     }

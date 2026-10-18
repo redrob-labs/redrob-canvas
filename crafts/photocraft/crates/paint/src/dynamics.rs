@@ -950,7 +950,15 @@ pub struct DabBuilder {
 
 impl DabBuilder {
     pub fn new(brush: &BrushSettings) -> Self {
-        Self { brush: brush.clone().with_shared_curve(), seed: brush.seed, stroke_color: None, next_index: 0, last_direction: None, travelled: 0.0, last_pos: None }
+        Self {
+            brush: brush.clone().with_shared_curve(),
+            seed: brush.seed,
+            stroke_color: None,
+            next_index: 0,
+            last_direction: None,
+            travelled: 0.0,
+            last_pos: None,
+        }
     }
 
     /// Colour from gradient: the stop colour at this point of the stroke.

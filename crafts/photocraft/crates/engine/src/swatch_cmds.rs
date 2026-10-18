@@ -1000,7 +1000,12 @@ fn palette_groups(pal: &Palette, group: &str) -> Vec<Group<Swatch>> {
             let items = g
                 .entries
                 .iter()
-                .map(|e| Swatch { id: String::new(), name: clip(e.name.trim()), color: color(e.color), kind: if e.spot { SwatchKind::Spot } else { SwatchKind::Process } })
+                .map(|e| Swatch {
+                    id: String::new(),
+                    name: clip(e.name.trim()),
+                    color: color(e.color),
+                    kind: if e.spot { SwatchKind::Spot } else { SwatchKind::Process },
+                })
                 .collect();
             Group::new(&name, items)
         })

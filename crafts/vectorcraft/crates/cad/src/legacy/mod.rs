@@ -193,7 +193,9 @@ impl Builder {
         }
         doc.layers = vec![Arc::new(layer)];
         let board = board.or_else(|| doc.layers.iter().filter_map(|l| l.visual_bounds()).reduce(|a, b| a.union(b)).map(|b| b.inflate(8.0, 8.0)));
-        let board = board.filter(|b| b.width() > 0.0 && b.height() > 0.0 && [b.x0, b.y0, b.x1, b.y1].iter().all(|v| v.is_finite())).unwrap_or(Rect::new(0.0, 0.0, 612.0, 792.0));
+        let board = board
+            .filter(|b| b.width() > 0.0 && b.height() > 0.0 && [b.x0, b.y0, b.x1, b.y1].iter().all(|v| v.is_finite()))
+            .unwrap_or(Rect::new(0.0, 0.0, 612.0, 792.0));
         if let Some(a) = doc.artboards.first_mut() {
             a.rect = board;
         }

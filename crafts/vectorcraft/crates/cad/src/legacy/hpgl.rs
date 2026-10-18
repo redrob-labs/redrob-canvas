@@ -14,17 +14,8 @@ use super::{Builder, Imported, Stroke, arc_to};
 const PT_PER_UNIT: f64 = 72.0 / 1016.0;
 
 /// The default pen colours of an 8-pen carousel.
-const PENS: [[u8; 3]; 9] = [
-    [255, 255, 255],
-    [0, 0, 0],
-    [255, 0, 0],
-    [0, 128, 0],
-    [255, 255, 0],
-    [0, 0, 255],
-    [255, 0, 255],
-    [0, 255, 255],
-    [128, 64, 0],
-];
+const PENS: [[u8; 3]; 9] =
+    [[255, 255, 255], [0, 0, 0], [255, 0, 0], [0, 128, 0], [255, 255, 0], [0, 0, 255], [255, 0, 255], [0, 255, 255], [128, 64, 0]];
 
 /// Does `bytes` look like an HPGL file (an `IN`, `SP`, `PU`, `PD` or `PA` instruction near the start)?
 pub fn is_hpgl(bytes: &[u8]) -> bool {
@@ -275,9 +266,9 @@ impl Plotter {
                 self.pos.x += self.label_size * 0.6 * text.chars().count() as f64;
             }
             "PE" => self.b.warn("polyline encoded (PE) instructions are compressed and aren't read: those lines are left out"),
-            "FT" | "PT" | "LA" | "TR" | "WU" | "NP" | "PS" | "RO" | "BP" | "PG" | "AF" | "PM" | "EP" | "FP" | "CO" | "DI" | "DR" | "SM" | "SL" | "ES" | "DT"
-            | "DV" | "LO" | "SR" | "SD" | "SS" | "SA" | "CP" | "CT" | "AT" | "RT" | "EW" | "WG" | "PP" | "IW" | "QL" | "MC" | "MG" | "MT" | "AC" | "TD"
-            | "SB" | "FI" | "FN" | "AD" | "UL" | "VS" | "ST" => {}
+            "FT" | "PT" | "LA" | "TR" | "WU" | "NP" | "PS" | "RO" | "BP" | "PG" | "AF" | "PM" | "EP" | "FP" | "CO" | "DI" | "DR" | "SM" | "SL"
+            | "ES" | "DT" | "DV" | "LO" | "SR" | "SD" | "SS" | "SA" | "CP" | "CT" | "AT" | "RT" | "EW" | "WG" | "PP" | "IW" | "QL" | "MC" | "MG"
+            | "MT" | "AC" | "TD" | "SB" | "FI" | "FN" | "AD" | "UL" | "VS" | "ST" => {}
             _ => self.skipped += 1,
         }
     }

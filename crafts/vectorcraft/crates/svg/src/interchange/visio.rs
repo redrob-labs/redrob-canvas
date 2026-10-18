@@ -164,7 +164,9 @@ impl<'a, 'i> Sh<'a, 'i> {
 
 fn geometry_sections<'a, 'i>(shape: XNode<'a, 'i>, syntax: Syntax) -> Vec<XNode<'a, 'i>> {
     match syntax {
-        Syntax::Main => shape.children().filter(|c| c.is_element() && c.tag_name().name() == "Section" && c.attribute("N") == Some("Geometry")).collect(),
+        Syntax::Main => {
+            shape.children().filter(|c| c.is_element() && c.tag_name().name() == "Section" && c.attribute("N") == Some("Geometry")).collect()
+        }
         Syntax::Core => shape.children().filter(|c| c.is_element() && c.tag_name().name() == "Geom").collect(),
     }
 }
@@ -238,8 +240,8 @@ fn color(v: &str, default: &str) -> String {
         return format!("#{h}");
     }
     const PALETTE: [&str; 24] = [
-        "#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#800000", "#008000", "#000080", "#808000", "#800080",
-        "#008080", "#c0c0c0", "#e6e6e6", "#cdcdcd", "#b3b3b3", "#9a9a9a", "#808080", "#666666", "#4d4d4d", "#333333", "#1a1a1a",
+        "#000000", "#ffffff", "#ff0000", "#00ff00", "#0000ff", "#ffff00", "#ff00ff", "#00ffff", "#800000", "#008000", "#000080", "#808000",
+        "#800080", "#008080", "#c0c0c0", "#e6e6e6", "#cdcdcd", "#b3b3b3", "#9a9a9a", "#808080", "#666666", "#4d4d4d", "#333333", "#1a1a1a",
     ];
     if let Ok(i) = t.parse::<usize>()
         && let Some(c) = PALETTE.get(i)
@@ -346,7 +348,8 @@ impl<'a, 'i> Page<'a, 'i> {
                         let ratio = g(r, "D").abs().max(1e-6);
                         match ellipse_through(cur, (x, y), (a, b), c, ratio) {
                             Some((rx, ry, large, sweep)) => {
-                                let _ = write!(d, "A{} {} {} {} {} {} {}", n(rx), n(ry), n(c.to_degrees()), u8::from(large), u8::from(sweep), n(x), n(y));
+                                let _ =
+                                    write!(d, "A{} {} {} {} {} {} {}", n(rx), n(ry), n(c.to_degrees()), u8::from(large), u8::from(sweep), n(x), n(y));
                             }
                             None => {
                                 let _ = write!(d, "L{} {}", n(x), n(y));
@@ -520,7 +523,13 @@ fn ellipse_through(from: (f64, f64), to: (f64, f64), ctrl: (f64, f64), c: f64, r
 }
 
 /// A page's SVG: the shapes over a page of `w × h` inches, y up → y down.
-fn page_svg<'a, 'i>(syntax: Syntax, shapes: XNode<'a, 'i>, masters: &'a HashMap<String, roxmltree::Document<'i>>, w: f64, h: f64) -> (String, Vec<String>) {
+fn page_svg<'a, 'i>(
+    syntax: Syntax,
+    shapes: XNode<'a, 'i>,
+    masters: &'a HashMap<String, roxmltree::Document<'i>>,
+    w: f64,
+    h: f64,
+) -> (String, Vec<String>) {
     let mut p = Page { syntax, masters, body: String::new(), warnings: vec![], shapes: 0 };
     for s in shapes.children().filter(|c| c.is_element() && c.tag_name().name() == "Shape") {
         p.shape(s, None, 0);
@@ -588,7 +597,11 @@ pub fn import_vsdx(bytes: &[u8], title: &str) -> Result<(Document, Vec<String>),
             .collect();
         for m in list.descendants().filter(|m| m.is_element() && m.tag_name().name() == "Master") {
             let Some(id) = m.attribute("ID") else { continue };
-            let rel = m.descendants().find(|r| r.is_element() && r.tag_name().name() == "Rel").and_then(|r| r.attributes().find(|a| a.name() == "id")).map(|a| a.value());
+            let rel = m
+                .descendants()
+                .find(|r| r.is_element() && r.tag_name().name() == "Rel")
+                .and_then(|r| r.attributes().find(|a| a.name() == "id"))
+                .map(|a| a.value());
             let Some(target) = rel.and_then(|r| targets.get(r)) else { continue };
             let path = format!("visio/masters/{}", target.trim_start_matches("/visio/masters/").trim_start_matches('/'));
             if let Some(text) = texts.get(&path)
@@ -616,7 +629,11 @@ pub fn import_vsdx(bytes: &[u8], title: &str) -> Result<(Document, Vec<String>),
             let sheet = pg.children().find(|c| c.is_element() && c.tag_name().name() == "PageSheet");
             let cell = |n: &str| sheet.and_then(|s| cell_of(s, Syntax::Main, n)).and_then(|v| v.parse::<f64>().ok()).filter(|v| *v > 0.0);
             let (w, h) = (cell("PageWidth").unwrap_or(8.5), cell("PageHeight").unwrap_or(11.0));
-            let rel = pg.descendants().find(|r| r.is_element() && r.tag_name().name() == "Rel").and_then(|r| r.attributes().find(|a| a.name() == "id")).map(|a| a.value());
+            let rel = pg
+                .descendants()
+                .find(|r| r.is_element() && r.tag_name().name() == "Rel")
+                .and_then(|r| r.attributes().find(|a| a.name() == "id"))
+                .map(|a| a.value());
             let Some(target) = rel.and_then(|r| targets.get(r)) else { continue };
             let path = format!("visio/pages/{}", target.trim_start_matches("/visio/pages/").trim_start_matches('/'));
             pages.push((name, path, w, h));

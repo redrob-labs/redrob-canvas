@@ -160,13 +160,7 @@ fn smooth_through(pts: &[Point], closed: bool) -> BezPath {
     if k < 2 {
         return bp;
     }
-    let at = |i: isize| -> Point {
-        if closed {
-            pts[i.rem_euclid(k as isize) as usize]
-        } else {
-            pts[i.clamp(0, k as isize - 1) as usize]
-        }
-    };
+    let at = |i: isize| -> Point { if closed { pts[i.rem_euclid(k as isize) as usize] } else { pts[i.clamp(0, k as isize - 1) as usize] } };
     bp.move_to(pts[0]);
     let segs = if closed { k } else { k - 1 };
     for i in 0..segs as isize {

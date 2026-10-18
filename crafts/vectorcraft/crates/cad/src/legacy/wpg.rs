@@ -114,8 +114,7 @@ impl Reader {
                     let ry = f64::from(r.i16le().unwrap_or(0));
                     let rect = Rect::new(o.x, o.y, o.x + sz.x, o.y + sz.y);
                     let bp = if rx > 0.0 && ry > 0.0 {
-                        kurbo::RoundedRect::from_rect(rect, kurbo::RoundedRectRadii::new(rx.min(ry), rx.min(ry), rx.min(ry), rx.min(ry)))
-                            .to_path(0.1)
+                        kurbo::RoundedRect::from_rect(rect, kurbo::RoundedRectRadii::new(rx.min(ry), rx.min(ry), rx.min(ry), rx.min(ry))).to_path(0.1)
                     } else {
                         rect_path(Point::new(rect.x0, rect.y0), Point::new(rect.x1, rect.y1))
                     };

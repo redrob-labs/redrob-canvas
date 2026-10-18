@@ -195,11 +195,20 @@ impl Conv {
             "RotateTransform" => format!("rotate({} {} {})", n(num("Angle", 0.0)), n(num("CenterX", 0.0)), n(num("CenterY", 0.0))),
             "SkewTransform" => {
                 let (cx, cy) = (num("CenterX", 0.0), num("CenterY", 0.0));
-                format!("translate({} {}) skewX({}) skewY({}) translate({} {})", n(cx), n(cy), n(num("AngleX", 0.0)), n(num("AngleY", 0.0)), n(-cx), n(-cy))
+                format!(
+                    "translate({} {}) skewX({}) skewY({}) translate({} {})",
+                    n(cx),
+                    n(cy),
+                    n(num("AngleX", 0.0)),
+                    n(num("AngleY", 0.0)),
+                    n(-cx),
+                    n(-cy)
+                )
             }
             "TransformGroup" => {
                 // Applied in order: the first child first, so the last one is outermost.
-                let parts: Vec<String> = t.children().filter(|c| c.is_element()).map(|c| self.transform_element(c)).filter(|s| !s.is_empty()).collect();
+                let parts: Vec<String> =
+                    t.children().filter(|c| c.is_element()).map(|c| self.transform_element(c)).filter(|s| !s.is_empty()).collect();
                 parts.into_iter().rev().collect::<Vec<_>>().join(" ")
             }
             _ => String::new(),
@@ -237,7 +246,11 @@ impl Conv {
         if stroke == "none" {
             return " stroke=\"none\"".into();
         }
-        let w: f64 = e.attribute(format!("{prefix}StrokeThickness").as_str()).or_else(|| e.attribute("Thickness")).and_then(|v| v.trim().parse().ok()).unwrap_or(1.0);
+        let w: f64 = e
+            .attribute(format!("{prefix}StrokeThickness").as_str())
+            .or_else(|| e.attribute("Thickness"))
+            .and_then(|v| v.trim().parse().ok())
+            .unwrap_or(1.0);
         let mut s = format!(" stroke=\"{stroke}\" stroke-width=\"{}\"", n(w));
         if so < 1.0 {
             let _ = write!(s, " stroke-opacity=\"{}\"", n(so));
@@ -257,9 +270,10 @@ impl Conv {
         if let Some(m) = e.attribute(format!("{prefix}StrokeMiterLimit").as_str()).or_else(|| e.attribute("MiterLimit")) {
             let _ = write!(s, " stroke-miterlimit=\"{}\"", m.trim());
         }
-        let dashes = e.attribute(format!("{prefix}StrokeDashArray").as_str()).map(nums).or_else(|| {
-            Self::prop(e, "DashStyle").and_then(|p| p.children().find(|c| c.is_element())).and_then(|d| d.attribute("Dashes")).map(nums)
-        });
+        let dashes = e
+            .attribute(format!("{prefix}StrokeDashArray").as_str())
+            .map(nums)
+            .or_else(|| Self::prop(e, "DashStyle").and_then(|p| p.children().find(|c| c.is_element())).and_then(|d| d.attribute("Dashes")).map(nums));
         if let Some(d) = dashes.filter(|d| !d.is_empty()) {
             let _ = write!(s, " stroke-dasharray=\"{}\"", d.iter().map(|v| n(v * w)).collect::<Vec<_>>().join(" "));
         }
@@ -363,7 +377,17 @@ impl Conv {
                                     let rot: f64 = seg.attribute("RotationAngle").and_then(|v| v.trim().parse().ok()).unwrap_or(0.0);
                                     let large = seg.attribute("IsLargeArc").is_some_and(|v| v.eq_ignore_ascii_case("true"));
                                     let sweep = seg.attribute("SweepDirection").is_some_and(|v| v.eq_ignore_ascii_case("Clockwise"));
-                                    let _ = write!(d, "A{} {} {} {} {} {} {}", n(size[0]), n(size[1]), n(rot), u8::from(large), u8::from(sweep), n(to[0]), n(to[1]));
+                                    let _ = write!(
+                                        d,
+                                        "A{} {} {} {} {} {} {}",
+                                        n(size[0]),
+                                        n(size[1]),
+                                        n(rot),
+                                        u8::from(large),
+                                        u8::from(sweep),
+                                        n(to[0]),
+                                        n(to[1])
+                                    );
                                 }
                             }
                             _ => {}
@@ -419,7 +443,19 @@ impl Conv {
                 let rx: f64 = g.attribute("RadiusX").and_then(|v| v.trim().parse().ok()).unwrap_or(0.0);
                 let ry: f64 = g.attribute("RadiusY").and_then(|v| v.trim().parse().ok()).unwrap_or(0.0);
                 let (cx, cy) = (c.first().copied().unwrap_or(0.0), c.get(1).copied().unwrap_or(0.0));
-                format!("M{} {}A{} {} 0 1 0 {} {}A{} {} 0 1 0 {} {}Z", n(cx - rx), n(cy), n(rx), n(ry), n(cx + rx), n(cy), n(rx), n(ry), n(cx - rx), n(cy))
+                format!(
+                    "M{} {}A{} {} 0 1 0 {} {}A{} {} 0 1 0 {} {}Z",
+                    n(cx - rx),
+                    n(cy),
+                    n(rx),
+                    n(ry),
+                    n(cx + rx),
+                    n(cy),
+                    n(rx),
+                    n(ry),
+                    n(cx - rx),
+                    n(cy)
+                )
             }
             "LineGeometry" => {
                 let (a, b) = (nums(g.attribute("StartPoint").unwrap_or("0,0")), nums(g.attribute("EndPoint").unwrap_or("0,0")));
@@ -429,7 +465,8 @@ impl Conv {
                 if g.tag_name().name() == "CombinedGeometry" {
                     self.warn("combined geometries are read as both of their geometries, not their boolean result");
                 }
-                let parts: Vec<String> = g.children().filter(|c| c.is_element() && !c.tag_name().name().contains('.')).map(|c| self.geometry_data(c)).collect();
+                let parts: Vec<String> =
+                    g.children().filter(|c| c.is_element() && !c.tag_name().name().contains('.')).map(|c| self.geometry_data(c)).collect();
                 parts.join("")
             }
             _ => String::new(),
@@ -494,12 +531,20 @@ impl Conv {
             "Ellipse" => {
                 let (w, h) = (size("Width").unwrap_or(0.0), size("Height").unwrap_or(0.0));
                 let attrs = self.shape_attrs(e);
-                let _ = writeln!(self.body, "<ellipse cx=\"{}\" cy=\"{}\" rx=\"{}\" ry=\"{}\"{attrs}/>", n(w / 2.0), n(h / 2.0), n(w / 2.0), n(h / 2.0));
+                let _ =
+                    writeln!(self.body, "<ellipse cx=\"{}\" cy=\"{}\" rx=\"{}\" ry=\"{}\"{attrs}/>", n(w / 2.0), n(h / 2.0), n(w / 2.0), n(h / 2.0));
             }
             "Line" => {
                 let num = |name: &str| e.attribute(name).and_then(|v| v.trim().parse::<f64>().ok()).unwrap_or(0.0);
                 let attrs = self.shape_attrs(e);
-                let _ = writeln!(self.body, "<line x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\"{attrs}/>", n(num("X1")), n(num("Y1")), n(num("X2")), n(num("Y2")));
+                let _ = writeln!(
+                    self.body,
+                    "<line x1=\"{}\" y1=\"{}\" x2=\"{}\" y2=\"{}\"{attrs}/>",
+                    n(num("X1")),
+                    n(num("Y1")),
+                    n(num("X2")),
+                    n(num("Y2"))
+                );
             }
             "Polygon" | "Polyline" => {
                 let pts = nums(e.attribute("Points").unwrap_or(""));
@@ -513,9 +558,11 @@ impl Conv {
                 );
             }
             "TextBlock" | "Label" => {
-                let text = e.attribute("Text").map(str::to_string).or_else(|| e.attribute("Content").map(str::to_string)).unwrap_or_else(|| {
-                    e.descendants().filter(|c| c.is_text()).filter_map(|c| c.text()).collect::<String>()
-                });
+                let text = e
+                    .attribute("Text")
+                    .map(str::to_string)
+                    .or_else(|| e.attribute("Content").map(str::to_string))
+                    .unwrap_or_else(|| e.descendants().filter(|c| c.is_text()).filter_map(|c| c.text()).collect::<String>());
                 let size: f64 = e.attribute("FontSize").and_then(|v| v.trim().parse().ok()).unwrap_or(12.0);
                 let family = e.attribute("FontFamily").unwrap_or("sans-serif");
                 let (fill, fo) = self.brush(e, "Foreground");
@@ -555,7 +602,8 @@ impl Conv {
                         let g = Self::prop(e, "Geometry").and_then(|p| p.children().find(|c| c.is_element()));
                         match g {
                             Some(g) => {
-                                let rule = if g.attribute("FillRule").is_some_and(|r| r.eq_ignore_ascii_case("Nonzero")) { "nonzero" } else { "evenodd" };
+                                let rule =
+                                    if g.attribute("FillRule").is_some_and(|r| r.eq_ignore_ascii_case("Nonzero")) { "nonzero" } else { "evenodd" };
                                 (rule, self.geometry_data(g))
                             }
                             None => ("nonzero", String::new()),
@@ -600,9 +648,10 @@ impl Conv {
         if let Some(t) = t {
             let _ = write!(s, " transform=\"{t}\"");
         }
-        let clip = e.attribute("ClipGeometry").map(|g| strip_fill_rule(g).1).or_else(|| {
-            Self::prop(e, "ClipGeometry").and_then(|p| p.children().find(|c| c.is_element())).map(|g| self.geometry_data(g))
-        });
+        let clip = e
+            .attribute("ClipGeometry")
+            .map(|g| strip_fill_rule(g).1)
+            .or_else(|| Self::prop(e, "ClipGeometry").and_then(|p| p.children().find(|c| c.is_element())).map(|g| self.geometry_data(g)));
         if let Some(d) = clip.filter(|d| !d.is_empty()) {
             let id = self.next_id("clip");
             let _ = writeln!(self.defs, "<clipPath id=\"{id}\"><path d=\"{}\"/></clipPath>", xml_escape(&d));

@@ -104,8 +104,8 @@ pub(crate) mod views;
 pub mod wand;
 pub mod webexport;
 mod xform;
-mod xmlcmds;
 pub mod xmlattrs;
+mod xmlcmds;
 
 use redrob_vector_color::Color;
 use redrob_vector_doc::NodeId;

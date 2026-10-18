@@ -65,6 +65,7 @@ mod other;
 mod other2;
 pub mod paint;
 pub mod paint_fx;
+pub mod paint_shaped;
 pub mod panorama;
 mod par;
 pub mod perspective;
@@ -99,7 +100,6 @@ pub mod vectorscope;
 mod video;
 pub mod warp;
 pub mod wideangle;
-pub mod paint_shaped;
 
 pub use artistic::{GALLERY_CATEGORIES, GalleryEffect, GalleryFilter, GalleryParam, GalleryParamKind};
 pub use image::{Edge, Image};

@@ -11,7 +11,9 @@ use super::{Builder, Bytes, Imported};
 
 /// Does `bytes` start a CorelDRAW RIFF container?
 pub fn is_cdr(bytes: &[u8]) -> bool {
-    bytes.len() >= 12 && &bytes[..4] == b"RIFF" && (&bytes[8..11] == b"CDR" || &bytes[8..11] == b"CMX" || &bytes[8..11] == b"CCX" || &bytes[8..11] == b"CDT")
+    bytes.len() >= 12
+        && &bytes[..4] == b"RIFF"
+        && (&bytes[8..11] == b"CDR" || &bytes[8..11] == b"CMX" || &bytes[8..11] == b"CCX" || &bytes[8..11] == b"CDT")
 }
 
 /// The version a form type letter names (`CDR9` → 9, `CDRA` → 10 …).
@@ -95,10 +97,13 @@ pub fn import(bytes: &[u8], title: &str) -> Result<Imported, String> {
         ));
     }
     let Some(dib) = find_disp(&bytes[12..], 0) else {
-        return Err(format!("{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it"));
+        return Err(format!(
+            "{kind}{ver}: the drawing records aren't documented and the file has no preview bitmap: export the drawing as SVG, PDF, EPS or EMF to open it"
+        ));
     };
     let bmp = dib_to_bmp(dib).ok_or("the preview bitmap can't be read")?;
-    let img = image::load_from_memory_with_format(&bmp, image::ImageFormat::Bmp).map_err(|e| format!("the preview bitmap can't be read: {e}"))?.to_rgba8();
+    let img =
+        image::load_from_memory_with_format(&bmp, image::ImageFormat::Bmp).map_err(|e| format!("the preview bitmap can't be read: {e}"))?.to_rgba8();
     let (w, h) = img.dimensions();
     if w == 0 || h == 0 {
         return Err("the preview bitmap is empty".into());

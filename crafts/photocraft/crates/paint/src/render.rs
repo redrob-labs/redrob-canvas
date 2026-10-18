@@ -506,7 +506,8 @@ impl BrushContext {
     /// Bounding rectangle of a dab (rotated sampled tips need the corner reach).
     pub fn dab_rect(&self, d: &Dab, dual: bool) -> Rect {
         let sampled = if dual { self.dual_tip.is_some() } else { self.tip.is_some() || !self.cells.is_empty() };
-        let hardness = if dual { self.brush.dual_brush.hardness } else { (scaled_hardness(self.brush.hardness, d) * d.hardness.clamp(0.0, 1.0)).clamp(0.0, 1.0) };
+        let hardness =
+            if dual { self.brush.dual_brush.hardness } else { (scaled_hardness(self.brush.hardness, d) * d.hardness.clamp(0.0, 1.0)).clamp(0.0, 1.0) };
         // A computed soft tip paints past its nominal radius (see `tip_shape`).
         let aliased = self.brush.aliased && !dual;
         let reach = if sampled {
@@ -547,7 +548,11 @@ impl BrushContext {
             dp.resize(w * h, 0.0);
         }
         let b = &self.brush;
-        let (hardness, mips) = if dual { (b.dual_brush.hardness, self.dual_tip.as_deref()) } else { ((scaled_hardness(b.hardness, d) * d.hardness.clamp(0.0, 1.0)).clamp(0.0, 1.0), self.primary_mips(d)) };
+        let (hardness, mips) = if dual {
+            (b.dual_brush.hardness, self.dual_tip.as_deref())
+        } else {
+            ((scaled_hardness(b.hardness, d) * d.hardness.clamp(0.0, 1.0)).clamp(0.0, 1.0), self.primary_mips(d))
+        };
         let aliased = b.aliased && !dual;
         // Sharpness: threshold the mask of a primary dab.
         let sharp = (!dual && b.sharpness.enabled && d.sharpness > 0.0).then_some(d.sharpness);
