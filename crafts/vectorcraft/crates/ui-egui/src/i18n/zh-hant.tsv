@@ -3994,3 +3994,12 @@ lighting	Light	光源
 	View rotation (Cmd+Shift+scroll turns the view)	檢視旋轉（Cmd+Shift+捲動可旋轉）
 	Lock Rotate View	鎖定檢視旋轉
 	Rotate View	旋轉檢視
+	Fixation:	固定：
+	Dip Pen	蘸水筆
+	Marker	麥克筆
+	Brush	毛筆
+	Wiggly	搖擺
+	Splotchy	斑駁
+	Use Pressure	使用壓力
+	Live Simplify	即時簡化
+	Simplify (Live)…	簡化（即時）…

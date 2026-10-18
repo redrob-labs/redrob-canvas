@@ -30,7 +30,7 @@ const ROWS: &[Row] = &[
     (&["livePaintBucket"], None, &["threshold", "grow", "channel", "union"]),
     (&["rectangularGrid"], None, &["rows", "columns", "rowSkew", "columnSkew", "frame", "fill"]),
     (&["polarGrid"], None, &["concentric", "radial", "concentricSkew", "radialSkew", "compound", "fill"]),
-    (&["pencil", "paintbrush"], None, &["fidelity", "fill", "editWithin", "closeWithin", "mode", "shape"]),
+    (&["pencil", "paintbrush"], None, &["fidelity", "fill", "editWithin", "closeWithin", "mode", "shape", "usePressure", "lpeSimplify"]),
     (&["pen"], None, &["mode", "shape"]),
     (&["smooth"], None, &["fidelity"]),
     (&["blobBrush", "eraser"], None, &["size"]),

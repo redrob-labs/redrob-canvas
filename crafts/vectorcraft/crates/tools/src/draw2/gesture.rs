@@ -8,10 +8,12 @@
 //! between follow the hand. The Paintbrush records the pen pressure of each point (a stroke a pen
 //! pressed less than fully on sends `[x, y, pressure]` points) for pressure-sensitive brushes. The
 //! other tools collect the drag polyline (shown as an overlay) and run
-//! one command on release.
+//! one command on release. The Paintbrush's Alt-drag beside an existing path engraves guided
+//! hatching: the stroke keeps the distance it started at from that path, so repeated strokes lie
+//! evenly beside it.
 
 use redrob_vector_doc::NodeId;
-use redrob_vector_geom::{Point, SplineMode};
+use redrob_vector_geom::{PathData, PathSeg, Point, SplineMode};
 use serde_json::{Value, json};
 
 use super::{FEEDBACK, STROKE_SHAPES, points_json, polyline};
@@ -42,9 +44,21 @@ pub struct GestureTool {
     pub mode: SplineMode,
     /// Pencil/Paintbrush: the width profile along the stroke (one of [`STROKE_SHAPES`]).
     pub shape: &'static str,
+    /// Pencil: the pen's pressure sets the stroke's width (the `pressure` shape when the pen
+    /// pressed less than fully anywhere along the stroke).
+    pub use_pressure: bool,
+    /// Pencil: smooth with a live Simplify effect instead of fitting the points away, so the
+    /// smoothing can be changed afterwards (the path keeps every point the hand put down).
+    pub lpe_simplify: bool,
     /// Smart Guides for the Pencil's ends.
     snap: DrawSnap,
+    /// Guided hatching (the Paintbrush's Alt-drag beside a path): the guide path and the signed
+    /// distance the stroke keeps from it.
+    hatch: Option<(PathData, f64)>,
 }
+
+/// How far (screen px) from a path an Alt-press starts guided hatching.
+const HATCH_REACH: f64 = 60.0;
 
 impl GestureTool {
     pub fn new(id: &str) -> Self {
@@ -73,7 +87,10 @@ impl GestureTool {
             close_within: 15.0,
             mode: SplineMode::Bezier,
             shape: "none",
+            use_pressure: false,
+            lpe_simplify: false,
             snap: DrawSnap::default(),
+            hatch: None,
         }
     }
 
@@ -89,7 +106,7 @@ impl GestureTool {
     /// Add a stroke sample.
     fn push(&mut self, p: Point, pressure: f32) {
         self.points.push(p);
-        if self.id == "paintbrush" {
+        if self.id == "paintbrush" || (self.id == "pencil" && self.use_pressure) {
             self.pressures.push(pressure);
         }
     }
@@ -143,11 +160,48 @@ impl GestureTool {
         None
     }
 
+    /// The editable path nearest `p` within `HATCH_REACH`, and the signed distance of `p` from it
+    /// (positive on the path's left): the guide of a hatching stroke.
+    fn find_hatch_guide(&self, cx: &ToolContext, p: Point) -> Option<(PathData, f64)> {
+        let reach = cx.tol(HATCH_REACH);
+        let mut best: Option<(PathData, f64, f64)> = None;
+        cx.doc.walk(|n| {
+            let Some(pd) = n.path_data() else { return };
+            if !cx.doc.is_editable(n.id) || !n.visible || pd.is_empty() {
+                return;
+            }
+            let Some((si, seg, t, q, d)) = pd.nearest(p) else { return };
+            if d > reach || best.as_ref().is_some_and(|b| b.2 <= d) {
+                return;
+            }
+            let tg = redrob_vector_geom::bez::tangent(&PathSeg::Cubic(pd.subpaths[si].segment(seg)), t);
+            let side = if tg.cross(p - q) >= 0.0 { 1.0 } else { -1.0 };
+            best = Some((pd.clone(), side * d, d));
+        });
+        best.map(|(pd, signed, _)| (pd, signed))
+    }
+
+    /// Where a hatching stroke's sample lands: the point of the guide nearest `p`, moved off it by
+    /// the stroke's distance (the pointer only chooses how far along the guide the stroke is).
+    fn guided(&self, p: Point) -> Point {
+        let Some((guide, dist)) = &self.hatch else { return p };
+        let Some((si, seg, t, q, _)) = guide.nearest(p) else { return p };
+        let tg = redrob_vector_geom::bez::tangent(&PathSeg::Cubic(guide.subpaths[si].segment(seg)), t);
+        let h = tg.hypot();
+        if h < 1e-12 {
+            return p;
+        }
+        let left = redrob_vector_geom::Vec2::new(-tg.y, tg.x) / h;
+        q + left * *dist
+    }
+
     /// Parameters of `path.freehand` for the current stroke.
     pub fn freehand_params(&self, closed: bool) -> Value {
+        // With the live Simplify the path keeps the hand's points; the effect smooths them.
+        let fidelity = if self.simplifies_live() { 0.05 } else { self.fidelity };
         let mut v = json!({
             "points": self.stroke_json(),
-            "fidelity": self.fidelity,
+            "fidelity": fidelity,
             "closed": closed,
             "style": if self.id == "paintbrush" { "brush" } else { "pencil" },
             "fill": self.fill,
@@ -157,11 +211,18 @@ impl GestureTool {
         }
         if self.shape != "none" {
             v["shape"] = json!(self.shape);
+        } else if self.id == "pencil" && self.use_pressure && self.pressures.iter().any(|p| *p < 1.0) {
+            v["shape"] = json!("pressure");
         }
         if let Some((id, start)) = self.extend {
             v["extend"] = json!({"id": id.0, "end": if start { "start" } else { "end" }});
         }
         v
+    }
+
+    /// Does the Pencil smooth with the live Simplify effect?
+    fn simplifies_live(&self) -> bool {
+        self.id == "pencil" && self.lpe_simplify && self.extend.is_none()
     }
 
     fn finish(&mut self, cx: &ToolContext, m: Mods) -> Vec<Action> {
@@ -174,8 +235,17 @@ impl GestureTool {
                     return vec![];
                 }
                 let near = pts.len() > 2 && pts[0].distance(pts[pts.len() - 1]) <= cx.tol(self.close_within);
-                let closed = m.alt || (self.extend.is_none() && near);
-                vec![Action::Preview("path.freehand".into(), self.freehand_params(closed)), Action::Commit]
+                // Alt closes the stroke, unless it was guiding hatching (then it stays open).
+                let closed = (m.alt && self.hatch.is_none()) || (self.extend.is_none() && near);
+                let mut out = vec![Action::Preview("path.freehand".into(), self.freehand_params(closed)), Action::Commit];
+                if self.simplifies_live() {
+                    // The new path is the selection: the live Simplify goes on it, at the fidelity.
+                    out.push(Action::Exec(
+                        "effect.apply".into(),
+                        json!({ "effect": "path.simplifyLive", "item": Value::Null, "params": { "threshold": self.fidelity } }),
+                    ));
+                }
+                out
             }
             "blobBrush" => vec![Action::Exec("path.blob".into(), json!({"points": points_json(pts), "size": self.size}))],
             "eraser" => vec![Action::Exec("path.eraseRegion".into(), json!({"points": points_json(pts), "size": self.size}))],
@@ -208,8 +278,16 @@ impl Tool for GestureTool {
                 self.active = true;
                 self.began = false;
                 self.extend = if self.draws_path() { self.find_extend(cx, p) } else { None };
+                // The Paintbrush's Alt-press beside a path: guided hatching along it.
+                self.hatch = if self.id == "paintbrush" && ev.mods.alt && self.extend.is_none() { self.find_hatch_guide(cx, p) } else { None };
                 // A path continued starts at its end; a new one where it snaps.
-                let start = if self.snaps() && self.extend.is_none() { self.snap.press(cx, p, &[], None) } else { p };
+                let start = if self.hatch.is_some() {
+                    self.guided(p)
+                } else if self.snaps() && self.extend.is_none() {
+                    self.snap.press(cx, p, &[], None)
+                } else {
+                    p
+                };
                 self.clear();
                 self.push(start, ev.pressure);
                 vec![]
@@ -222,6 +300,7 @@ impl Tool for GestureTool {
                     // Where the stroke would end: shown, taken on release.
                     self.snap.drag(cx, p, None);
                 }
+                let p = self.guided(p);
                 if self.points.last().is_some_and(|l| l.distance(p) < cx.tol(1.0)) {
                     return vec![];
                 }
@@ -241,7 +320,13 @@ impl Tool for GestureTool {
                 if !self.active {
                     return vec![];
                 }
-                let end = if self.snaps() { self.snap.drag(cx, p, None) } else { p };
+                let end = if self.hatch.is_some() {
+                    self.guided(p)
+                } else if self.snaps() {
+                    self.snap.drag(cx, p, None)
+                } else {
+                    p
+                };
                 self.snap.clear();
                 if self.points.last().is_some_and(|l| l.distance(p) >= cx.tol(1.0)) {
                     self.push(end, ev.pressure);
@@ -257,6 +342,7 @@ impl Tool for GestureTool {
                 self.began = false;
                 self.clear();
                 self.extend = None;
+                self.hatch = None;
                 out
             }
             _ => vec![],
@@ -321,6 +407,8 @@ impl Tool for GestureTool {
                     "closeWithin": self.close_within,
                     "mode": self.mode.id(),
                     "shape": self.shape,
+                    "usePressure": self.use_pressure,
+                    "lpeSimplify": self.lpe_simplify,
                 })
             }
             "smooth" => json!({"fidelity": self.fidelity}),
@@ -346,6 +434,8 @@ impl Tool for GestureTool {
                     self.shape = sh;
                 }
             }
+            "usePressure" => self.use_pressure = v.as_bool().unwrap_or(self.use_pressure),
+            "lpeSimplify" => self.lpe_simplify = v.as_bool().unwrap_or(self.lpe_simplify),
             _ => {}
         }
     }

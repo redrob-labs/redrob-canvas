@@ -4621,3 +4621,13 @@ lighting	Light	Свет
 	View rotation (Cmd+Shift+scroll turns the view)	Поворот вида (Cmd+Shift+прокрутка поворачивает вид)
 	Lock Rotate View	Заблокировать поворот вида
 	Rotate View	Повернуть вид
+	Fixation:	Фиксация:
+	Dip Pen	Перо
+	Marker	Маркер
+	Brush	Кисть
+	Wiggly	Волнистый
+	Splotchy	Пятнистый
+	Tracing	Трассировка
+	Use Pressure	Использовать нажим
+	Live Simplify	Живое упрощение
+	Simplify (Live)…	Упростить (живое)…

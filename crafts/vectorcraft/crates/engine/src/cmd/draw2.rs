@@ -24,7 +24,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Pencil",
             [],
             None,
-            "{points: [[x,y]…] or [[x,y,pressure]…] (pen pressure 0..1: the stroke keeps it, for Calligraphic brushes with Pressure variation; a point without one presses fully), fidelity?: pt (1.5), closed?, style?: \"pencil\"|\"brush\", fill?: bool, extend?: {id, end: \"start\"|\"end\"}, mode?: \"regular\"|\"spiro\"|\"bspline\" (the fitted anchors become the points of a spiro-like spline or the control polygon of a B-spline), shape?: \"none\"|\"triangleIn\"|\"triangleOut\"|\"ellipse\"|\"fromClipboard\" (a width profile along the stroke; fromClipboard reads the shape of the copied path)} fit a freehand stroke → {id}",
+            "{points: [[x,y]…] or [[x,y,pressure]…] (pen pressure 0..1: the stroke keeps it, for Calligraphic brushes with Pressure variation; a point without one presses fully), fidelity?: pt (1.5), closed?, style?: \"pencil\"|\"brush\", fill?: bool, extend?: {id, end: \"start\"|\"end\"}, mode?: \"regular\"|\"spiro\"|\"bspline\" (the fitted anchors become the points of a spiro-like spline or the control polygon of a B-spline), shape?: \"none\"|\"triangleIn\"|\"triangleOut\"|\"ellipse\"|\"fromClipboard\"|\"pressure\" (a width profile along the stroke; fromClipboard reads the shape of the copied path, pressure follows the pen pressure of the points: the Pencil's pressure-sensitive width)} fit a freehand stroke → {id}",
             has_doc,
             freehand
         ),
@@ -33,7 +33,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "Shape Along Stroke",
             [],
             None,
-            "{shape: \"none\"|\"triangleIn\"|\"triangleOut\"|\"ellipse\"|\"fromClipboard\", ids?|id? (default: the selected paths)} give the paths' strokes a width profile shaped along the path: a triangle wide at the start (triangleIn) or the end (triangleOut), an ellipse (lens), or the outline of the copied path read as a width profile along its x axis; none restores a uniform stroke → {changed}",
+            "{shape: \"none\"|\"triangleIn\"|\"triangleOut\"|\"ellipse\"|\"fromClipboard\"|\"pressure\", ids?|id? (default: the selected paths)} give the paths' strokes a width profile shaped along the path: a triangle wide at the start (triangleIn) or the end (triangleOut), an ellipse (lens), the outline of the copied path read as a width profile along its x axis, or the pen pressure recorded on the stroke; none restores a uniform stroke → {changed}",
             has_doc,
             stroke_shape
         ),
@@ -599,7 +599,8 @@ fn freehand(s: &mut Session, p: &Value) -> Result<Value> {
             *a = Anchor::with_handles(a.p, a.h_in, a.h_out);
         }
         let mut sp = respline(sp, mode);
-        let shaped = shape.map(|shape| shape_profile(s, shape));
+        let shaped = shape.filter(|shape| *shape != "pressure").map(|shape| shape_profile(s, shape));
+        let pressure_shaped = shape == Some("pressure");
         // The path's pressure (in the direction it is continued in) followed by the stroke's.
         let old_pressure = s.doc()?.doc.node(id).and_then(|n| n.appearance.stroke()).and_then(|st| st.pressure.clone());
         let joined = (old_pressure.is_some() || pressure.is_some()).then(|| {
@@ -617,6 +618,9 @@ fn freehand(s: &mut Session, p: &Value) -> Result<Value> {
                 && let Some(st) = d.node_mut(id).and_then(|n| n.appearance.stroke_mut())
             {
                 st.pressure = if reverse { joined.map(|p| p.reversed()) } else { joined };
+                if pressure_shaped {
+                    st.profile = st.pressure.as_ref().map(pressure_profile);
+                }
             }
             if let Some(profile) = shaped
                 && let Some(st) = d.node_mut(id).and_then(|n| n.appearance.stroke_mut())
@@ -638,10 +642,11 @@ fn freehand(s: &mut Session, p: &Value) -> Result<Value> {
     let stroke = if brush || fill.is_none() { stroke_paint(s) } else { s.paint.stroke.clone() };
     let mut look = s.new_art_look(fill, stroke, s.paint.stroke_width.max(0.1));
     if let Some(st) = look.appearance.stroke_mut() {
-        st.pressure = pressure;
         if let Some(shape) = shape {
-            st.profile = shape_profile(s, shape);
+            // The pressure shape: the stroke's width follows the pen pressure recorded along it.
+            st.profile = if shape == "pressure" { pressure.as_ref().map(pressure_profile) } else { shape_profile(s, shape) };
         }
+        st.pressure = pressure;
     }
     add_look(s, if brush { "Paintbrush" } else { "Pencil" }, path_kind(PathData::single(sp)), look, None)
 }
@@ -667,7 +672,7 @@ fn mode_param(p: &Value, cmd: &str) -> Result<SplineMode> {
 }
 
 /// The shapes a stroke can take along its path (the Pencil's and the Pen's Shape option).
-pub(crate) const STROKE_SHAPES: [&str; 5] = ["none", "triangleIn", "triangleOut", "ellipse", "fromClipboard"];
+pub(crate) const STROKE_SHAPES: [&str; 6] = ["none", "triangleIn", "triangleOut", "ellipse", "fromClipboard", "pressure"];
 
 /// The `shape` param: one of [`STROKE_SHAPES`], `None` when absent (the stroke is left as it is).
 fn shape_param<'a>(p: &'a Value, cmd: &str) -> Result<Option<&'a str>> {
@@ -702,6 +707,24 @@ pub(crate) fn shape_profile(s: &Session, shape: &str) -> Option<WidthProfile> {
         "fromClipboard" => clipboard_profile(&s.clipboard.nodes),
         _ => None,
     }
+}
+
+/// The width profile a stroke's recorded pen pressure gives it (the `pressure` shape): the width
+/// at each sample is the pressure there, full pressure the stroke's weight.
+pub(crate) fn pressure_profile(p: &PressureProfile) -> WidthProfile {
+    let mut points: Vec<(f64, f64, f64)> = p.points.iter().map(|(t, v)| (t.clamp(0.0, 1.0), v.clamp(0.0, 1.0), v.clamp(0.0, 1.0))).collect();
+    if points.is_empty() {
+        points.push((0.0, 1.0, 1.0));
+    }
+    if points.first().is_some_and(|(t, ..)| *t > 1e-9) {
+        let (_, l, r) = points[0];
+        points.insert(0, (0.0, l, r));
+    }
+    if points.last().is_some_and(|(t, ..)| *t < 1.0 - 1e-9) {
+        let (_, l, r) = points[points.len() - 1];
+        points.push((1.0, l, r));
+    }
+    WidthProfile { points }
 }
 
 /// The outline of the first path among the copied `nodes`, read as a width profile along its x
@@ -787,7 +810,7 @@ fn stroke_shape(s: &mut Session, p: &Value) -> Result<Value> {
                 n.appearance.set_stroke(Paint::solid(Color::BLACK));
             }
             if let Some(st) = n.appearance.stroke_mut() {
-                st.profile = profile.clone();
+                st.profile = if shape == "pressure" { st.pressure.as_ref().map(pressure_profile) } else { profile.clone() };
                 changed += 1;
             }
         }

@@ -123,9 +123,9 @@ name = "Pencil (freehand) tool"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/pencil-tool.html"
 behaviour = "Drag draws a path, smoothed by a 1-100 slider; click-click draws straight segments; modes: regular Bezier, Spiro, BSpline; a shape can be applied along the stroke (triangle in/out, ellipse, from clipboard, bend from clipboard); 'LPE based interactive simplify'; pressure-sensitive width when a tablet is used ('PowerPencil')."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/tools/src/draw2/gesture.rs, crafts/vectorcraft/crates/geom/src/spline.rs, crafts/vectorcraft/crates/pathops/src/fit.rs, crafts/vectorcraft/crates/engine/src/cmd/draw2.rs (path.freehand mode/shape, path.strokeShape), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (Mode and Shape dropdowns)"
-gap = "Spiro is a documented approximation (chord-bisector tangents, arc handles, curvature relaxation), not a clothoid solver; no 'LPE based interactive simplify'; no pressure width while drawing (the Paintbrush keeps pressure, the Pencil does not)"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/geom/src/clothoid.rs (clothoid spline solver: G2 across every point, straight free ends; the Spiro mode), crafts/vectorcraft/crates/tools/src/draw2/gesture.rs (Pencil: smoothing slider, click-click segments, modes, shapes, Use Pressure, Live Simplify), crafts/vectorcraft/crates/effects/src/lpe_simplify.rs (path.simplifyLive), crafts/vectorcraft/crates/engine/src/cmd/draw2.rs (path.freehand shape pressure), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs"
+gap = ""
 priority = 1
 
 [[feature]]
@@ -147,9 +147,9 @@ name = "Calligraphy tool"
 reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/calligraphy-tool.html"
 behaviour = "Draws a filled stroke whose width follows velocity (thinning), pen angle, fixation, caps, tremor, wiggle and mass settings; presets Dip pen, Marker, Brush, Wiggly, Splotchy, Tracing; pressure and tilt from a tablet can drive width and angle; Alt-drag on an existing stroke engraves hatching guided by it."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs, crafts/vectorcraft/crates/brush/src/lib.rs (Calligraphic::thinning/mass/tremor/wiggle), crafts/vectorcraft/crates/ui-egui/src/dialogs/brush_options.rs"
-gap = "thinning (speed read from anchor spacing), mass, tremor, wiggle, angle, roundness, size and pressure variation are brush options; no tilt input (the shell receives no tilt), no fixation setting, no Dip pen/Marker/Brush/Wiggly/Splotchy/Tracing presets, no guided hatching"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs (thinning, mass, tremor, wiggle, fixation, caps, pressure), crafts/vectorcraft/crates/brush/src/lib.rs (Calligraphic, CALLIGRAPHIC_PRESETS: Dip Pen, Marker, Brush, Wiggly, Splotchy, Tracing), crafts/vectorcraft/crates/ui-egui/src/dialogs/brush_options.rs (Preset, Fixation), crafts/vectorcraft/crates/engine/src/cmd/brushsym.rs (brush.options preset), crafts/vectorcraft/crates/tools/src/draw2/gesture.rs (Alt-drag beside a path: guided hatching)"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -328,8 +328,8 @@ reference = "Inkscape"
 manual = "https://inkscape.org/doc/tutorials/calligraphy/tutorial-calligraphy.html"
 behaviour = "Calligraphy, pencil (PowerPencil), tweak, spray and eraser read stylus pressure when their 'use pressure' toggle is on; calligraphy also reads tilt for pen angle."
 ours = "partial"
-ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs, crafts/vectorcraft/crates/ui-egui/src/touch.rs, crafts/vectorcraft/crates/ui-egui/src/canvas.rs (pen_pressure)"
-gap = "pressure drives the calligraphic brush width and the liquify tools; no tilt input (the shell receives pointer force but no tilt angles)"
+ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs (pressure drives the calligraphic nib), crafts/vectorcraft/crates/tools/src/draw2/gesture.rs (Pencil Use Pressure, Paintbrush pressure), crafts/vectorcraft/crates/ui-egui/src/canvas.rs (pen_pressure), crafts/vectorcraft/crates/ui-egui/src/touch.rs"
+gap = "pressure drives the calligraphic brush, the Pencil's width (Use Pressure) and the liquify tools; tilt cannot be read: the windowing layer (egui/winit) delivers pointer force but no stylus tilt angles, so pen angle from tilt needs a platform input path"
 priority = 2
 
 [[feature]]
@@ -423,9 +423,9 @@ name = "Calligraphy tool (Krita)"
 reference = "Krita"
 manual = "https://docs.krita.org/en/reference_manual/tools/calligraphy.html"
 behaviour = "Draws vector calligraphic strokes with width, thinning, angle, fixation, caps, mass and drag settings and assistant following; saves named profiles; pressure can drive width."
-ours = "partial"
-ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs"
-gap = "no thinning, mass/drag or saved calligraphy profiles"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/brush/src/calli.rs (width, thinning, angle, fixation, caps, mass), crafts/vectorcraft/crates/brush/src/lib.rs (named calligraphic brushes saved with the document and the Brushes library are the profiles; CALLIGRAPHIC_PRESETS), crafts/vectorcraft/crates/ui-egui/src/dialogs/brush_options.rs"
+gap = ""
 priority = 3
 
 [[feature]]

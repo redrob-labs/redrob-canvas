@@ -425,12 +425,13 @@ fn drawing_mode_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     /// (value, label) of each choice.
     type Choices = [(&'static str, &'static str)];
     const MODES: [(&str, &str); 4] = [("regular", "Regular"), ("spiro", "Spiro"), ("bspline", "BSpline"), ("paraxial", "Paraxial")];
-    const SHAPES: [(&str, &str); 5] = [
+    const SHAPES: [(&str, &str); 6] = [
         ("none", "None"),
         ("triangleIn", "Triangle In"),
         ("triangleOut", "Triangle Out"),
         ("ellipse", "Ellipse"),
         ("fromClipboard", "From Clipboard"),
+        ("pressure", "Pressure"),
     ];
     let t = Tokens::get(ui.ctx());
     let opts = app.session.tool_options();
@@ -444,6 +445,17 @@ fn drawing_mode_options(app: &mut VectorcraftApp, ui: &mut Ui) {
         let labels: Vec<&str> = choices.iter().map(|(_, l)| *l).collect();
         if let Some((value, _)) = widgets::dropdown(ui, ("cb-draw", key), shown, &labels, 112.0).and_then(|i| choices.get(i)) {
             app.run("tool.setOption", json!({ "key": key, "value": value })).ok();
+        }
+    }
+    if app.session.tool_id() == "pencil" {
+        // Pressure-sensitive width and the live Simplify (the smoothing stays editable).
+        let use_pressure = opts["usePressure"].as_bool().unwrap_or(false);
+        if widgets::check(ui, "Use Pressure", use_pressure, true) {
+            app.run("tool.setOption", json!({ "key": "usePressure", "value": !use_pressure })).ok();
+        }
+        let live = opts["lpeSimplify"].as_bool().unwrap_or(false);
+        if widgets::check(ui, "Live Simplify", live, true) {
+            app.run("tool.setOption", json!({ "key": "lpeSimplify", "value": !live })).ok();
         }
     }
     ui.separator();

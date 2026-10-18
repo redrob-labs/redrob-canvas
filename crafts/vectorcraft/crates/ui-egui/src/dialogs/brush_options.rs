@@ -31,11 +31,12 @@ pub(super) const SPEC: DialogSpec = DialogSpec { heading, body, confirm, min_wid
 const CALLI: [(&str, &str, &str, usize); 3] = [("angle", "Angle:", "°", 0), ("roundness", "Roundness:", "%", 0), ("size", "Size:", " pt", 1)];
 
 /// Calligraphic stroke dynamics: (field, label, range), in percent.
-const DYNAMICS: [(&str, &str, (f64, f64)); 4] = [
+const DYNAMICS: [(&str, &str, (f64, f64)); 5] = [
     ("thinning", "Thinning:", (-100.0, 100.0)),
     ("mass", "Mass:", (0.0, 100.0)),
     ("tremor", "Tremor:", (0.0, 100.0)),
     ("wiggle", "Wiggle:", (0.0, 100.0)),
+    ("fixation", "Fixation:", (0.0, 100.0)),
 ];
 
 /// Bristle sliders: (field, label, range), in percent.
@@ -105,8 +106,11 @@ pub fn open(app: &mut VectorcraftApp, name: Option<&str>) -> Result<Value, Strin
                 f.insert(variation_key(key), json!(var));
                 f.insert(mode_key(key), json!(mode.id()));
             }
-            for ((key, ..), v) in DYNAMICS.iter().zip([c.thinning, c.mass, c.tremor, c.wiggle]) {
+            for ((key, ..), v) in DYNAMICS.iter().zip([c.thinning, c.mass, c.tremor, c.wiggle, c.fixation]) {
                 f.insert((*key).into(), json!(v));
+            }
+            if let Some(p) = redrob_vector_brush::CALLIGRAPHIC_PRESETS.iter().find(|p| p.brush() == *c) {
+                f.insert("__preset".into(), json!(p.id));
             }
         }
         BrushKind::Bristle(b) => {
@@ -157,7 +161,24 @@ fn calligraphic(d: &Dialog) -> Calligraphic {
         mass: dyn_value(1),
         tremor: dyn_value(2),
         wiggle: dyn_value(3),
+        fixation: dyn_value(4),
     }
+}
+
+/// Put preset `preset`'s values into the calligraphic fields (the name stays).
+fn apply_preset(d: &mut Dialog, preset: &redrob_vector_brush::CalligraphicPreset) {
+    let c = preset.brush();
+    let values = [c.angle, c.roundness, c.size];
+    for (i, (key, ..)) in CALLI.iter().enumerate() {
+        let (Some(v), Some(var), Some(mode)) = (values.get(i), c.variation.get(i), c.modes().get(i).copied()) else { continue };
+        d.fields.insert((*key).into(), json!(v));
+        d.fields.insert(variation_key(key), json!(var));
+        d.fields.insert(mode_key(key), json!(mode.id()));
+    }
+    for ((key, ..), v) in DYNAMICS.iter().zip([c.thinning, c.mass, c.tremor, c.wiggle, c.fixation]) {
+        d.fields.insert((*key).into(), json!(v));
+    }
+    d.fields.insert("__preset".into(), json!(preset.id));
 }
 
 /// `brush.options` params from the fields.
@@ -191,6 +212,17 @@ fn body(app: &mut VectorcraftApp, ui: &mut egui::Ui, d: &mut Dialog) -> bool {
 }
 
 fn calligraphic_body(ui: &mut egui::Ui, d: &mut Dialog) {
+    // Presets: a pen type's dynamics in one pick (Dip Pen, Marker, Brush, Wiggly, Splotchy, Tracing).
+    let presets = &redrob_vector_brush::CALLIGRAPHIC_PRESETS;
+    let current = d.str("__preset");
+    let shown = presets.iter().find(|p| p.id == current).map_or_else(|| tl!("Custom").to_string(), |p| tl!(p.label).to_string());
+    let labels: Vec<&str> = presets.iter().map(|p| p.label).collect();
+    widgets::label_row(ui, tl!("Preset:"), LABEL_W, |ui| {
+        if let Some(p) = widgets::dropdown(ui, "brush-calli-preset", &shown, &labels, 150.0).and_then(|i| presets.get(i)) {
+            apply_preset(d, p);
+        }
+    });
+    ui.add_space(8.0);
     let c = calligraphic(d);
     ui.horizontal(|ui| {
         nib_preview(ui, &c, vec2(NIB_W, 84.0));
@@ -220,11 +252,18 @@ fn calligraphic_body(ui: &mut egui::Ui, d: &mut Dialog) {
             ui.end_row();
         }
     });
-    // Stroke dynamics: how the nib thins with speed, smooths with mass, shakes and wanders.
+    // Stroke dynamics: how the nib thins with speed, smooths with mass, shakes and wanders, and
+    // how far it keeps its angle as the stroke turns.
     ui.add_space(8.0);
     let rail = Tokens::get(ui.ctx()).input_border;
     for (key, text, (lo, hi)) in DYNAMICS {
         widgets::label_row(ui, tl!(text), LABEL_W, |ui| form::slider_field(ui, d, key, lo..=hi, "%", &|_| rail));
+    }
+    // A value edited away from the preset's makes the brush Custom.
+    if let Some(p) = redrob_vector_brush::calligraphic_preset(&d.str("__preset"))
+        && calligraphic(d) != p.brush()
+    {
+        d.fields.remove("__preset");
     }
 }
 

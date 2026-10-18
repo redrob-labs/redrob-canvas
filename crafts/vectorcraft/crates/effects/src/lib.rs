@@ -38,10 +38,11 @@ mod adjust;
 mod bake;
 mod clip;
 mod distort;
+pub mod filter_presets;
 mod group;
 mod live;
-pub mod filter_presets;
 pub mod lpe;
+pub mod lpe_simplify;
 mod marks;
 pub mod pixel;
 mod raster;
@@ -327,7 +328,7 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
             lpe::SPIRO,
             "Spiro Spline…",
             PATH,
-            "{cusps: bool (false; true keeps corner anchors without handles sharp)} a smooth G2-like spline through the anchors (an approximation of a Spiro clothoid spline: circle tangents at the anchors, arc-fitted handles, curvature relaxed to agree across each anchor)",
+            "{cusps: bool (false; true keeps corner anchors without handles sharp)} a clothoid (Spiro) spline through the anchors: curvature-continuous across every anchor, straight at the open ends; with cusps the runs between sharp corners are splined apart",
             json!({"cusps": false}),
         ),
         g(
@@ -343,6 +344,13 @@ pub fn effect_catalog() -> Vec<EffectInfo> {
             PATH,
             "{width: pt (0..10000, 4), startTaper: pt (0..1000000, 20; the length over which each open subpath grows from a point to the width), endTaper: pt (0..1000000, 20; the length over which it shrinks back), smoothing: 0..1 (0.5; 0 a straight taper, 1 an eased one), join: \"round\"|\"miter\"|\"bevel\" (\"round\"; at the path's corners), direction: \"center\"|\"left\"|\"right\" (\"center\"; the side of the path the stroke lies on, one edge staying on the path when left or right)} the outline of a stroke with tapering ends (closed subpaths become plain rings)",
             json!({"width": 4.0, "startTaper": 20.0, "endTaper": 20.0, "smoothing": 0.5, "join": "round", "direction": "center"}),
+        ),
+        g(
+            lpe_simplify::SIMPLIFY,
+            "Simplify (Live)…",
+            PATH,
+            "{threshold: pt (0.05..100, 1.5; how far the smoothed path may leave the drawn one), cornerAngle: deg (0..180, 60; anchors where the path turns more than this stay corners), straightLines: bool (false; straight segments only)} the Pencil's interactive simplify: the drawn points stay, the smoothing is re-fitted live and can be changed later",
+            json!({"threshold": 1.5, "cornerAngle": 60.0, "straightLines": false}),
         ),
         g(
             "stylize.scribble",
@@ -926,6 +934,7 @@ pub(crate) fn apply_one(id: &str, p: &Value, path: &PathData, b: Rect, ctx: &Geo
         lpe::SPIRO => lpe::spiro(path, p),
         lpe::DASHED_STROKE => lpe::dashed_stroke(path, p, ctx.stroke),
         lpe::TAPER_STROKE => lpe::taper_stroke(path, p),
+        lpe_simplify::SIMPLIFY => lpe_simplify::simplify(path, p),
         "stylize.scribble" => stylize::scribble(path, b, p),
         _ => match id.strip_prefix("warp.").and_then(WarpStyle::from_id) {
             Some(style) => warp::warp(path, b, style, p),
