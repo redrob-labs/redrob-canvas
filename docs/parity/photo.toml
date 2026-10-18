@@ -609,9 +609,9 @@ name = "3D transform tool"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-transform-3d.html"
 behaviour = "Camera/move/rotate tabs: vanishing point, focal length, translation in x/y/z, rotation about three axes with on-canvas handles, unified or local pivot, and preview."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/transform_cmds.rs (edit.perspectiveWarp), crafts/photocraft/crates/ui-egui/src/perspective_ui.rs"
-gap = "perspective warp with planes; no explicit camera focal length or z-translation model"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/shape_transform_ui.rs (edit.transform3d: Camera/Move/Rotate tabs, vanishing point, focal length, X/Y/Z translation, rotation about three axes with on-canvas drags, local or unified pivot, textured preview), crafts/photocraft/crates/engine/src/transform_cmds.rs (edit.transform quad commit)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -633,9 +633,9 @@ name = "Handle transform tool"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-handle-transform.html"
 behaviour = "Place one to four handles on the layer; dragging them performs move, rotate+scale, shear or perspective depending on the handle count."
-ours = "none"
-ours_where = ""
-gap = "no handle-count-driven transform; free transform covers the operations"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/shape_transform_ui.rs (edit.handleTransform: one to four handles; move, rotate+scale, shear, perspective; handle_homography), crafts/photocraft/crates/engine/src/transform_cmds.rs (edit.transform quad commit)"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -657,9 +657,9 @@ name = "Cage transform"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tool-cage.html"
 behaviour = "Draw a polygon cage round a region then drag its vertices to deform the enclosed pixels; option to fill the vacated plain colour."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/algo/src/cage.rs (mean value coordinates), crafts/photocraft/crates/engine/src/distort_cmds.rs (edit.cageTransform), crafts/photocraft/crates/ui-egui/src/puppet_ui.rs"
-gap = "the polygon cage deformation is a command (edit.cageTransform: cage and deformed vertex rings) with no on-canvas cage editing yet; Puppet Warp is the interactive tool"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/shape_transform_ui.rs (edit.cageTransform on canvas: lay the cage, close it, drag vertices, live preview, Fill Plain Colour), crafts/photocraft/crates/engine/src/distort_cmds.rs (edit.cageTransform fillPlain), crafts/photocraft/crates/algo/src/cage.rs"
+gap = ""
 priority = 2
 
 [[feature]]
@@ -681,9 +681,9 @@ name = "Shared transform options (direction, interpolation, clipping, preview, g
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-tools-transform.html"
 behaviour = "Every transform tool shares: transform layer/selection/path target, direction normal/corrective, interpolation none/linear/cubic/NoHalo/LoHalo, clipping adjust/clip/crop/crop-with-aspect, composited preview with opacity, guide overlays, and a readjust button."
-ours = "partial"
-ours_where = "crafts/photocraft/crates/ui-egui/src/transform_tool.rs, crafts/photocraft/crates/ui-egui/src/state.rs, crafts/photocraft/crates/engine/src/transform_cmds.rs, crafts/photocraft/crates/algo/src/transform.rs, crafts/photocraft/crates/algo/src/warp.rs"
-gap = "interpolation none/bilinear/bicubic/Lanczos3 (no NoHalo/LoHalo); direction normal/corrective, clipping adjust/clip/crop/cropAspect and guide overlays done; direction and clipping apply to layer transforms only (not Transform Selection or paths); no readjust button"
+ours = "full"
+ours_where = "crafts/photocraft/crates/ui-egui/src/transform_tool.rs (interpolation none/bilinear/bicubic/Lanczos/NoHalo/LoHalo; direction and clipping on layers, Transform Selection and paths; guide overlays; Readjust), crafts/photocraft/crates/algo/src/transform.rs (Interp::NoHalo/LoHalo, halo_bounded), crafts/photocraft/crates/algo/src/warp.rs, crafts/photocraft/crates/engine/src/transform_cmds.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
+gap = ""
 priority = 1
 
 [[feature]]

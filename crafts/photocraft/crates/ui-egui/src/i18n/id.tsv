@@ -3548,3 +3548,31 @@ curves	Smooth	Haluskan
 	MyPaint Brushes	Kuas MyPaint
 	No MyPaint brushes yet. Import .myb files to list them here.	Belum ada kuas MyPaint. Impor berkas .myb untuk menampilkannya di sini.
 	No brush matches the filter.	Tidak ada kuas yang cocok dengan filter.
+	Handle Transform	Transformasi Pegangan
+	3D Transform	Transformasi 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Sesuaikan Ulang
+	Apply the transform so far and put a fresh box on the result	Terapkan transformasi sejauh ini dan letakkan kotak baru pada hasilnya
+	Camera	Kamera
+	Vanishing X:	Titik hilang X:
+	Y:	Y:
+	Focal length:	Panjang fokus:
+	Local pivot	Poros lokal
+	Unified pivot	Poros terpadu
+	Close Cage	Tutup Kurungan
+	Reset Cage	Setel Ulang Kurungan
+	Fill Plain Colour	Isi Warna Polos
+	Fill the original position of the cage with the plain colour of its outline	Isi posisi asli kurungan dengan warna polos garis luarnya
+	{n} points	{n} titik
+	Click to place a handle	Klik untuk menempatkan pegangan
+	Rotate and Scale	Putar dan Skalakan
+	{n} handles: {what}	{n} pegangan: {what}
+	Reset Handles	Setel Ulang Pegangan
+	Remove Handles	Hapus Pegangan
+	Commit Cage Transform (Enter)	Terapkan Transformasi Kurungan (Enter)
+	Commit Handle Transform (Enter)	Terapkan Transformasi Pegangan (Enter)
+	Commit 3D Transform (Enter)	Terapkan Transformasi 3D (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformasi kurungan: klik di sekeliling bagian yang akan dideformasi, klik titik pertama untuk menutup kurungan, lalu seret titiknya
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformasi pegangan: tempatkan satu sampai empat pegangan dan seret (satu memindahkan, dua memutar dan menskalakan, tiga mencondongkan, empat memberi perspektif)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Transformasi 3D: seret untuk memutar pada X dan Y, Alt-seret pada Z; tab Pindah dan Kamera memindahkan lapisan dan kamera

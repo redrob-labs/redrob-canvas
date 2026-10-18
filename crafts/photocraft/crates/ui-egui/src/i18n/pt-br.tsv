@@ -4339,3 +4339,31 @@ layerLabel	No Color	Sem cor
 	MyPaint Brushes	Pincéis MyPaint
 	No MyPaint brushes yet. Import .myb files to list them here.	Ainda não há pincéis MyPaint. Importe arquivos .myb para listá-los aqui.
 	No brush matches the filter.	Nenhum pincel corresponde ao filtro.
+	Handle Transform	Transformação por alças
+	3D Transform	Transformação 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Reajustar
+	Apply the transform so far and put a fresh box on the result	Aplica a transformação até aqui e coloca uma nova caixa sobre o resultado
+	Camera	Câmera
+	Vanishing X:	Ponto de fuga X:
+	Y:	Y:
+	Focal length:	Distância focal:
+	Local pivot	Pivô local
+	Unified pivot	Pivô unificado
+	Close Cage	Fechar gaiola
+	Reset Cage	Redefinir gaiola
+	Fill Plain Colour	Preencher com cor sólida
+	Fill the original position of the cage with the plain colour of its outline	Preenche a posição original da gaiola com a cor sólida do seu contorno
+	{n} points	{n} pontos
+	Click to place a handle	Clique para colocar uma alça
+	Rotate and Scale	Girar e redimensionar
+	{n} handles: {what}	{n} alças: {what}
+	Reset Handles	Redefinir alças
+	Remove Handles	Remover alças
+	Commit Cage Transform (Enter)	Confirmar transformação por gaiola (Enter)
+	Commit Handle Transform (Enter)	Confirmar transformação por alças (Enter)
+	Commit 3D Transform (Enter)	Confirmar transformação 3D (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformação por gaiola: clique ao redor da parte a deformar, clique no primeiro ponto para fechar a gaiola e arraste seus pontos
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformação por alças: coloque de uma a quatro alças e arraste (uma move, duas giram e redimensionam, três inclinam, quatro dão perspectiva)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Transformação 3D: arraste para girar em X e Y, Alt-arraste em Z; as abas Mover e Câmera movem a camada e a câmera

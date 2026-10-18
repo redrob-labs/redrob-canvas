@@ -4279,3 +4279,31 @@ cameraData	Lens	Lens
 	MyPaint Brushes	MyPaint Fırçaları
 	No MyPaint brushes yet. Import .myb files to list them here.	Henüz MyPaint fırçası yok. Burada listelemek için .myb dosyalarını içe aktarın.
 	No brush matches the filter.	Filtreyle eşleşen fırça yok.
+	Handle Transform	Tutamaç Dönüşümü
+	3D Transform	3B Dönüşüm
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Yeniden Ayarla
+	Apply the transform so far and put a fresh box on the result	Şimdiye kadarki dönüşümü uygula ve sonuca yeni bir kutu yerleştir
+	Camera	Kamera
+	Vanishing X:	Kaybolma noktası X:
+	Y:	Y:
+	Focal length:	Odak uzaklığı:
+	Local pivot	Yerel eksen
+	Unified pivot	Birleşik eksen
+	Close Cage	Kafesi Kapat
+	Reset Cage	Kafesi Sıfırla
+	Fill Plain Colour	Düz Renkle Doldur
+	Fill the original position of the cage with the plain colour of its outline	Kafesin özgün konumunu dış hattının düz rengiyle doldurur
+	{n} points	{n} nokta
+	Click to place a handle	Tutamaç yerleştirmek için tıklayın
+	Rotate and Scale	Döndür ve Ölçekle
+	{n} handles: {what}	{n} tutamaç: {what}
+	Reset Handles	Tutamaçları Sıfırla
+	Remove Handles	Tutamaçları Kaldır
+	Commit Cage Transform (Enter)	Kafes Dönüşümünü Uygula (Enter)
+	Commit Handle Transform (Enter)	Tutamaç Dönüşümünü Uygula (Enter)
+	Commit 3D Transform (Enter)	3B Dönüşümü Uygula (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Kafes Dönüşümü: biçimi değiştirilecek bölümün etrafına tıklayın, kafesi kapatmak için ilk noktaya tıklayın, sonra noktaları sürükleyin
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Tutamaç Dönüşümü: bir ila dört tutamaç yerleştirip sürükleyin (biri taşır, ikisi döndürür ve ölçekler, üçü kaydırır, dördü perspektif verir)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3B Dönüşüm: X ve Y etrafında döndürmek için sürükleyin, Z için Alt ile sürükleyin; Taşı ve Kamera sekmeleri katmanı ve kamerayı taşır

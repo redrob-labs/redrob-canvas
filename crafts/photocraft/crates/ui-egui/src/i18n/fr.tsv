@@ -3561,3 +3561,31 @@ curves	Smooth	Lisser
 	MyPaint Brushes	Brosses MyPaint
 	No MyPaint brushes yet. Import .myb files to list them here.	Aucune brosse MyPaint pour l'instant. Importez des fichiers .myb pour les lister ici.
 	No brush matches the filter.	Aucune brosse ne correspond au filtre.
+	Handle Transform	Transformation par poignées
+	3D Transform	Transformation 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Réajuster
+	Apply the transform so far and put a fresh box on the result	Applique la transformation en cours et place un nouveau cadre sur le résultat
+	Camera	Caméra
+	Vanishing X:	Point de fuite X :
+	Y:	Y:
+	Focal length:	Longueur focale :
+	Local pivot	Pivot local
+	Unified pivot	Pivot unifié
+	Close Cage	Fermer la cage
+	Reset Cage	Réinitialiser la cage
+	Fill Plain Colour	Remplir d'une couleur unie
+	Fill the original position of the cage with the plain colour of its outline	Remplit la position d'origine de la cage avec la couleur unie de son contour
+	{n} points	{n} points
+	Click to place a handle	Cliquez pour placer une poignée
+	Rotate and Scale	Rotation et échelle
+	{n} handles: {what}	{n} poignées : {what}
+	Reset Handles	Réinitialiser les poignées
+	Remove Handles	Supprimer les poignées
+	Commit Cage Transform (Enter)	Valider la transformation par cage (Entrée)
+	Commit Handle Transform (Enter)	Valider la transformation par poignées (Entrée)
+	Commit 3D Transform (Enter)	Valider la transformation 3D (Entrée)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformation par cage : cliquez autour de la partie à déformer, cliquez sur le premier point pour fermer la cage, puis faites glisser ses points
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformation par poignées : placez une à quatre poignées et faites-les glisser (une déplace, deux tournent et redimensionnent, trois inclinent, quatre donnent une perspective)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Transformation 3D : faites glisser pour tourner autour de X et Y, Alt pour Z ; les onglets Déplacer et Caméra déplacent le calque et la caméra

@@ -4854,3 +4854,31 @@ navigator	Zoom	Zoom
 	MyPaint Brushes	Pinceles MyPaint
 	No MyPaint brushes yet. Import .myb files to list them here.	Aún no hay pinceles MyPaint. Importe archivos .myb para listarlos aquí.
 	No brush matches the filter.	Ningún pincel coincide con el filtro.
+	Handle Transform	Transformación por tiradores
+	3D Transform	Transformación 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Reajustar
+	Apply the transform so far and put a fresh box on the result	Aplica la transformación hasta ahora y coloca un cuadro nuevo sobre el resultado
+	Camera	Cámara
+	Vanishing X:	Punto de fuga X:
+	Y:	Y:
+	Focal length:	Distancia focal:
+	Local pivot	Pivote local
+	Unified pivot	Pivote unificado
+	Close Cage	Cerrar jaula
+	Reset Cage	Restablecer jaula
+	Fill Plain Colour	Rellenar con color liso
+	Fill the original position of the cage with the plain colour of its outline	Rellena la posición original de la jaula con el color liso de su contorno
+	{n} points	{n} puntos
+	Click to place a handle	Haga clic para colocar un tirador
+	Rotate and Scale	Rotar y escalar
+	{n} handles: {what}	{n} tiradores: {what}
+	Reset Handles	Restablecer tiradores
+	Remove Handles	Quitar tiradores
+	Commit Cage Transform (Enter)	Aplicar transformación de jaula (Intro)
+	Commit Handle Transform (Enter)	Aplicar transformación por tiradores (Intro)
+	Commit 3D Transform (Enter)	Aplicar transformación 3D (Intro)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformación de jaula: haga clic alrededor de la parte a deformar, haga clic en el primer punto para cerrar la jaula y arrastre sus puntos
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformación por tiradores: coloque de uno a cuatro tiradores y arrástrelos (uno mueve, dos rotan y escalan, tres sesgan, cuatro dan perspectiva)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Transformación 3D: arrastre para rotar en X e Y, Alt-arrastre en Z; las pestañas Mover y Cámara mueven la capa y la cámara

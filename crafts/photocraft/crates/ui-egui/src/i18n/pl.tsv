@@ -4148,3 +4148,31 @@ curves	Smooth	Wygładź
 	MyPaint Brushes	Pędzle MyPaint
 	No MyPaint brushes yet. Import .myb files to list them here.	Brak pędzli MyPaint. Zaimportuj pliki .myb, aby je tu wyświetlić.
 	No brush matches the filter.	Żaden pędzel nie pasuje do filtru.
+	Handle Transform	Przekształcenie uchwytami
+	3D Transform	Przekształcenie 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Dopasuj ponownie
+	Apply the transform so far and put a fresh box on the result	Zastosuj dotychczasowe przekształcenie i nałóż nową ramkę na wynik
+	Camera	Kamera
+	Vanishing X:	Punkt zbiegu X:
+	Y:	Y:
+	Focal length:	Ogniskowa:
+	Local pivot	Oś lokalna
+	Unified pivot	Oś wspólna
+	Close Cage	Zamknij klatkę
+	Reset Cage	Resetuj klatkę
+	Fill Plain Colour	Wypełnij jednolitym kolorem
+	Fill the original position of the cage with the plain colour of its outline	Wypełnia pierwotne miejsce klatki jednolitym kolorem jej obrysu
+	{n} points	{n} punktów
+	Click to place a handle	Kliknij, aby umieścić uchwyt
+	Rotate and Scale	Obrót i skalowanie
+	{n} handles: {what}	{n} uchwytów: {what}
+	Reset Handles	Resetuj uchwyty
+	Remove Handles	Usuń uchwyty
+	Commit Cage Transform (Enter)	Zatwierdź przekształcenie klatką (Enter)
+	Commit Handle Transform (Enter)	Zatwierdź przekształcenie uchwytami (Enter)
+	Commit 3D Transform (Enter)	Zatwierdź przekształcenie 3D (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Przekształcenie klatką: klikaj wokół części do zdeformowania, kliknij pierwszy punkt, aby zamknąć klatkę, a potem przeciągaj punkty
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Przekształcenie uchwytami: umieść od jednego do czterech uchwytów i przeciągaj (jeden przesuwa, dwa obracają i skalują, trzy pochylają, cztery dają perspektywę)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Przekształcenie 3D: przeciągaj, aby obracać wokół X i Y, z Alt wokół Z; karty Przesuń i Kamera przesuwają warstwę i kamerę

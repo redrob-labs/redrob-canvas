@@ -1013,17 +1013,23 @@ pub fn commit(app: &mut PhotocraftApp) {
         crate::cas_transform::commit(app, &t, options);
         return;
     }
+    // Direction › Corrective on a selection or a path: the box is applied backwards, as for a
+    // layer (the quad the frame's corners go to is the inverse mapping of the drawn one).
+    let quad = if app.ui.transform_options.direction == TransformDirection::Corrective && t.warp.is_none() { corrective_quad(t.rect, t.quad) } else { t.quad };
     if t.selection {
         let mut p = json!({"rect": t.rect, "interpolation": t.interpolation});
         match &t.warp {
             Some(w) if !w.is_identity() => p["warp"] = json!(w),
             Some(_) => return,
             None if t.quad == corners(t.rect) => return,
-            None => p["quad"] = json!(t.quad),
+            None => p["quad"] = json!(quad),
         }
         if let Err(e) = app.run("select.transformSelection", p) {
             keep_open(app, t, preview, e);
+            return;
         }
+        // Clipping › Crop / Crop with Aspect on a selection: the canvas is cut to the result.
+        clip_selection_result(app, quad);
         return;
     }
     if let Some(target) = &t.path {
@@ -1033,11 +1039,11 @@ pub fn commit(app: &mut PhotocraftApp) {
             Some(w) => p["warp"] = json!(w),
             None if t.quad == corners(t.rect) => return,
             // Distort and Perspective map the path through the box (#3027).
-            None => match rect_to_quad_affine(t.rect, t.quad) {
+            None => match rect_to_quad_affine(t.rect, quad) {
                 Some(a) => p["matrix"] = json!(a.m),
                 None => {
                     p["rect"] = json!(t.rect);
-                    p["quad"] = json!(t.quad);
+                    p["quad"] = json!(quad);
                 }
             },
         }
@@ -1083,6 +1089,80 @@ pub fn commit(app: &mut PhotocraftApp) {
     match r {
         Ok(_) => finish(app, document, LayerId(t.layer), made, true),
         Err(e) => keep_open(app, t, preview, e),
+    }
+}
+
+/// The quad of the inverse mapping: where `rect`'s corners go under the inverse of the
+/// `rect → quad` homography (Direction › Corrective). The quad itself when it cannot be inverted.
+pub(crate) fn corrective_quad(rect: [f64; 4], quad: [[f64; 2]; 4]) -> [[f64; 2]; 4] {
+    let Some(inv) = Homography::rect_to_quad(rect, quad).and_then(|h| h.inverse()) else { return quad };
+    corners(rect).map(|c| {
+        let (x, y) = inv.apply(c[0], c[1]);
+        if x.is_finite() && y.is_finite() { [x, y] } else { c }
+    })
+}
+
+/// Clipping › Crop / Crop with Aspect after Transform Selection: the canvas becomes the result's
+/// upright bounds (kept to the canvas's proportions for Crop with Aspect), clipped to the canvas.
+fn clip_selection_result(app: &mut PhotocraftApp, quad: [[f64; 2]; 4]) {
+    let clipping = app.ui.transform_options.clipping;
+    if !matches!(clipping, TransformClipping::Crop | TransformClipping::CropAspect) {
+        return;
+    }
+    let Some(doc) = app.session.active().map(|st| st.doc.clone()) else { return };
+    let (cw, ch) = (f64::from(doc.size.width), f64::from(doc.size.height));
+    let (mut x0, mut y0, mut x1, mut y1) = (f64::MAX, f64::MAX, f64::MIN, f64::MIN);
+    for q in quad {
+        x0 = x0.min(q[0]);
+        y0 = y0.min(q[1]);
+        x1 = x1.max(q[0]);
+        y1 = y1.max(q[1]);
+    }
+    if clipping == TransformClipping::CropAspect && x1 > x0 && y1 > y0 {
+        let aspect = cw / ch;
+        let (w, h) = (x1 - x0, y1 - y0);
+        if w / h > aspect {
+            let nh = w / aspect;
+            let cy = (y0 + y1) / 2.0;
+            y0 = cy - nh / 2.0;
+            y1 = cy + nh / 2.0;
+        } else {
+            let nw = h * aspect;
+            let cx = (x0 + x1) / 2.0;
+            x0 = cx - nw / 2.0;
+            x1 = cx + nw / 2.0;
+        }
+    }
+    let (x0, y0) = (x0.floor().clamp(0.0, cw), y0.floor().clamp(0.0, ch));
+    let (x1, y1) = (x1.ceil().clamp(0.0, cw), y1.ceil().clamp(0.0, ch));
+    if x1 - x0 >= 1.0 && y1 - y0 >= 1.0 && (x0 > 0.0 || y0 > 0.0 || x1 < cw || y1 < ch) {
+        let _ = app.run("image.crop", json!({"x": x0, "y": y0, "width": x1 - x0, "height": y1 - y0, "deleteCroppedPixels": false}));
+    }
+}
+
+/// Readjust: the transform so far is applied and a fresh box is put on the result, so the
+/// handles sit on what is on the canvas now (and back in view) while the work is kept.
+pub fn readjust(app: &mut PhotocraftApp, ctx: &egui::Context) {
+    let Some(t) = app.ui.transform.clone() else { return };
+    if t.content_aware.is_some() {
+        return;
+    }
+    let unchanged = match &t.warp {
+        Some(w) => w.is_identity(),
+        None => t.quad == corners(t.rect),
+    };
+    if unchanged {
+        return;
+    }
+    let selection = t.selection;
+    commit(app);
+    if app.ui.transform.is_some() {
+        return; // kept open: an error, or a job still applying it
+    }
+    let r = if selection { begin_selection(app, ctx) } else { begin(app, ctx) };
+    if let Err(e) = r {
+        app.ui.status = e;
+        app.ui.status_error = true;
     }
 }
 
@@ -2884,6 +2964,8 @@ fn transform_fields(app: &mut PhotocraftApp, ui: &mut egui::Ui, t: &TransformSes
         ("bilinear".to_string(), tl!("Bilinear")),
         ("nearest".to_string(), tl!("Nearest Neighbor")),
         ("lanczos3".to_string(), tl!("Lanczos")),
+        ("nohalo".to_string(), tl!("NoHalo")),
+        ("lohalo".to_string(), tl!("LoHalo")),
     ];
     if crate::widgets::dropdown(ui, "transform-interp", &mut interp, &opts, 130.0)
         && let Some(s) = app.ui.transform.as_mut()
@@ -2933,6 +3015,21 @@ fn shared_option_fields(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
     }
     if o != app.ui.transform_options {
         app.ui.transform_options = o;
+    }
+    let can_readjust = app.ui.transform.as_ref().is_some_and(|t| {
+        t.content_aware.is_none()
+            && match &t.warp {
+                Some(w) => !w.is_identity(),
+                None => t.quad != corners(t.rect),
+            }
+    });
+    if ui
+        .add_enabled(can_readjust, egui::Button::new(tl!("Readjust")))
+        .on_hover_text(tl!("Apply the transform so far and put a fresh box on the result"))
+        .clicked()
+    {
+        let ctx = ui.ctx().clone();
+        readjust(app, &ctx);
     }
 }
 

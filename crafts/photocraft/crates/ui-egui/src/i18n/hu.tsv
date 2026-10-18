@@ -4464,3 +4464,31 @@ cameraRaw	Yellow	Sárga
 	MyPaint Brushes	MyPaint-ecsetek
 	No MyPaint brushes yet. Import .myb files to list them here.	Még nincs MyPaint-ecset. Importáljon .myb fájlokat, hogy itt megjelenjenek.
 	No brush matches the filter.	Egyik ecset sem felel meg a szűrőnek.
+	Handle Transform	Fogantyús átalakítás
+	3D Transform	3D átalakítás
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Újraigazítás
+	Apply the transform so far and put a fresh box on the result	Alkalmazza az eddigi átalakítást, és új keretet tesz az eredményre
+	Camera	Kamera
+	Vanishing X:	Enyészpont X:
+	Y:	Y:
+	Focal length:	Gyújtótávolság:
+	Local pivot	Helyi forgáspont
+	Unified pivot	Egyesített forgáspont
+	Close Cage	Ketrec bezárása
+	Reset Cage	Ketrec visszaállítása
+	Fill Plain Colour	Egyszínű kitöltés
+	Fill the original position of the cage with the plain colour of its outline	A ketrec eredeti helyét a körvonal egyszínű színével tölti ki
+	{n} points	{n} pont
+	Click to place a handle	Kattintson egy fogantyú elhelyezéséhez
+	Rotate and Scale	Forgatás és méretezés
+	{n} handles: {what}	{n} fogantyú: {what}
+	Reset Handles	Fogantyúk visszaállítása
+	Remove Handles	Fogantyúk eltávolítása
+	Commit Cage Transform (Enter)	Ketreces átalakítás véglegesítése (Enter)
+	Commit Handle Transform (Enter)	Fogantyús átalakítás véglegesítése (Enter)
+	Commit 3D Transform (Enter)	3D átalakítás véglegesítése (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Ketreces átalakítás: kattintson a torzítandó rész köré, az első pontra kattintva zárja be, majd húzza a pontokat
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Fogantyús átalakítás: tegyen le egy-négy fogantyút és húzza őket (egy mozgat, kettő forgat és méretez, három nyír, négy perspektívát ad)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D átalakítás: húzással X és Y körül forgat, Alt-húzással Z körül; a Mozgatás és Kamera lapok a réteget és a kamerát mozgatják

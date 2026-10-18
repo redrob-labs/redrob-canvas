@@ -4250,3 +4250,31 @@ curves	Smooth	Εξομάλυνση
 	MyPaint Brushes	Πινέλα MyPaint
 	No MyPaint brushes yet. Import .myb files to list them here.	Δεν υπάρχουν πινέλα MyPaint ακόμη. Εισαγάγετε αρχεία .myb για να εμφανιστούν εδώ.
 	No brush matches the filter.	Κανένα πινέλο δεν ταιριάζει στο φίλτρο.
+	Handle Transform	Μετασχηματισμός με λαβές
+	3D Transform	Μετασχηματισμός 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Επαναρύθμιση
+	Apply the transform so far and put a fresh box on the result	Εφαρμογή του μετασχηματισμού ως τώρα και νέο πλαίσιο στο αποτέλεσμα
+	Camera	Κάμερα
+	Vanishing X:	Σημείο φυγής X:
+	Y:	Y:
+	Focal length:	Εστιακή απόσταση:
+	Local pivot	Τοπικός άξονας
+	Unified pivot	Ενοποιημένος άξονας
+	Close Cage	Κλείσιμο κλωβού
+	Reset Cage	Επαναφορά κλωβού
+	Fill Plain Colour	Γέμισμα με ενιαίο χρώμα
+	Fill the original position of the cage with the plain colour of its outline	Γεμίζει την αρχική θέση του κλωβού με το ενιαίο χρώμα του περιγράμματός του
+	{n} points	{n} σημεία
+	Click to place a handle	Κλικ για τοποθέτηση λαβής
+	Rotate and Scale	Περιστροφή και κλιμάκωση
+	{n} handles: {what}	{n} λαβές: {what}
+	Reset Handles	Επαναφορά λαβών
+	Remove Handles	Αφαίρεση λαβών
+	Commit Cage Transform (Enter)	Εφαρμογή μετασχηματισμού κλωβού (Enter)
+	Commit Handle Transform (Enter)	Εφαρμογή μετασχηματισμού με λαβές (Enter)
+	Commit 3D Transform (Enter)	Εφαρμογή μετασχηματισμού 3D (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Μετασχηματισμός κλωβού: κλικ γύρω από το τμήμα, κλικ στο πρώτο σημείο για κλείσιμο, μετά σύρετε τα σημεία
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Μετασχηματισμός με λαβές: βάλτε μία έως τέσσερις λαβές και σύρετε (μία μετακινεί, δύο περιστρέφουν και κλιμακώνουν, τρεις στρεβλώνουν, τέσσερις δίνουν προοπτική)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Μετασχηματισμός 3D: σύρετε για περιστροφή στους X και Y, Alt για Z· οι καρτέλες Μετακίνηση και Κάμερα μετακινούν στρώση και κάμερα

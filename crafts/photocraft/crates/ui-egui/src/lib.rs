@@ -190,6 +190,7 @@ pub mod served_fonts;
 pub mod shape_dialog;
 pub(crate) mod shape_fill_ui;
 pub mod shape_stroke_ui;
+pub mod shape_transform_ui;
 pub mod shortcut_dispatch;
 pub mod shortcuts;
 mod single_line_drag;

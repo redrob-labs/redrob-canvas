@@ -3558,3 +3558,31 @@ curves	Smooth	Glätten
 	Import…	Importieren…
 	No MyPaint brushes yet. Import .myb files to list them here.	Noch keine MyPaint-Pinsel. .myb-Dateien importieren, um sie hier aufzulisten.
 	No brush matches the filter.	Kein Pinsel entspricht dem Filter.
+	Handle Transform	Griffpunkt-Transformation
+	3D Transform	3D-Transformation
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Neu ausrichten
+	Apply the transform so far and put a fresh box on the result	Die bisherige Transformation anwenden und einen neuen Rahmen auf das Ergebnis setzen
+	Camera	Kamera
+	Vanishing X:	Fluchtpunkt X:
+	Y:	Y:
+	Focal length:	Brennweite:
+	Local pivot	Lokaler Drehpunkt
+	Unified pivot	Gemeinsamer Drehpunkt
+	Close Cage	Käfig schließen
+	Reset Cage	Käfig zurücksetzen
+	Fill Plain Colour	Mit einfarbiger Fläche füllen
+	Fill the original position of the cage with the plain colour of its outline	Füllt die ursprüngliche Lage des Käfigs mit der einheitlichen Farbe seines Umrisses
+	{n} points	{n} Punkte
+	Click to place a handle	Klicken, um einen Griffpunkt zu setzen
+	Rotate and Scale	Drehen und Skalieren
+	{n} handles: {what}	{n} Griffpunkte: {what}
+	Reset Handles	Griffpunkte zurücksetzen
+	Remove Handles	Griffpunkte entfernen
+	Commit Cage Transform (Enter)	Käfig-Transformation anwenden (Eingabe)
+	Commit Handle Transform (Enter)	Griffpunkt-Transformation anwenden (Eingabe)
+	Commit 3D Transform (Enter)	3D-Transformation anwenden (Eingabe)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Käfig-Transformation: um den zu verformenden Teil klicken, den ersten Punkt klicken, um den Käfig zu schließen, dann die Punkte ziehen
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Griffpunkt-Transformation: ein bis vier Griffpunkte setzen und ziehen (einer verschiebt, zwei drehen und skalieren, drei scheren, vier geben Perspektive)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D-Transformation: ziehen dreht um X und Y, Alt-Ziehen um Z; die Reiter Bewegen und Kamera bewegen Ebene und Kamera

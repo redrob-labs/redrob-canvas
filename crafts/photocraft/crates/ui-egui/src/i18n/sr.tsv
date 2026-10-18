@@ -4618,3 +4618,31 @@ shape	Appearance	Izgled
 	MyPaint Brushes	MyPaint четкице
 	No MyPaint brushes yet. Import .myb files to list them here.	Још нема MyPaint четкица. Увезите .myb датотеке да се овде прикажу.
 	No brush matches the filter.	Ниједна четкица не одговара филтеру.
+	Handle Transform	Трансформација ручкама
+	3D Transform	3D трансформација
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Поново подеси
+	Apply the transform so far and put a fresh box on the result	Примени досадашњу трансформацију и постави нови оквир на резултат
+	Camera	Камера
+	Vanishing X:	Тачка нестајања X:
+	Y:	Y:
+	Focal length:	Жижна даљина:
+	Local pivot	Локална оса
+	Unified pivot	Јединствена оса
+	Close Cage	Затвори кавез
+	Reset Cage	Поништи кавез
+	Fill Plain Colour	Испуни једнобојно
+	Fill the original position of the cage with the plain colour of its outline	Испуни првобитни положај кавеза једнобојном бојом његове ивице
+	{n} points	{n} тачака
+	Click to place a handle	Кликните да поставите ручку
+	Rotate and Scale	Ротирај и скалирај
+	{n} handles: {what}	{n} ручки: {what}
+	Reset Handles	Поништи ручке
+	Remove Handles	Уклони ручке
+	Commit Cage Transform (Enter)	Потврди трансформацију кавезом (Enter)
+	Commit Handle Transform (Enter)	Потврди трансформацију ручкама (Enter)
+	Commit 3D Transform (Enter)	Потврди 3D трансформацију (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Трансформација кавезом: кликните око дела за деформацију, кликните на прву тачку да затворите кавез, затим превлачите тачке
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Трансформација ручкама: поставите једну до четири ручке и превлачите их (једна помера, две ротирају и скалирају, три искошавају, четири дају перспективу)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D трансформација: превлачите за ротацију око X и Y, Alt за Z; картице Помери и Камера померају слој и камеру

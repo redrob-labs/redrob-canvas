@@ -4248,3 +4248,31 @@ curves	Smooth	Згладити
 	MyPaint Brushes	Пензлі MyPaint
 	No MyPaint brushes yet. Import .myb files to list them here.	Пензлів MyPaint ще немає. Імпортуйте файли .myb, щоб побачити їх тут.
 	No brush matches the filter.	Немає пензлів, що відповідають фільтру.
+	Handle Transform	Трансформація за ручками
+	3D Transform	3D-трансформація
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Переставити
+	Apply the transform so far and put a fresh box on the result	Застосувати трансформацію і поставити нову рамку на результат
+	Camera	Камера
+	Vanishing X:	Точка сходу X:
+	Y:	Y:
+	Focal length:	Фокусна відстань:
+	Local pivot	Локальна вісь
+	Unified pivot	Спільна вісь
+	Close Cage	Замкнути клітку
+	Reset Cage	Скинути клітку
+	Fill Plain Colour	Залити суцільним кольором
+	Fill the original position of the cage with the plain colour of its outline	Залити початкове положення клітки суцільним кольором її контуру
+	{n} points	{n} точок
+	Click to place a handle	Клацніть, щоб поставити ручку
+	Rotate and Scale	Поворот і масштаб
+	{n} handles: {what}	Ручок: {n}: {what}
+	Reset Handles	Скинути ручки
+	Remove Handles	Прибрати ручки
+	Commit Cage Transform (Enter)	Застосувати трансформацію кліткою (Enter)
+	Commit Handle Transform (Enter)	Застосувати трансформацію за ручками (Enter)
+	Commit 3D Transform (Enter)	Застосувати 3D-трансформацію (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Трансформація кліткою: клацайте навколо частини, клацніть першу точку, щоб замкнути клітку, потім перетягуйте точки
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Трансформація за ручками: поставте від однієї до чотирьох ручок і тягніть (одна рухає, дві обертають і масштабують, три нахиляють, чотири дають перспективу)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D-трансформація: тягніть для повороту навколо X і Y, Alt — навколо Z; вкладки Перемістити і Камера рухають шар і камеру

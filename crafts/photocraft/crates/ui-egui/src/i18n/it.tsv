@@ -5012,3 +5012,31 @@ shape	Appearance	Aspetto
 	MyPaint Brushes	Pennelli MyPaint
 	No MyPaint brushes yet. Import .myb files to list them here.	Nessun pennello MyPaint. Importa file .myb per elencarli qui.
 	No brush matches the filter.	Nessun pennello corrisponde al filtro.
+	Handle Transform	Trasformazione con maniglie
+	3D Transform	Trasformazione 3D
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Riadatta
+	Apply the transform so far and put a fresh box on the result	Applica la trasformazione fatta finora e mette un nuovo riquadro sul risultato
+	Camera	Fotocamera
+	Vanishing X:	Punto di fuga X:
+	Y:	Y:
+	Focal length:	Lunghezza focale:
+	Local pivot	Perno locale
+	Unified pivot	Perno unificato
+	Close Cage	Chiudi gabbia
+	Reset Cage	Ripristina gabbia
+	Fill Plain Colour	Riempi con tinta unita
+	Fill the original position of the cage with the plain colour of its outline	Riempie la posizione originale della gabbia con la tinta unita del suo contorno
+	{n} points	{n} punti
+	Click to place a handle	Clic per posizionare una maniglia
+	Rotate and Scale	Ruota e scala
+	{n} handles: {what}	{n} maniglie: {what}
+	Reset Handles	Ripristina maniglie
+	Remove Handles	Rimuovi maniglie
+	Commit Cage Transform (Enter)	Conferma trasformazione a gabbia (Invio)
+	Commit Handle Transform (Enter)	Conferma trasformazione con maniglie (Invio)
+	Commit 3D Transform (Enter)	Conferma trasformazione 3D (Invio)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Trasformazione a gabbia: clicca intorno alla parte da deformare, clicca il primo punto per chiudere la gabbia, poi trascina i punti
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Trasformazione con maniglie: posiziona da una a quattro maniglie e trascinale (una sposta, due ruotano e scalano, tre inclinano, quattro danno prospettiva)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	Trasformazione 3D: trascina per ruotare su X e Y, Alt-trascina su Z; le schede Sposta e Fotocamera muovono livello e fotocamera

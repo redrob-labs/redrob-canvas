@@ -4157,3 +4157,31 @@ navigator	Zoom	Zvětšení
 	Import…	Importovat…
 	No MyPaint brushes yet. Import .myb files to list them here.	Žádné štětce MyPaint. Importujte soubory .myb a objeví se zde.
 	No brush matches the filter.	Filtru neodpovídá žádný štětec.
+	Handle Transform	Transformace úchyty
+	3D Transform	3D transformace
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	Přenastavit
+	Apply the transform so far and put a fresh box on the result	Použije dosavadní transformaci a položí nový rámeček na výsledek
+	Camera	Kamera
+	Vanishing X:	Úběžník X:
+	Y:	Y:
+	Focal length:	Ohnisková vzdálenost:
+	Local pivot	Místní střed
+	Unified pivot	Společný střed
+	Close Cage	Uzavřít klec
+	Reset Cage	Obnovit klec
+	Fill Plain Colour	Vyplnit jednolitou barvou
+	Fill the original position of the cage with the plain colour of its outline	Vyplní původní místo klece jednolitou barvou jejího obrysu
+	{n} points	{n} bodů
+	Click to place a handle	Klepnutím umístíte úchyt
+	Rotate and Scale	Otočit a změnit velikost
+	{n} handles: {what}	{n} úchytů: {what}
+	Reset Handles	Obnovit úchyty
+	Remove Handles	Odebrat úchyty
+	Commit Cage Transform (Enter)	Potvrdit transformaci klecí (Enter)
+	Commit Handle Transform (Enter)	Potvrdit transformaci úchyty (Enter)
+	Commit 3D Transform (Enter)	Potvrdit 3D transformaci (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	Transformace klecí: klepejte kolem části k deformaci, klepnutím na první bod klec uzavřete a pak body přetahujte
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	Transformace úchyty: umístěte jeden až čtyři úchyty a přetahujte je (jeden posouvá, dva otáčejí a škálují, tři zkosí, čtyři dávají perspektivu)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D transformace: tažením otáčíte kolem X a Y, s Alt kolem Z; karty Přesunout a Kamera posouvají vrstvu a kameru

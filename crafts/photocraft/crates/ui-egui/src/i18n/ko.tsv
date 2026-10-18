@@ -4086,3 +4086,31 @@ curves	Smooth	매끄럽게
 	Import…	가져오기…
 	No MyPaint brushes yet. Import .myb files to list them here.	MyPaint 브러시가 아직 없습니다. .myb 파일을 가져오면 여기에 표시됩니다.
 	No brush matches the filter.	필터와 일치하는 브러시가 없습니다.
+	Handle Transform	핸들 변형
+	3D Transform	3D 변형
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	다시 맞추기
+	Apply the transform so far and put a fresh box on the result	지금까지의 변형을 적용하고 결과에 새 상자를 놓습니다
+	Camera	카메라
+	Vanishing X:	소실점 X:
+	Y:	Y:
+	Focal length:	초점 거리:
+	Local pivot	로컬 피벗
+	Unified pivot	통합 피벗
+	Close Cage	케이지 닫기
+	Reset Cage	케이지 재설정
+	Fill Plain Colour	단색으로 채우기
+	Fill the original position of the cage with the plain colour of its outline	케이지의 원래 위치를 윤곽의 단색으로 채웁니다
+	{n} points	점 {n}개
+	Click to place a handle	클릭하여 핸들 놓기
+	Rotate and Scale	회전 및 크기 조절
+	{n} handles: {what}	핸들 {n}개: {what}
+	Reset Handles	핸들 재설정
+	Remove Handles	핸들 제거
+	Commit Cage Transform (Enter)	케이지 변형 확정 (Enter)
+	Commit Handle Transform (Enter)	핸들 변형 확정 (Enter)
+	Commit 3D Transform (Enter)	3D 변형 확정 (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	케이지 변형: 변형할 부분 주위를 클릭하고 첫 점을 클릭해 케이지를 닫은 뒤 점을 드래그하세요
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	핸들 변형: 핸들을 1~4개 놓고 드래그하세요 (1개 이동, 2개 회전·크기, 3개 기울이기, 4개 원근)
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D 변형: 드래그로 X·Y 축 회전, Alt+드래그로 Z 축 회전; 이동과 카메라 탭으로 레이어와 카메라를 움직입니다

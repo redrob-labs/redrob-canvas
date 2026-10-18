@@ -3165,3 +3165,31 @@ curves	Smooth	平滑
 	Import…	匯入…
 	No MyPaint brushes yet. Import .myb files to list them here.	還沒有 MyPaint 筆刷。匯入 .myb 檔案即可在此列出。
 	No brush matches the filter.	沒有筆刷符合篩選條件。
+	Handle Transform	控制點變形
+	3D Transform	3D 變形
+	NoHalo	NoHalo
+	LoHalo	LoHalo
+	Readjust	重新調整
+	Apply the transform so far and put a fresh box on the result	套用到目前為止的變形，並在結果上放置新的框
+	Camera	相機
+	Vanishing X:	消失點 X：
+	Y:	Y:
+	Focal length:	焦距：
+	Local pivot	局部軸心
+	Unified pivot	統一軸心
+	Close Cage	閉合籠子
+	Reset Cage	重設籠子
+	Fill Plain Colour	填滿純色
+	Fill the original position of the cage with the plain colour of its outline	用籠子輪廓的純色填滿其原始位置
+	{n} points	{n} 個點
+	Click to place a handle	按一下以放置控制點
+	Rotate and Scale	旋轉和縮放
+	{n} handles: {what}	{n} 個控制點：{what}
+	Reset Handles	重設控制點
+	Remove Handles	移除控制點
+	Commit Cage Transform (Enter)	確定籠子變形 (Enter)
+	Commit Handle Transform (Enter)	確定控制點變形 (Enter)
+	Commit 3D Transform (Enter)	確定 3D 變形 (Enter)
+	Cage Transform: click round the part to deform, click the first point to close the cage, then drag its points	籠子變形：圍繞要變形的部分按一下，按一下第一個點閉合籠子，然後拖曳其點
+	Handle Transform: place one to four handles and drag them (one moves, two rotate and scale, three shear, four give perspective)	控制點變形：放置一到四個控制點並拖曳（一個移動，兩個旋轉縮放，三個傾斜，四個透視）
+	3D Transform: drag to rotate about X and Y, Alt-drag about Z; the Move and Camera tabs move the layer and the camera	3D 變形：拖曳繞 X 和 Y 旋轉，Alt 拖曳繞 Z 旋轉；移動和相機分頁移動圖層和相機

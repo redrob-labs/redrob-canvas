@@ -25,6 +25,8 @@ pub struct Distort {
     pub puppet: Option<crate::puppet_ui::PuppetSession>,
     pub perspective: Option<crate::perspective_ui::PerspSession>,
     pub vanishing: Option<crate::vp_ui::VpSession>,
+    /// Cage, Handle and 3D transforms on the canvas (shape_transform_ui).
+    pub shape: Option<crate::shape_transform_ui::Session>,
     /// Filter Gallery dialog (gallery_ui).
     pub gallery: Option<crate::gallery_ui::GalleryDialog>,
     /// The document the open sessions belong to, noted by [`drop_foreign`] on the first frame they are open.
@@ -33,7 +35,7 @@ pub struct Distort {
 
 impl Distort {
     pub fn active(&self) -> bool {
-        self.liquify.is_some() || self.puppet.is_some() || self.perspective.is_some() || self.vanishing.is_some()
+        self.liquify.is_some() || self.puppet.is_some() || self.perspective.is_some() || self.vanishing.is_some() || self.shape.is_some()
     }
 
     /// Short description for `ui.inspect`.
@@ -43,6 +45,7 @@ impl Distort {
             "puppet": self.puppet.as_ref().map(|p| p.describe()),
             "perspective": self.perspective.as_ref().map(|p| p.describe()),
             "vanishingPoint": self.vanishing.as_ref().map(|v| v.describe()),
+            "shape": self.shape.as_ref().map(|s| s.describe()),
             "gallery": self.gallery.as_ref().map(|g| g.describe()),
         })
     }
@@ -99,6 +102,9 @@ pub fn display_doc(app: &PhotocraftApp, idx: usize) -> Option<(Arc<Document>, u6
     if let Some(p) = &app.distort.perspective {
         return Some((p.preview_doc.clone(), (1 << 42) + p.key));
     }
+    if let Some(s) = &app.distort.shape {
+        return Some((s.preview_doc.clone(), (1 << 42) + s.key));
+    }
     None
 }
 
@@ -125,6 +131,21 @@ pub fn menu(app: &mut PhotocraftApp, ctx: &egui::Context, id: &str, params: &Val
         }
         "filter.vanishingPoint" if empty => Some(crate::vp_ui::begin(app, ctx).map(|_| json!({"vanishingPoint": app.distort.describe()["vanishingPoint"]}))),
         "filter.vanishingPoint" if ui.is_some() && app.distort.vanishing.is_some() => Some(crate::vp_ui::control(app, ui.unwrap_or(&Value::Null))),
+        // Cage / Handle / 3D transforms: the menu opens the on-canvas mode; with params the
+        // engine command (Cage) runs as it is.
+        crate::shape_transform_ui::CAGE | crate::shape_transform_ui::HANDLE | crate::shape_transform_ui::THREE_D if empty => {
+            let kind = match id {
+                crate::shape_transform_ui::CAGE => crate::shape_transform_ui::Kind::Cage,
+                crate::shape_transform_ui::HANDLE => crate::shape_transform_ui::Kind::Handle,
+                _ => crate::shape_transform_ui::Kind::ThreeD,
+            };
+            Some(crate::shape_transform_ui::begin(app, ctx, kind).map(|_| json!({"shape": app.distort.describe()["shape"]})))
+        }
+        crate::shape_transform_ui::CAGE | crate::shape_transform_ui::HANDLE | crate::shape_transform_ui::THREE_D
+            if ui.is_some() && app.distort.shape.is_some() =>
+        {
+            Some(crate::shape_transform_ui::control(app, ui.unwrap_or(&Value::Null)))
+        }
         _ => None,
     }
 }
@@ -145,6 +166,10 @@ pub fn pointer(app: &mut PhotocraftApp, ev: ToolEvent, mods: egui::Modifiers) ->
     }
     if app.distort.vanishing.is_some() {
         crate::vp_ui::pointer(app, ev, mods);
+        return true;
+    }
+    if app.distort.shape.is_some() {
+        crate::shape_transform_ui::pointer(app, ev, mods);
         return true;
     }
     false
@@ -205,6 +230,14 @@ pub fn keys(app: &mut PhotocraftApp, ctx: &egui::Context) -> bool {
         }
         return true;
     }
+    if app.distort.shape.is_some() {
+        if enter(ctx) {
+            crate::shape_transform_ui::commit(app);
+        } else if esc(ctx) {
+            app.distort.shape = None;
+        }
+        return true;
+    }
     false
 }
 
@@ -218,6 +251,9 @@ pub fn draw_overlay(app: &PhotocraftApp, painter: &egui::Painter, xf: &ViewXform
     }
     if let Some(v) = &app.distort.vanishing {
         crate::vp_ui::draw(v, painter, xf);
+    }
+    if let Some(s) = &app.distort.shape {
+        crate::shape_transform_ui::draw(s, painter, xf);
     }
 }
 
@@ -233,6 +269,10 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) -> bool {
     }
     if app.distort.vanishing.is_some() {
         crate::vp_ui::options_bar(app, ui);
+        return true;
+    }
+    if app.distort.shape.is_some() {
+        crate::shape_transform_ui::options_bar(app, ui);
         return true;
     }
     false
@@ -251,6 +291,7 @@ pub fn drop_foreign(app: &mut PhotocraftApp) {
         app.distort.puppet = None;
         app.distort.perspective = None;
         app.distort.vanishing = None;
+        app.distort.shape = None;
         app.distort.gallery = None;
         app.distort.owner = None;
     }
