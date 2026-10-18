@@ -21,6 +21,7 @@ pub fn insert_menu_items(app: &PhotocraftApp, items: &mut Vec<MenuItem>) {
     let enabled = app.session.is_enabled("plugin.run");
     let mut extra: Vec<MenuItem> = plugins
         .iter()
+        .filter(|p| redrob_photo_engine::modules_cmds::module_enabled(&app.session, p.id()))
         .map(|p| {
             let m = p.manifest();
             let dots = if m.params.is_empty() || m.name.ends_with('…') { "" } else { "…" };

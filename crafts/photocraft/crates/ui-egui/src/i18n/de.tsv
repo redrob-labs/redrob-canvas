@@ -3505,3 +3505,42 @@ curves	Smooth	Glätten
 	Psd	PSD
 	Pdf	PDF
 	Loop	Schleife
+	Buffer	Puffer
+	Buffers	Puffer
+	Cut Named…	Benannt ausschneiden…
+	Copy Named…	Benannt kopieren…
+	Copy Visible Named…	Sichtbares benannt kopieren…
+	Paste Named…	Benannt einfügen…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Keine benannten Puffer. Mit Bearbeiten > Puffer > Benannt kopieren… eine Kopie hier ablegen.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Keine benannten Puffer; zuerst Bearbeiten > Puffer > Benannt kopieren verwenden
+	Paste Buffer	Puffer einfügen
+	Paste Buffer in Place	Puffer an Ort und Stelle einfügen
+	Paste Buffer as New Image	Puffer als neues Bild einfügen
+	Rename Buffer…	Puffer umbenennen…
+	Delete Buffer	Puffer löschen
+	Paste as New	Als neu einfügen
+	Paste the buffer as a new layer	Den Puffer als neue Ebene einfügen
+	Paste the buffer as a new document	Den Puffer als neues Dokument einfügen
+	As	Als
+	In place	An Ort und Stelle
+	Into	Hinein
+	Modules…	Module…
+	Units…	Einheiten…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Keine ladbaren Module installiert. Filter > Plug-ins > Plug-in installieren… fügt eines hinzu.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Ein ausgeschaltetes Modul bleibt installiert, verschwindet aber aus den Menüs, bis es wieder eingeschaltet wird.
+	Module	Modul
+	Not installed	Nicht installiert
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Der Faktor gibt an, wie viele Einheiten ein Zoll ergeben (2,54 für Zentimeter, 72 für Punkt).
+	Identifier	Kennung
+	Factor	Faktor
+	Digits	Stellen
+	Symbol	Symbol
+	Abbreviation	Abkürzung
+	Singular	Einzahl
+	Plural	Mehrzahl
+	Delete Unit	Einheit löschen
+	New unit	Neue Einheit
+	Add Unit	Einheit hinzufügen
+	That identifier is already a unit	Diese Kennung ist bereits eine Einheit
+	Custom units	Eigene Einheiten
+	Disabled modules	Deaktivierte Module

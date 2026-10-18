@@ -135,6 +135,8 @@ pub mod warp_cmds;
 pub mod web_cmds;
 // v0.11 parity round (A4): formats, file/edit, scripting, Ink and MyPaint-style brushes.
 pub mod create_cmds;
+pub mod buffers_cmds;
+pub mod modules_cmds;
 pub mod dynamics_extra_cmds;
 pub mod path_svg_cmds;
 pub mod perspective_clone_cmds;
@@ -519,6 +521,8 @@ pub struct Session {
     /// The shell's HTTP client for File › Open Location ([`create_cmds`]); without one the
     /// system's `curl` is used.
     pub fetch_url: Option<create_cmds::FetchUrlFn>,
+    /// Edit › Buffer: the named buffers ([`buffers_cmds`]).
+    pub buffers: Vec<buffers_cmds::NamedBuffer>,
     /// Background jobs (see [`jobs`]).
     jobs: jobs::Jobs,
     /// Color Sampler points dropped by the last canvas-size change (crop, Canvas Size, Image Size,

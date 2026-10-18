@@ -4174,3 +4174,41 @@ curves	Smooth	スムーズ
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	バッファ
+	Buffers	バッファ
+	Cut Named…	名前を付けて切り取り…
+	Copy Named…	名前を付けてコピー…
+	Copy Visible Named…	可視部分を名前を付けてコピー…
+	Paste Named…	名前を付けてペースト…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	名前付きバッファがありません。編集 > バッファ > 名前を付けてコピー…でここにコピーを保持します。
+	There are no named buffers; use Edit > Buffer > Copy Named first	名前付きバッファがありません。先に編集 > バッファ > 名前を付けてコピーを使ってください
+	Paste Buffer	バッファをペースト
+	Paste Buffer in Place	バッファを同じ位置にペースト
+	Paste Buffer as New Image	バッファを新規画像としてペースト
+	Rename Buffer…	バッファ名を変更…
+	Delete Buffer	バッファを削除
+	Paste as New	新規としてペースト
+	Paste the buffer as a new layer	バッファを新規レイヤーとしてペーストします
+	Paste the buffer as a new document	バッファを新規ドキュメントとしてペーストします
+	As	形式
+	In place	同じ位置
+	Into	選択範囲内に
+	Modules…	モジュール…
+	Units…	単位…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	読み込み可能なモジュールがインストールされていません。フィルター > プラグイン > プラグインをインストール…で追加します。
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	オフにしたモジュールはインストールされたままですが、再びオンにするまでメニューから消えます。
+	Module	モジュール
+	Not installed	未インストール
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	係数は1インチあたりの単位数です(センチメートルは2.54、ポイントは72)。
+	Identifier	識別子
+	Factor	係数
+	Symbol	記号
+	Abbreviation	略語
+	Singular	単数形
+	Plural	複数形
+	Delete Unit	単位を削除
+	New unit	新しい単位
+	Add Unit	単位を追加
+	That identifier is already a unit	その識別子はすでに単位です
+	Custom units	カスタム単位
+	Disabled modules	無効なモジュール

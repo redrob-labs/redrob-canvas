@@ -4805,3 +4805,41 @@ navigator	Zoom	Zoom
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Búfer
+	Buffers	Búferes
+	Cut Named…	Cortar con nombre…
+	Copy Named…	Copiar con nombre…
+	Copy Visible Named…	Copiar visible con nombre…
+	Paste Named…	Pegar con nombre…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	No hay búferes con nombre. Use Edición > Búfer > Copiar con nombre… para guardar una copia aquí.
+	There are no named buffers; use Edit > Buffer > Copy Named first	No hay búferes con nombre; use primero Edición > Búfer > Copiar con nombre
+	Paste Buffer	Pegar búfer
+	Paste Buffer in Place	Pegar búfer en su sitio
+	Paste Buffer as New Image	Pegar búfer como imagen nueva
+	Rename Buffer…	Renombrar búfer…
+	Delete Buffer	Eliminar búfer
+	Paste as New	Pegar como nuevo
+	Paste the buffer as a new layer	Pegar el búfer como una capa nueva
+	Paste the buffer as a new document	Pegar el búfer como un documento nuevo
+	As	Como
+	In place	En su sitio
+	Into	Dentro
+	Modules…	Módulos…
+	Units…	Unidades…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	No hay módulos cargables instalados. Filtro > Plugins > Instalar plugin… añade uno.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Un módulo desactivado sigue instalado pero desaparece de los menús hasta que se active de nuevo.
+	Module	Módulo
+	Not installed	No instalado
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	El factor es cuántas unidades hacen una pulgada (2,54 para centímetros, 72 para puntos).
+	Identifier	Identificador
+	Factor	Factor
+	Symbol	Símbolo
+	Abbreviation	Abreviatura
+	Singular	Singular
+	Plural	Plural
+	Delete Unit	Eliminar unidad
+	New unit	Unidad nueva
+	Add Unit	Añadir unidad
+	That identifier is already a unit	Ese identificador ya es una unidad
+	Custom units	Unidades personalizadas
+	Disabled modules	Módulos desactivados

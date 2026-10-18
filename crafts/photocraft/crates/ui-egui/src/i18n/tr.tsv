@@ -4227,3 +4227,41 @@ cameraData	Lens	Lens
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Arabellek
+	Buffers	Arabellekler
+	Cut Named…	Adlandırılmış Kes…
+	Copy Named…	Adlandırılmış Kopyala…
+	Copy Visible Named…	Görüneni Adlandırılmış Kopyala…
+	Paste Named…	Adlandırılmış Yapıştır…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Adlandırılmış arabellek yok. Burada bir kopya tutmak için Düzen > Arabellek > Adlandırılmış Kopyala… kullanın.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Adlandırılmış arabellek yok; önce Düzen > Arabellek > Adlandırılmış Kopyala kullanın
+	Paste Buffer	Arabelleği Yapıştır
+	Paste Buffer in Place	Arabelleği Yerine Yapıştır
+	Paste Buffer as New Image	Arabelleği Yeni Görüntü Olarak Yapıştır
+	Rename Buffer…	Arabelleği Yeniden Adlandır…
+	Delete Buffer	Arabelleği Sil
+	Paste as New	Yeni Olarak Yapıştır
+	Paste the buffer as a new layer	Arabelleği yeni katman olarak yapıştır
+	Paste the buffer as a new document	Arabelleği yeni belge olarak yapıştır
+	As	Olarak
+	In place	Yerine
+	Into	İçine
+	Modules…	Modüller…
+	Units…	Birimler…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Yüklenebilir modül kurulu değil. Filtre > Eklentiler > Eklenti Kur… bir tane ekler.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Kapatılan bir modül kurulu kalır ancak yeniden açılana kadar menülerden kalkar.
+	Module	Modül
+	Not installed	Kurulu değil
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Çarpan, bir inçte kaç birim olduğudur (santimetre için 2,54, punto için 72).
+	Identifier	Tanımlayıcı
+	Factor	Çarpan
+	Symbol	Simge
+	Abbreviation	Kısaltma
+	Singular	Tekil
+	Plural	Çoğul
+	Delete Unit	Birimi Sil
+	New unit	Yeni birim
+	Add Unit	Birim Ekle
+	That identifier is already a unit	Bu tanımlayıcı zaten bir birim
+	Custom units	Özel birimler
+	Disabled modules	Devre dışı modüller

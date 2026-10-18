@@ -4197,3 +4197,41 @@ curves	Smooth	Εξομάλυνση
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Ενδιάμεση μνήμη
+	Buffers	Ενδιάμεσες μνήμες
+	Cut Named…	Αποκοπή με όνομα…
+	Copy Named…	Αντιγραφή με όνομα…
+	Copy Visible Named…	Αντιγραφή ορατών με όνομα…
+	Paste Named…	Επικόλληση με όνομα…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Δεν υπάρχουν ενδιάμεσες μνήμες με όνομα. Χρησιμοποιήστε Επεξεργασία > Ενδιάμεση μνήμη > Αντιγραφή με όνομα… για να κρατήσετε ένα αντίγραφο εδώ.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Δεν υπάρχουν ενδιάμεσες μνήμες με όνομα· χρησιμοποιήστε πρώτα Επεξεργασία > Ενδιάμεση μνήμη > Αντιγραφή με όνομα
+	Paste Buffer	Επικόλληση ενδιάμεσης μνήμης
+	Paste Buffer in Place	Επικόλληση ενδιάμεσης μνήμης στη θέση
+	Paste Buffer as New Image	Επικόλληση ενδιάμεσης μνήμης ως νέα εικόνα
+	Rename Buffer…	Μετονομασία ενδιάμεσης μνήμης…
+	Delete Buffer	Διαγραφή ενδιάμεσης μνήμης
+	Paste as New	Επικόλληση ως νέο
+	Paste the buffer as a new layer	Επικόλληση της ενδιάμεσης μνήμης ως νέο επίπεδο
+	Paste the buffer as a new document	Επικόλληση της ενδιάμεσης μνήμης ως νέο έγγραφο
+	As	Ως
+	In place	Στη θέση
+	Into	Εντός
+	Modules…	Μονάδες…
+	Units…	Μονάδες μέτρησης…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Δεν υπάρχουν εγκατεστημένες μονάδες. Φίλτρο > Πρόσθετα > Εγκατάσταση προσθέτου… προσθέτει μία.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Μια απενεργοποιημένη μονάδα παραμένει εγκατεστημένη αλλά λείπει από τα μενού έως ότου ενεργοποιηθεί ξανά.
+	Module	Μονάδα
+	Not installed	Μη εγκατεστημένο
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Ο συντελεστής είναι πόσες μονάδες κάνουν μία ίντσα (2,54 για εκατοστά, 72 για στιγμές).
+	Identifier	Αναγνωριστικό
+	Factor	Συντελεστής
+	Symbol	Σύμβολο
+	Abbreviation	Συντομογραφία
+	Singular	Ενικός
+	Plural	Πληθυντικός
+	Delete Unit	Διαγραφή μονάδας
+	New unit	Νέα μονάδα
+	Add Unit	Προσθήκη μονάδας
+	That identifier is already a unit	Αυτό το αναγνωριστικό είναι ήδη μονάδα
+	Custom units	Προσαρμοσμένες μονάδες
+	Disabled modules	Απενεργοποιημένες μονάδες

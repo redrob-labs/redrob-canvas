@@ -3987,3 +3987,41 @@ curves	Smooth	Làm mượt
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Bộ đệm
+	Buffers	Bộ đệm
+	Cut Named…	Cắt có tên…
+	Copy Named…	Sao chép có tên…
+	Copy Visible Named…	Sao chép phần hiển thị có tên…
+	Paste Named…	Dán có tên…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Không có bộ đệm có tên. Dùng Chỉnh sửa > Bộ đệm > Sao chép có tên… để giữ một bản sao ở đây.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Không có bộ đệm có tên; hãy dùng Chỉnh sửa > Bộ đệm > Sao chép có tên trước
+	Paste Buffer	Dán bộ đệm
+	Paste Buffer in Place	Dán bộ đệm tại chỗ
+	Paste Buffer as New Image	Dán bộ đệm thành ảnh mới
+	Rename Buffer…	Đổi tên bộ đệm…
+	Delete Buffer	Xóa bộ đệm
+	Paste as New	Dán thành mới
+	Paste the buffer as a new layer	Dán bộ đệm thành lớp mới
+	Paste the buffer as a new document	Dán bộ đệm thành tài liệu mới
+	As	Dạng
+	In place	Tại chỗ
+	Into	Vào trong
+	Modules…	Mô-đun…
+	Units…	Đơn vị…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Chưa cài mô-đun nào. Bộ lọc > Plug-in > Cài plug-in… để thêm.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Mô-đun bị tắt vẫn được cài nhưng rời khỏi menu cho đến khi bật lại.
+	Module	Mô-đun
+	Not installed	Chưa cài
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Hệ số là số đơn vị trong một inch (2,54 với xentimét, 72 với điểm).
+	Identifier	Định danh
+	Factor	Hệ số
+	Symbol	Ký hiệu
+	Abbreviation	Viết tắt
+	Singular	Số ít
+	Plural	Số nhiều
+	Delete Unit	Xóa đơn vị
+	New unit	Đơn vị mới
+	Add Unit	Thêm đơn vị
+	That identifier is already a unit	Định danh đó đã là một đơn vị
+	Custom units	Đơn vị tùy chỉnh
+	Disabled modules	Mô-đun đã tắt

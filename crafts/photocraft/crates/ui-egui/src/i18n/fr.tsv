@@ -3509,3 +3509,41 @@ curves	Smooth	Lisser
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Tampon
+	Buffers	Tampons
+	Cut Named…	Couper (nommé)…
+	Copy Named…	Copier (nommé)…
+	Copy Visible Named…	Copier visible (nommé)…
+	Paste Named…	Coller (nommé)…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Aucun tampon nommé. Utilisez Édition > Tampon > Copier (nommé)… pour garder une copie ici.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Aucun tampon nommé ; utilisez d'abord Édition > Tampon > Copier (nommé)
+	Paste Buffer	Coller le tampon
+	Paste Buffer in Place	Coller le tampon en place
+	Paste Buffer as New Image	Coller le tampon comme nouvelle image
+	Rename Buffer…	Renommer le tampon…
+	Delete Buffer	Supprimer le tampon
+	Paste as New	Coller comme nouveau
+	Paste the buffer as a new layer	Coller le tampon comme nouveau calque
+	Paste the buffer as a new document	Coller le tampon comme nouveau document
+	As	Comme
+	In place	En place
+	Into	Dedans
+	Modules…	Modules…
+	Units…	Unités…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Aucun module chargeable n'est installé. Filtre > Modules externes > Installer un module… en ajoute un.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Un module désactivé reste installé mais disparaît des menus jusqu'à sa réactivation.
+	Module	Module
+	Not installed	Non installé
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Le facteur est le nombre d'unités dans un pouce (2,54 pour les centimètres, 72 pour les points).
+	Identifier	Identifiant
+	Factor	Facteur
+	Symbol	Symbole
+	Abbreviation	Abréviation
+	Singular	Singulier
+	Plural	Pluriel
+	Delete Unit	Supprimer l'unité
+	New unit	Nouvelle unité
+	Add Unit	Ajouter l'unité
+	That identifier is already a unit	Cet identifiant est déjà une unité
+	Custom units	Unités personnalisées
+	Disabled modules	Modules désactivés

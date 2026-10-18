@@ -4029,3 +4029,42 @@ curves	Smooth	매끄럽게
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	버퍼
+	Buffers	버퍼
+	Cut Named…	이름 지정 잘라내기…
+	Copy Named…	이름 지정 복사…
+	Copy Visible Named…	보이는 영역 이름 지정 복사…
+	Paste Named…	이름 지정 붙이기…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	이름 지정 버퍼가 없습니다. 편집 > 버퍼 > 이름 지정 복사…로 복사본을 여기에 보관하세요.
+	There are no named buffers; use Edit > Buffer > Copy Named first	이름 지정 버퍼가 없습니다. 먼저 편집 > 버퍼 > 이름 지정 복사를 사용하세요
+	Paste Buffer	버퍼 붙이기
+	Paste Buffer in Place	버퍼 제자리에 붙이기
+	Paste Buffer as New Image	버퍼를 새 이미지로 붙이기
+	Rename Buffer…	버퍼 이름 바꾸기…
+	Delete Buffer	버퍼 삭제
+	Paste as New	새 이미지로 붙이기
+	Paste the buffer as a new layer	버퍼를 새 레이어로 붙입니다
+	Paste the buffer as a new document	버퍼를 새 문서로 붙입니다
+	As	형식
+	In place	제자리
+	Into	선택 영역 안에
+	Modules…	모듈…
+	Units…	단위…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	로드할 수 있는 모듈이 설치되어 있지 않습니다. 필터 > 플러그인 > 플러그인 설치…로 추가합니다.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	꺼진 모듈은 설치된 채로 남지만 다시 켤 때까지 메뉴에서 사라집니다.
+	Module	모듈
+	Not installed	설치되지 않음
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	계수는 1인치가 그 단위로 몇 개인지입니다(센티미터는 2.54, 포인트는 72).
+	Identifier	식별자
+	Factor	계수
+	Digits	소수 자릿수
+	Symbol	기호
+	Abbreviation	약어
+	Singular	단수
+	Plural	복수
+	Delete Unit	단위 삭제
+	New unit	새 단위
+	Add Unit	단위 추가
+	That identifier is already a unit	그 식별자는 이미 단위입니다
+	Custom units	사용자 정의 단위
+	Disabled modules	꺼진 모듈

@@ -4287,3 +4287,41 @@ layerLabel	No Color	Sem cor
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Buffer
+	Buffers	Buffers
+	Cut Named…	Recortar com nome…
+	Copy Named…	Copiar com nome…
+	Copy Visible Named…	Copiar visível com nome…
+	Paste Named…	Colar com nome…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Nenhum buffer com nome. Use Editar > Buffer > Copiar com nome… para guardar uma cópia aqui.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Nenhum buffer com nome; use primeiro Editar > Buffer > Copiar com nome
+	Paste Buffer	Colar buffer
+	Paste Buffer in Place	Colar buffer no lugar
+	Paste Buffer as New Image	Colar buffer como nova imagem
+	Rename Buffer…	Renomear buffer…
+	Delete Buffer	Excluir buffer
+	Paste as New	Colar como novo
+	Paste the buffer as a new layer	Colar o buffer como uma nova camada
+	Paste the buffer as a new document	Colar o buffer como um novo documento
+	As	Como
+	In place	No lugar
+	Into	Dentro
+	Modules…	Módulos…
+	Units…	Unidades…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Nenhum módulo carregável instalado. Filtro > Plug-ins > Instalar plug-in… adiciona um.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Um módulo desativado continua instalado, mas sai dos menus até ser ativado de novo.
+	Module	Módulo
+	Not installed	Não instalado
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	O fator é quantas unidades formam uma polegada (2,54 para centímetros, 72 para pontos).
+	Identifier	Identificador
+	Factor	Fator
+	Symbol	Símbolo
+	Abbreviation	Abreviação
+	Singular	Singular
+	Plural	Plural
+	Delete Unit	Excluir unidade
+	New unit	Nova unidade
+	Add Unit	Adicionar unidade
+	That identifier is already a unit	Esse identificador já é uma unidade
+	Custom units	Unidades personalizadas
+	Disabled modules	Módulos desativados

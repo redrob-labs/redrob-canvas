@@ -4257,3 +4257,41 @@ curves	Smooth	Vloeiend maken
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Buffer
+	Buffers	Buffers
+	Cut Named…	Benoemd knippen…
+	Copy Named…	Benoemd kopiëren…
+	Copy Visible Named…	Zichtbaar benoemd kopiëren…
+	Paste Named…	Benoemd plakken…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Geen benoemde buffers. Gebruik Bewerken > Buffer > Benoemd kopiëren… om hier een kopie te bewaren.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Geen benoemde buffers; gebruik eerst Bewerken > Buffer > Benoemd kopiëren
+	Paste Buffer	Buffer plakken
+	Paste Buffer in Place	Buffer op plaats plakken
+	Paste Buffer as New Image	Buffer plakken als nieuwe afbeelding
+	Rename Buffer…	Buffer hernoemen…
+	Delete Buffer	Buffer verwijderen
+	Paste as New	Plakken als nieuw
+	Paste the buffer as a new layer	De buffer plakken als nieuwe laag
+	Paste the buffer as a new document	De buffer plakken als nieuw document
+	As	Als
+	In place	Op plaats
+	Into	Erin
+	Modules…	Modules…
+	Units…	Eenheden…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Geen laadbare modules geïnstalleerd. Filter > Plug-ins > Plug-in installeren… voegt er een toe.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Een uitgeschakelde module blijft geïnstalleerd maar verdwijnt uit de menu's tot ze weer wordt ingeschakeld.
+	Module	Module
+	Not installed	Niet geïnstalleerd
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	De factor is hoeveel eenheden in één inch gaan (2,54 voor centimeters, 72 voor punten).
+	Identifier	Identificatie
+	Factor	Factor
+	Symbol	Symbool
+	Abbreviation	Afkorting
+	Singular	Enkelvoud
+	Plural	Meervoud
+	Delete Unit	Eenheid verwijderen
+	New unit	Nieuwe eenheid
+	Add Unit	Eenheid toevoegen
+	That identifier is already a unit	Die identificatie is al een eenheid
+	Custom units	Aangepaste eenheden
+	Disabled modules	Uitgeschakelde modules

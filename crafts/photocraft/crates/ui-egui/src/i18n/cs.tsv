@@ -4107,3 +4107,41 @@ navigator	Zoom	Zvětšení
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Buffer
+	Buffers	Buffery
+	Cut Named…	Vyjmout pojmenované…
+	Copy Named…	Kopírovat pojmenované…
+	Copy Visible Named…	Kopírovat viditelné pojmenované…
+	Paste Named…	Vložit pojmenované…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Žádné pojmenované buffery. Použijte Úpravy > Buffer > Kopírovat pojmenované… pro uložení kopie sem.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Žádné pojmenované buffery; nejprve použijte Úpravy > Buffer > Kopírovat pojmenované
+	Paste Buffer	Vložit buffer
+	Paste Buffer in Place	Vložit buffer na místo
+	Paste Buffer as New Image	Vložit buffer jako nový obrázek
+	Rename Buffer…	Přejmenovat buffer…
+	Delete Buffer	Odstranit buffer
+	Paste as New	Vložit jako nový
+	Paste the buffer as a new layer	Vložit buffer jako novou vrstvu
+	Paste the buffer as a new document	Vložit buffer jako nový dokument
+	As	Jako
+	In place	Na místo
+	Into	Dovnitř
+	Modules…	Moduly…
+	Units…	Jednotky…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Nejsou nainstalovány žádné moduly. Filtr > Zásuvné moduly > Instalovat modul… přidá jeden.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Vypnutý modul zůstává nainstalován, ale zmizí z nabídek, dokud není znovu zapnut.
+	Module	Modul
+	Not installed	Nenainstalováno
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Faktor udává, kolik jednotek tvoří jeden palec (2,54 u centimetrů, 72 u bodů).
+	Identifier	Identifikátor
+	Factor	Faktor
+	Symbol	Symbol
+	Abbreviation	Zkratka
+	Singular	Jednotné číslo
+	Plural	Množné číslo
+	Delete Unit	Odstranit jednotku
+	New unit	Nová jednotka
+	Add Unit	Přidat jednotku
+	That identifier is already a unit	Tento identifikátor již jednotka používá
+	Custom units	Vlastní jednotky
+	Disabled modules	Vypnuté moduly

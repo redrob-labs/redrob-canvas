@@ -3496,3 +3496,41 @@ curves	Smooth	Haluskan
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Buffer
+	Buffers	Buffer
+	Cut Named…	Potong Bernama…
+	Copy Named…	Salin Bernama…
+	Copy Visible Named…	Salin Terlihat Bernama…
+	Paste Named…	Tempel Bernama…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Tidak ada buffer bernama. Gunakan Edit > Buffer > Salin Bernama… untuk menyimpan salinan di sini.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Tidak ada buffer bernama; gunakan Edit > Buffer > Salin Bernama dahulu
+	Paste Buffer	Tempel Buffer
+	Paste Buffer in Place	Tempel Buffer di Tempat
+	Paste Buffer as New Image	Tempel Buffer sebagai Gambar Baru
+	Rename Buffer…	Ubah Nama Buffer…
+	Delete Buffer	Hapus Buffer
+	Paste as New	Tempel sebagai Baru
+	Paste the buffer as a new layer	Tempel buffer sebagai lapisan baru
+	Paste the buffer as a new document	Tempel buffer sebagai dokumen baru
+	As	Sebagai
+	In place	Di tempat
+	Into	Ke dalam
+	Modules…	Modul…
+	Units…	Satuan…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Tidak ada modul yang terpasang. Filter > Plug-in > Pasang Plug-in… menambahkannya.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Modul yang dimatikan tetap terpasang tetapi hilang dari menu sampai dihidupkan lagi.
+	Module	Modul
+	Not installed	Belum terpasang
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Faktor adalah berapa satuan dalam satu inci (2,54 untuk sentimeter, 72 untuk poin).
+	Identifier	Pengenal
+	Factor	Faktor
+	Symbol	Simbol
+	Abbreviation	Singkatan
+	Singular	Tunggal
+	Plural	Jamak
+	Delete Unit	Hapus Satuan
+	New unit	Satuan baru
+	Add Unit	Tambah Satuan
+	That identifier is already a unit	Pengenal itu sudah menjadi satuan
+	Custom units	Satuan khusus
+	Disabled modules	Modul dimatikan

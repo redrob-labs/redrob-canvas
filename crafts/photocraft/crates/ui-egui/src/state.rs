@@ -1481,6 +1481,9 @@ pub struct UiState {
     #[serde(default)]
     pub assistants: crate::assistant_ui::AssistantUi,
     pub timeline: crate::timeline_ui::TimelineUi,
+    /// Window › Buffers panel (named buffers, see `buffers_ui`).
+    #[serde(default)]
+    pub buffers: crate::buffers_ui::BuffersUi,
     /// Slice and Slice Select tools (see `slice_ui`).
     #[serde(default)]
     pub slices: crate::slice_ui::SliceUi,
@@ -1635,6 +1638,7 @@ impl Default for UiState {
             analysis: Default::default(),
             assistants: Default::default(),
             timeline: Default::default(),
+            buffers: Default::default(),
             slices: Default::default(),
             frame_tool: Default::default(),
             artboard_tool: Default::default(),

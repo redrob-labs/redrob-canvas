@@ -3126,3 +3126,42 @@ curves	Smooth	平滑
 	Psd	PSD
 	Pdf	PDF
 	Loop	循环
+	Buffer	缓冲区
+	Buffers	缓冲区
+	Cut Named…	命名剪切…
+	Copy Named…	命名复制…
+	Copy Visible Named…	命名复制可见部分…
+	Paste Named…	命名粘贴…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	没有命名缓冲区。使用“编辑 > 缓冲区 > 命名复制…”在此保留副本。
+	There are no named buffers; use Edit > Buffer > Copy Named first	没有命名缓冲区；请先使用“编辑 > 缓冲区 > 命名复制”
+	Paste Buffer	粘贴缓冲区
+	Paste Buffer in Place	原位粘贴缓冲区
+	Paste Buffer as New Image	将缓冲区粘贴为新图像
+	Rename Buffer…	重命名缓冲区…
+	Delete Buffer	删除缓冲区
+	Paste as New	粘贴为新图像
+	Paste the buffer as a new layer	将缓冲区粘贴为新图层
+	Paste the buffer as a new document	将缓冲区粘贴为新文档
+	As	方式
+	In place	原位
+	Into	贴入
+	Modules…	模块…
+	Units…	单位…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	未安装可加载模块。使用“滤镜 > 插件 > 安装插件…”添加。
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	关闭的模块仍保持安装，但在重新开启前不会出现在菜单中。
+	Module	模块
+	Not installed	未安装
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	系数是一英寸包含多少该单位（厘米为 2.54，点为 72）。
+	Identifier	标识符
+	Factor	系数
+	Digits	位数
+	Symbol	符号
+	Abbreviation	缩写
+	Singular	单数
+	Plural	复数
+	Delete Unit	删除单位
+	New unit	新单位
+	Add Unit	添加单位
+	That identifier is already a unit	该标识符已是一个单位
+	Custom units	自定义单位
+	Disabled modules	已禁用的模块

@@ -3111,3 +3111,42 @@ curves	Smooth	平滑
 	Psd	PSD
 	Pdf	PDF
 	Loop	循環
+	Buffer	緩衝區
+	Buffers	緩衝區
+	Cut Named…	命名剪下…
+	Copy Named…	命名複製…
+	Copy Visible Named…	命名複製可見部分…
+	Paste Named…	命名貼上…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	沒有命名緩衝區。使用「編輯 > 緩衝區 > 命名複製…」在此保留副本。
+	There are no named buffers; use Edit > Buffer > Copy Named first	沒有命名緩衝區；請先使用「編輯 > 緩衝區 > 命名複製」
+	Paste Buffer	貼上緩衝區
+	Paste Buffer in Place	原位貼上緩衝區
+	Paste Buffer as New Image	將緩衝區貼上為新影像
+	Rename Buffer…	重新命名緩衝區…
+	Delete Buffer	刪除緩衝區
+	Paste as New	貼上為新影像
+	Paste the buffer as a new layer	將緩衝區貼上為新圖層
+	Paste the buffer as a new document	將緩衝區貼上為新文件
+	As	方式
+	In place	原位
+	Into	貼入
+	Modules…	模組…
+	Units…	單位…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	未安裝可載入模組。使用「濾鏡 > 外掛 > 安裝外掛…」新增。
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	關閉的模組仍保持安裝，但在重新開啟前不會出現在選單中。
+	Module	模組
+	Not installed	未安裝
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	係數是一英寸包含多少該單位（公分為 2.54，點為 72）。
+	Identifier	識別碼
+	Factor	係數
+	Digits	位數
+	Symbol	符號
+	Abbreviation	縮寫
+	Singular	單數
+	Plural	複數
+	Delete Unit	刪除單位
+	New unit	新單位
+	Add Unit	新增單位
+	That identifier is already a unit	該識別碼已是一個單位
+	Custom units	自訂單位
+	Disabled modules	已停用的模組

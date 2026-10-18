@@ -4833,9 +4833,9 @@ name = "Named buffers"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-edit-buffer-dialog.html"
 behaviour = "Cut/copy to a named buffer and paste from a buffers dockable holding many clips."
-ours = "none"
-ours_where = ""
-gap = "single clipboard"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/buffers_cmds.rs (edit.buffer.cut/copy/copyVisible/paste/delete/rename/list, Session::buffers), crafts/photocraft/crates/ui-egui/src/buffers_ui.rs (Window > Buffers panel with thumbnails, paste, paste as new, rename, delete; Edit > Buffer name forms), crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+gap = ""
 priority = 3
 
 [[feature]]
@@ -4893,9 +4893,9 @@ name = "Modules and Units editors"
 reference = "GIMP"
 manual = "https://docs.gimp.org/3.0/en/gimp-module-dialog.html"
 behaviour = "Enable/disable loadable modules; define custom measurement units."
-ours = "none"
-ours_where = ""
-gap = "fixed unit list, no module system"
+ours = "full"
+ours_where = "crafts/photocraft/crates/engine/src/modules_cmds.rs (module.list/setEnabled over the installed plug-ins, units.list/set/delete), crafts/photocraft/crates/engine/src/prefs.rs (PlugIns::disabled_modules, UnitsAndRulers::custom_units, CustomUnit, format_custom), crafts/photocraft/crates/engine/src/plugin_cmds.rs (disabled modules refuse to run), crafts/photocraft/crates/ui-egui/src/modules_ui.rs (Edit > Modules…, Edit > Units… dialogs), crafts/photocraft/crates/ui-egui/src/plugin_ui.rs (disabled modules leave the menu)"
+gap = ""
 priority = 3
 
 [[feature]]

@@ -4096,3 +4096,41 @@ curves	Smooth	Wygładź
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Bufor
+	Buffers	Bufory
+	Cut Named…	Wytnij nazwane…
+	Copy Named…	Kopiuj nazwane…
+	Copy Visible Named…	Kopiuj widoczne nazwane…
+	Paste Named…	Wklej nazwane…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Brak nazwanych buforów. Użyj Edycja > Bufor > Kopiuj nazwane…, aby zachować tu kopię.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Brak nazwanych buforów; najpierw użyj Edycja > Bufor > Kopiuj nazwane
+	Paste Buffer	Wklej bufor
+	Paste Buffer in Place	Wklej bufor w miejscu
+	Paste Buffer as New Image	Wklej bufor jako nowy obraz
+	Rename Buffer…	Zmień nazwę bufora…
+	Delete Buffer	Usuń bufor
+	Paste as New	Wklej jako nowy
+	Paste the buffer as a new layer	Wklej bufor jako nową warstwę
+	Paste the buffer as a new document	Wklej bufor jako nowy dokument
+	As	Jako
+	In place	W miejscu
+	Into	Do wewnątrz
+	Modules…	Moduły…
+	Units…	Jednostki…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Brak zainstalowanych modułów. Filtr > Wtyczki > Zainstaluj wtyczkę… dodaje jeden.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Wyłączony moduł pozostaje zainstalowany, ale znika z menu do ponownego włączenia.
+	Module	Moduł
+	Not installed	Niezainstalowany
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Współczynnik to liczba jednostek w jednym calu (2,54 dla centymetrów, 72 dla punktów).
+	Identifier	Identyfikator
+	Factor	Współczynnik
+	Symbol	Symbol
+	Abbreviation	Skrót
+	Singular	Liczba pojedyncza
+	Plural	Liczba mnoga
+	Delete Unit	Usuń jednostkę
+	New unit	Nowa jednostka
+	Add Unit	Dodaj jednostkę
+	That identifier is already a unit	Ten identyfikator jest już jednostką
+	Custom units	Jednostki własne
+	Disabled modules	Wyłączone moduły

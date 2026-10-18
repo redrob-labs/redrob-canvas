@@ -4415,3 +4415,41 @@ cameraRaw	Yellow	Sárga
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Puffer
+	Buffers	Pufferek
+	Cut Named…	Kivágás névvel…
+	Copy Named…	Másolás névvel…
+	Copy Visible Named…	Látható másolása névvel…
+	Paste Named…	Beillesztés névvel…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Nincs nevesített puffer. A Szerkesztés > Puffer > Másolás névvel… paranccsal tarthat itt másolatot.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Nincs nevesített puffer; először használja a Szerkesztés > Puffer > Másolás névvel parancsot
+	Paste Buffer	Puffer beillesztése
+	Paste Buffer in Place	Puffer beillesztése helyben
+	Paste Buffer as New Image	Puffer beillesztése új képként
+	Rename Buffer…	Puffer átnevezése…
+	Delete Buffer	Puffer törlése
+	Paste as New	Beillesztés újként
+	Paste the buffer as a new layer	A puffer beillesztése új rétegként
+	Paste the buffer as a new document	A puffer beillesztése új dokumentumként
+	As	Mint
+	In place	Helyben
+	Into	Belülre
+	Modules…	Modulok…
+	Units…	Egységek…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Nincs betölthető modul telepítve. Szűrő > Bővítmények > Bővítmény telepítése… hozzáad egyet.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	A kikapcsolt modul telepítve marad, de a menükből eltűnik, amíg újra be nem kapcsolják.
+	Module	Modul
+	Not installed	Nincs telepítve
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	A szorzó azt adja meg, hány egység tesz ki egy hüvelyket (centiméternél 2,54, pontnál 72).
+	Identifier	Azonosító
+	Factor	Szorzó
+	Symbol	Jel
+	Abbreviation	Rövidítés
+	Singular	Egyes szám
+	Plural	Többes szám
+	Delete Unit	Egység törlése
+	New unit	Új egység
+	Add Unit	Egység hozzáadása
+	That identifier is already a unit	Ez az azonosító már egy egység
+	Custom units	Egyéni egységek
+	Disabled modules	Letiltott modulok

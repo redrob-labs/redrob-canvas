@@ -4197,3 +4197,41 @@ curves	Smooth	Згладити
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Буфер
+	Buffers	Буфери
+	Cut Named…	Вирізати в іменований буфер…
+	Copy Named…	Копіювати в іменований буфер…
+	Copy Visible Named…	Копіювати видиме в іменований буфер…
+	Paste Named…	Вставити з іменованого буфера…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Немає іменованих буферів. Використайте Зміни > Буфер > Копіювати в іменований буфер…, щоб зберегти копію тут.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Немає іменованих буферів; спочатку використайте Зміни > Буфер > Копіювати в іменований буфер
+	Paste Buffer	Вставити буфер
+	Paste Buffer in Place	Вставити буфер на місце
+	Paste Buffer as New Image	Вставити буфер як нове зображення
+	Rename Buffer…	Перейменувати буфер…
+	Delete Buffer	Видалити буфер
+	Paste as New	Вставити як нове
+	Paste the buffer as a new layer	Вставити буфер як новий шар
+	Paste the buffer as a new document	Вставити буфер як новий документ
+	As	Як
+	In place	На місце
+	Into	Усередину
+	Modules…	Модулі…
+	Units…	Одиниці…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Завантажувані модулі не встановлено. Фільтр > Плагіни > Встановити плагін… додасть один.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Вимкнений модуль залишається встановленим, але зникає з меню, доки його не увімкнуть знову.
+	Module	Модуль
+	Not installed	Не встановлено
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Множник: скільки одиниць в одному дюймі (2,54 для сантиметрів, 72 для пунктів).
+	Identifier	Ідентифікатор
+	Factor	Множник
+	Symbol	Символ
+	Abbreviation	Скорочення
+	Singular	Однина
+	Plural	Множина
+	Delete Unit	Видалити одиницю
+	New unit	Нова одиниця
+	Add Unit	Додати одиницю
+	That identifier is already a unit	Цей ідентифікатор уже зайнятий одиницею
+	Custom units	Власні одиниці
+	Disabled modules	Вимкнені модулі

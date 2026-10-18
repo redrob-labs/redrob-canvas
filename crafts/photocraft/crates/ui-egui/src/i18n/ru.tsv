@@ -3477,3 +3477,41 @@ curves	Smooth	Сгладить
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Буфер
+	Buffers	Буферы
+	Cut Named…	Вырезать в буфер с именем…
+	Copy Named…	Копировать в буфер с именем…
+	Copy Visible Named…	Копировать видимое в буфер с именем…
+	Paste Named…	Вставить из буфера с именем…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Нет именованных буферов. Используйте Правка > Буфер > Копировать в буфер с именем…, чтобы сохранить копию здесь.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Нет именованных буферов; сначала используйте Правка > Буфер > Копировать в буфер с именем
+	Paste Buffer	Вставить буфер
+	Paste Buffer in Place	Вставить буфер на место
+	Paste Buffer as New Image	Вставить буфер как новое изображение
+	Rename Buffer…	Переименовать буфер…
+	Delete Buffer	Удалить буфер
+	Paste as New	Вставить как новое
+	Paste the buffer as a new layer	Вставить буфер как новый слой
+	Paste the buffer as a new document	Вставить буфер как новый документ
+	As	Как
+	In place	На место
+	Into	Внутрь
+	Modules…	Модули…
+	Units…	Единицы…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Загружаемые модули не установлены. Фильтр > Плагины > Установить плагин… добавит один.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Выключенный модуль остаётся установленным, но исчезает из меню, пока его не включат снова.
+	Module	Модуль
+	Not installed	Не установлен
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Множитель: сколько единиц в одном дюйме (2,54 для сантиметров, 72 для пунктов).
+	Identifier	Идентификатор
+	Factor	Множитель
+	Symbol	Символ
+	Abbreviation	Сокращение
+	Singular	Ед. число
+	Plural	Мн. число
+	Delete Unit	Удалить единицу
+	New unit	Новая единица
+	Add Unit	Добавить единицу
+	That identifier is already a unit	Этот идентификатор уже занят единицей
+	Custom units	Пользовательские единицы
+	Disabled modules	Отключённые модули

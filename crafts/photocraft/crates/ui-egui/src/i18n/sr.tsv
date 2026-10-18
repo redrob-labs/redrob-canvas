@@ -4569,3 +4569,41 @@ shape	Appearance	Izgled
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Bafer
+	Buffers	Baferi
+	Cut Named…	Iseci u imenovani…
+	Copy Named…	Kopiraj u imenovani…
+	Copy Visible Named…	Kopiraj vidljivo u imenovani…
+	Paste Named…	Nalepi imenovani…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Nema imenovanih bafera. Koristite Uredi > Bafer > Kopiraj u imenovani… da sačuvate kopiju ovde.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Nema imenovanih bafera; prvo koristite Uredi > Bafer > Kopiraj u imenovani
+	Paste Buffer	Nalepi bafer
+	Paste Buffer in Place	Nalepi bafer na mesto
+	Paste Buffer as New Image	Nalepi bafer kao novu sliku
+	Rename Buffer…	Preimenuj bafer…
+	Delete Buffer	Obriši bafer
+	Paste as New	Nalepi kao novo
+	Paste the buffer as a new layer	Nalepi bafer kao novi sloj
+	Paste the buffer as a new document	Nalepi bafer kao novi dokument
+	As	Kao
+	In place	Na mesto
+	Into	Unutra
+	Modules…	Moduli…
+	Units…	Jedinice…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Nema instaliranih modula. Filter > Dodaci > Instaliraj dodatak… dodaje jedan.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Isključen modul ostaje instaliran, ali nestaje iz menija dok se ponovo ne uključi.
+	Module	Modul
+	Not installed	Nije instalirano
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Faktor je koliko jedinica čini jedan inč (2,54 za centimetre, 72 za tačke).
+	Identifier	Identifikator
+	Factor	Faktor
+	Symbol	Simbol
+	Abbreviation	Skraćenica
+	Singular	Jednina
+	Plural	Množina
+	Delete Unit	Obriši jedinicu
+	New unit	Nova jedinica
+	Add Unit	Dodaj jedinicu
+	That identifier is already a unit	Taj identifikator je već jedinica
+	Custom units	Prilagođene jedinice
+	Disabled modules	Isključeni moduli

@@ -4963,3 +4963,41 @@ shape	Appearance	Aspetto
 	Tif	TIFF
 	Psd	PSD
 	Pdf	PDF
+	Buffer	Buffer
+	Buffers	Buffer
+	Cut Named…	Taglia con nome…
+	Copy Named…	Copia con nome…
+	Copy Visible Named…	Copia visibile con nome…
+	Paste Named…	Incolla con nome…
+	No named buffers. Use Edit > Buffer > Copy Named… to keep a copy here.	Nessun buffer con nome. Usa Modifica > Buffer > Copia con nome… per tenere qui una copia.
+	There are no named buffers; use Edit > Buffer > Copy Named first	Nessun buffer con nome; usa prima Modifica > Buffer > Copia con nome
+	Paste Buffer	Incolla buffer
+	Paste Buffer in Place	Incolla buffer in posizione
+	Paste Buffer as New Image	Incolla buffer come nuova immagine
+	Rename Buffer…	Rinomina buffer…
+	Delete Buffer	Elimina buffer
+	Paste as New	Incolla come nuovo
+	Paste the buffer as a new layer	Incolla il buffer come nuovo livello
+	Paste the buffer as a new document	Incolla il buffer come nuovo documento
+	As	Come
+	In place	In posizione
+	Into	Dentro
+	Modules…	Moduli…
+	Units…	Unità…
+	No loadable modules are installed. Filter > Plug-ins > Install Plug-in… adds one.	Nessun modulo caricabile installato. Filtro > Plug-in > Installa plug-in… ne aggiunge uno.
+	A module that is switched off stays installed but leaves the menus until it is switched on again.	Un modulo disattivato resta installato ma scompare dai menu finché non viene riattivato.
+	Module	Modulo
+	Not installed	Non installato
+	The factor is how many of the unit make one inch (2.54 for centimetres, 72 for points).	Il fattore è quante unità formano un pollice (2,54 per i centimetri, 72 per i punti).
+	Identifier	Identificatore
+	Factor	Fattore
+	Symbol	Simbolo
+	Abbreviation	Abbreviazione
+	Singular	Singolare
+	Plural	Plurale
+	Delete Unit	Elimina unità
+	New unit	Nuova unità
+	Add Unit	Aggiungi unità
+	That identifier is already a unit	Quell'identificatore è già un'unità
+	Custom units	Unità personalizzate
+	Disabled modules	Moduli disattivati

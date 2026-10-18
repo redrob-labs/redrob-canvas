@@ -111,6 +111,8 @@ choice!(RawDepth { Eight = "8", Sixteen = "16" } default Sixteen);
 choice!(RawSharpen { None = "none", Screen = "screen", Glossy = "glossy", Matte = "matte" } default None);
 
 impl Unit {
+    /// Every built-in unit, in menu order.
+    pub const ALL: [Unit; 7] = [Unit::Pixels, Unit::Inches, Unit::Centimeters, Unit::Millimeters, Unit::Points, Unit::Picas, Unit::Percent];
     /// Document pixels → this unit. `dpi` is the document resolution, `extent` the 100% length
     /// (for percent), `ppi` points per inch (72 PostScript, 72.27 traditional).
     pub fn from_px(self, px: f64, dpi: f64, extent: f64, ppi: f64) -> f64 {
@@ -686,6 +688,46 @@ pub struct UnitsAndRulers {
     /// launch, so new and opened documents show them as Photoshop does. Set from the View
     /// menu (⌘R), not from the Preferences dialog.
     pub show_rulers: bool,
+    /// Edit › Units: user-defined measurement units (`modules_cmds`).
+    pub custom_units: Vec<CustomUnit>,
+}
+
+/// A user-defined measurement unit (Edit › Units…): `factor` is how many of it make one inch.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default, rename_all = "camelCase")]
+pub struct CustomUnit {
+    pub identifier: String,
+    pub factor: f64,
+    pub digits: u8,
+    pub symbol: String,
+    pub abbreviation: String,
+    pub singular: String,
+    pub plural: String,
+}
+
+impl Default for CustomUnit {
+    fn default() -> Self {
+        Self {
+            identifier: "unit".into(),
+            factor: 1.0,
+            digits: 2,
+            symbol: "u".into(),
+            abbreviation: "u".into(),
+            singular: "unit".into(),
+            plural: "units".into(),
+        }
+    }
+}
+
+impl CustomUnit {
+    /// Document pixels → this unit at `dpi`.
+    pub fn from_px(&self, px: f64, dpi: f64) -> f64 {
+        px / dpi.max(1e-6) * self.factor
+    }
+    /// This unit → document pixels at `dpi`.
+    pub fn to_px(&self, v: f64, dpi: f64) -> f64 {
+        v / self.factor.max(1e-12) * dpi.max(1e-6)
+    }
 }
 
 impl Default for UnitsAndRulers {
@@ -699,6 +741,7 @@ impl Default for UnitsAndRulers {
             screen_resolution: 72.0,
             point_size: PointSize::PostScript,
             show_rulers: false,
+            custom_units: Vec::new(),
         }
     }
 }
@@ -724,6 +767,16 @@ impl UnitsAndRulers {
     pub fn format(&self, px: f64, dpi: f64, extent: f64) -> String {
         let v = self.rulers.from_px(px, dpi, extent, self.point_size.per_inch());
         fmt_decimals(v, self.rulers.decimals())
+    }
+
+    /// Format a length in document pixels in a custom unit, with its symbol: `"1.25 fur"`.
+    pub fn format_custom(&self, unit: &CustomUnit, px: f64, dpi: f64) -> String {
+        format!("{} {}", fmt_decimals(unit.from_px(px, dpi), usize::from(unit.digits)), unit.symbol)
+    }
+
+    /// The custom unit called `identifier`, if defined.
+    pub fn custom_unit(&self, identifier: &str) -> Option<&CustomUnit> {
+        self.custom_units.iter().find(|u| u.identifier == identifier)
     }
 }
 
@@ -776,6 +829,8 @@ pub struct PlugIns {
     pub show_extension_panels: bool,
     pub allow_scripts_to_connect: bool,
     pub generator_enabled: bool,
+    /// Edit › Modules: installed plug-ins switched off without being removed (`modules_cmds`).
+    pub disabled_modules: Vec<String>,
 }
 
 impl Default for PlugIns {
@@ -786,6 +841,7 @@ impl Default for PlugIns {
             show_extension_panels: true,
             allow_scripts_to_connect: false,
             generator_enabled: false,
+            disabled_modules: Vec::new(),
         }
     }
 }
