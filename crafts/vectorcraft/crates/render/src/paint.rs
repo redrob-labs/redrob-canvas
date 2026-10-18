@@ -64,13 +64,12 @@ pub fn image_decodes(bytes: &[u8]) -> bool {
 
 /// `bytes` decoded within [`MAX_DECODE_ALLOC`].
 fn decode(bytes: &[u8]) -> Option<image::DynamicImage> {
-    let img = image::ImageReader::new(std::io::Cursor::new(bytes)).with_guessed_format().ok().and_then(|mut r| {
+    image::ImageReader::new(std::io::Cursor::new(bytes)).with_guessed_format().ok().and_then(|mut r| {
         let mut limits = image::Limits::default();
         limits.max_alloc = Some(MAX_DECODE_ALLOC);
         r.limits(limits);
         r.decode().ok()
-    });
-    img
+    })
 }
 
 /// `img` shrunk, keeping its proportions, to fit a pixmap's sides (at most `u16::MAX` pixels).
