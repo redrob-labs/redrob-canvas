@@ -398,6 +398,15 @@ pub fn control_bar_options(app: &mut VectorcraftApp, ui: &mut Ui) {
     if app.session.tool_id() == "spiral" {
         return spiral_options(app, ui);
     }
+    if app.session.tool_id() == "selection" {
+        // On-canvas alignment handles around the selection's bounds.
+        let on = app.ui.view.align_handles;
+        if widgets::check(ui, "Alignment Handles", on, true) {
+            app.ui.view.align_handles = !on;
+        }
+        ui.separator();
+        return;
+    }
     if app.session.tool_id() == "livePaintBucket" {
         return paint_bucket_options(app, ui);
     }

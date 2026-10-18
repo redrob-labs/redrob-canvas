@@ -220,6 +220,10 @@ pub struct ViewFlags {
     /// View › X-ray: a disc of outline rendering around the pointer.
     #[serde(default)]
     pub xray: bool,
+    /// The Selection tool's Alignment Handles: buttons around the selection's bounds that align
+    /// the selected objects to that edge or centre (Shift: the key object moves instead).
+    #[serde(default)]
+    pub align_handles: bool,
 }
 
 fn half() -> f32 {
@@ -251,6 +255,7 @@ impl Default for ViewFlags {
             split_view: false,
             split_at: 0.5,
             xray: false,
+            align_handles: false,
         }
     }
 }

@@ -505,6 +505,9 @@ pub fn show(app: &mut VectorcraftApp, ui: &mut Ui) {
     if app.ui.view.edges && !revolve_edit {
         hover_highlight(app, &painter, &xf);
         selection_overlay(app, &painter, &xf, overlays.iter().any(|o| matches!(o, Overlay::CurvePoint { .. })));
+        if app.ui.view.align_handles {
+            align_handles(app, ui, &painter, &xf);
+        }
         if app.ui.view.text_threads {
             thread_overlay(app, &painter, &xf);
         }
@@ -1947,6 +1950,118 @@ fn print_tiling_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf) {
 
 /// The print tiling's lines: a neutral grey that reads on the paper and on the pasteboard.
 const PRINT_TILING: Color32 = Color32::from_gray(96);
+
+/// On-canvas alignment handles (the Selection tool's toggle): six buttons just outside the
+/// selection's bounds, three above it (left, centre, right) and three beside it (top, middle,
+/// bottom). A click aligns the selected objects to that edge or centre of their bounds
+/// (`object.align`); Shift-click moves the key object (else the last selected) to the edge of the
+/// others instead.
+fn align_handles(app: &mut VectorcraftApp, ui: &mut Ui, p: &egui::Painter, xf: &Xf) {
+    const SIZE: f32 = 14.0;
+    const GAP: f32 = 10.0;
+    if app.session.tool_id() != "selection" || app.session.tool_transforming() {
+        return;
+    }
+    let Some(ids) =
+        app.session.active().filter(|st| st.selection.objects.len() >= 2 && st.selection.anchors.is_empty()).map(|st| st.selection.objects.clone())
+    else {
+        return;
+    };
+    let Some(b) = app.selection_bounds() else { return };
+    let t = Tokens::get(ui.ctx());
+    let corners = [Point::new(b.x0, b.y0), Point::new(b.x1, b.y0), Point::new(b.x1, b.y1), Point::new(b.x0, b.y1)].map(|q| xf.to_screen(q));
+    let sr = egui::Rect::from_points(&corners);
+    // (centre, horizontal, vertical) of each button.
+    let buttons: [(Pos2, Option<&str>, Option<&str>); 6] = [
+        (pos2(sr.left(), sr.top() - GAP), Some("left"), None),
+        (pos2(sr.center().x, sr.top() - GAP), Some("center"), None),
+        (pos2(sr.right(), sr.top() - GAP), Some("right"), None),
+        (pos2(sr.left() - GAP, sr.top()), None, Some("top")),
+        (pos2(sr.left() - GAP, sr.center().y), None, Some("center")),
+        (pos2(sr.left() - GAP, sr.bottom()), None, Some("bottom")),
+    ];
+    let mut clicked: Option<(Option<&str>, Option<&str>, bool)> = None;
+    for (i, (c, h, v)) in buttons.iter().enumerate() {
+        let r = egui::Rect::from_center_size(*c, vec2(SIZE, SIZE));
+        let resp = ui.interact(r, ui.id().with(("align-handle", i)), Sense::click());
+        let fill = if resp.hovered() { t.accent } else { t.panel };
+        p.rect_filled(r, 2.0, fill);
+        p.rect_stroke(r, 2.0, Stroke::new(1.0, t.accent), egui::StrokeKind::Inside);
+        // The glyph: a bar at the edge the button aligns to, two shorter bars beside it.
+        let ink = if resp.hovered() { t.panel } else { t.text };
+        let bar = |a: Pos2, b: Pos2| p.line_segment([a, b], Stroke::new(1.5, ink));
+        match (h, v) {
+            (Some(h), _) => {
+                let x = match *h {
+                    "left" => r.left() + 3.0,
+                    "right" => r.right() - 3.0,
+                    _ => r.center().x,
+                };
+                bar(pos2(x, r.top() + 2.0), pos2(x, r.bottom() - 2.0));
+                bar(pos2(r.center().x - 3.0, r.center().y - 2.0), pos2(r.center().x + 3.0, r.center().y - 2.0));
+                bar(pos2(r.center().x - 2.0, r.center().y + 2.0), pos2(r.center().x + 2.0, r.center().y + 2.0));
+            }
+            (_, Some(v)) => {
+                let y = match *v {
+                    "top" => r.top() + 3.0,
+                    "bottom" => r.bottom() - 3.0,
+                    _ => r.center().y,
+                };
+                bar(pos2(r.left() + 2.0, y), pos2(r.right() - 2.0, y));
+                bar(pos2(r.center().x - 2.0, r.center().y - 3.0), pos2(r.center().x - 2.0, r.center().y + 3.0));
+                bar(pos2(r.center().x + 2.0, r.center().y - 2.0), pos2(r.center().x + 2.0, r.center().y + 2.0));
+            }
+            _ => {}
+        }
+        if resp.clicked() {
+            clicked = Some((*h, *v, ui.input(|i| i.modifiers.shift)));
+        }
+        resp.on_hover_text(tl!("Align (Shift: move the key object)"));
+    }
+    let Some((h, v, shift)) = clicked else { return };
+    if !shift {
+        let mut params = json!({ "to": "selection" });
+        if let Some(h) = h {
+            params["horizontal"] = json!(h);
+        }
+        if let Some(v) = v {
+            params["vertical"] = json!(v);
+        }
+        if let Err(e) = app.run("object.align", params) {
+            app.ui.status = e;
+        }
+        return;
+    }
+    // Shift: the key object (else the last selected) moves to the others' edge or centre.
+    let Some(st) = app.session.active() else { return };
+    let key = st.selection.key.filter(|k| ids.contains(k)).or_else(|| ids.last().copied());
+    let Some(key) = key else { return };
+    let others: Vec<redrob_vector_doc::NodeId> = ids.iter().copied().filter(|id| *id != key).collect();
+    let (Some(kb), Some(ob)) = (st.doc.bounds_of(&[key], true), st.doc.bounds_of(&others, true)) else { return };
+    let dx = match h {
+        Some("left") => ob.x0 - kb.x0,
+        Some("right") => ob.x1 - kb.x1,
+        Some(_) => ob.center().x - kb.center().x,
+        None => 0.0,
+    };
+    let dy = match v {
+        Some("top") => ob.y0 - kb.y0,
+        Some("bottom") => ob.y1 - kb.y1,
+        Some(_) => ob.center().y - kb.center().y,
+        None => 0.0,
+    };
+    if dx.abs() < 1e-9 && dy.abs() < 1e-9 {
+        return;
+    }
+    let before: Vec<u64> = ids.iter().map(|i| i.0).collect();
+    let r = app
+        .run("select.set", json!({ "ids": [key.0] }))
+        .and_then(|_| app.run("object.move", json!({ "dx": dx, "dy": dy })))
+        .and_then(|_| app.run("select.set", json!({ "ids": before })));
+    if let Err(e) = r {
+        app.ui.status = e;
+    }
+}
 
 fn selection_overlay(app: &mut VectorcraftApp, p: &egui::Painter, xf: &Xf, curve_points_from_tool: bool) {
     // The Selection tool's bounding box (rotated with the objects after a rotation). It hides while

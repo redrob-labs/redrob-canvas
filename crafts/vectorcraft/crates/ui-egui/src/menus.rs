@@ -273,6 +273,12 @@ pub const UI_COMMANDS: &[(&str, &str, &str, &str)] = &[
     ),
     ("view.splitView", "Split View", "", "{} normal rendering on one side of a draggable divider and outline on the other; toggles"),
     ("view.xray", "X-ray", "Alt+6", "{} a disc of outline rendering around the pointer; toggles"),
+    (
+        "view.alignHandles",
+        "Alignment Handles",
+        "",
+        "{} buttons around the selection's bounds on the canvas (the Selection tool): click aligns the selected objects to that edge or centre, Shift-click moves the key object to it instead; toggles",
+    ),
     ("view.flipHorizontal", "Flip Horizontal", "", "{} mirror the view left to right (View › Canvas Orientation); toggles"),
     ("view.flipVertical", "Flip Vertical", "", "{} mirror the view top to bottom (View › Canvas Orientation); toggles"),
     ("view.flipReset", "Reset Canvas Orientation", "", "{} undo both view flips"),
@@ -1219,6 +1225,7 @@ pub fn run_ui_command(app: &mut VectorcraftApp, id: &str, p: &Value) -> Option<R
         "view.rotateLock" => flag(&mut app.ui.view.rotation_lock),
         "view.splitView" => flag(&mut app.ui.view.split_view),
         "view.xray" => flag(&mut app.ui.view.xray),
+        "view.alignHandles" => flag(&mut app.ui.view.align_handles),
         "view.setRotation" => match p.get("angle").and_then(Value::as_f64) {
             _ if app.ui.view.rotation_lock => Err("the view's rotation is locked (View › Lock Rotate View)".into()),
             None => Err("view.setRotation: missing `angle`".into()),
@@ -1611,6 +1618,7 @@ pub fn checked(app: &VectorcraftApp, id: &str, p: &Value) -> Option<bool> {
         "view.rotateLock" => v.rotation_lock,
         "view.splitView" => v.split_view,
         "view.xray" => v.xray,
+        "view.alignHandles" => v.align_handles,
         "view.grid" => v.grid,
         "view.snapToGrid" => v.snap_to_grid,
         "view.snapToPoint" => v.snap_to_point,
@@ -2670,6 +2678,7 @@ pub fn menu_tree_named(english_names: bool) -> Vec<(&'static str, Vec<Item>)> {
                 c("Lock Rotate View", "view.rotateLock"),
                 c("Split View", "view.splitView"),
                 c("X-ray", "view.xray"),
+                c("Alignment Handles", "view.alignHandles"),
                 sub(
                     "Canvas Orientation",
                     vec![

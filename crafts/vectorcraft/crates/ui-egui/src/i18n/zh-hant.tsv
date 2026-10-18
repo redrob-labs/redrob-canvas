@@ -4037,3 +4037,5 @@ lighting	Light	光源
 	External file	外部檔案
 	Code:	程式碼：
 	Open a document to edit its scripts.	開啟文件以編輯其指令碼。
+	Alignment Handles	對齊控制點
+	Align (Shift: move the key object)	對齊（Shift：移動關鍵物件）

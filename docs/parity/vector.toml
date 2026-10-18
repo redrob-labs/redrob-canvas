@@ -351,9 +351,9 @@ name = "On-canvas alignment handles"
 reference = "Inkscape"
 manual = "https://wiki.inkscape.org/wiki/Release_notes/1.0#On-Canvas_Alignment"
 behaviour = "A toolbar toggle shows alignment buttons around the selection bounding box on the canvas; clicking one aligns the selected objects to that edge or centre, Shift-click moves the anchor object instead."
-ours = "none"
-ours_where = ""
-gap = "alignment only through the Align panel"
+ours = "full"
+ours_where = "crafts/vectorcraft/crates/ui-egui/src/canvas.rs (align_handles: six buttons around the selection's bounds; click aligns, Shift-click moves the key object), crafts/vectorcraft/crates/ui-egui/src/toolbar.rs (Selection tool control bar toggle), crafts/vectorcraft/crates/ui-egui/src/menus.rs (view.alignHandles)"
+gap = ""
 priority = 3
 
 [[feature]]
