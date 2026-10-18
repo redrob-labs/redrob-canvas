@@ -14,7 +14,7 @@ pub const MAX_REFERENCES: usize = 32;
 /// Largest reference image side kept (larger ones are scaled down on load).
 pub const MAX_SIDE: u32 = 4096;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(default, rename_all = "camelCase")]
 pub struct RefImage {
     pub name: String,
@@ -83,7 +83,7 @@ pub enum Drag {
     },
 }
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct References {
     pub items: Vec<RefImage>,
@@ -125,7 +125,7 @@ pub fn decode(bytes: &[u8]) -> Result<egui::ColorImage, String> {
             px.push(full.pixels[(y * k).min(h - 1) * w + (x * k).min(w - 1)]);
         }
     }
-    Ok(egui::ColorImage { size: [nw, nh], pixels: px, ..full })
+    Ok(egui::ColorImage { size: [nw, nh], source_size: egui::vec2(nw as f32, nh as f32), pixels: px })
 }
 
 /// `img` with its saturation scaled by `s` (0 = greyscale).

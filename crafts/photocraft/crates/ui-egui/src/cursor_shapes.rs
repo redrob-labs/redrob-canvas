@@ -17,7 +17,7 @@ fn two_tone(painter: &Painter, f: impl Fn(Stroke)) {
 /// The outline for `shape` around `at`: `radius` is the tip's screen radius, `tilt` the stylus
 /// tilt in degrees (x, y). Draws nothing for `NoOutline`; the tip preview falls back to the
 /// circle when the tip has no traced outline.
-fn outline(app: &PhotocraftApp, painter: &Painter, xf: &ViewXform, at: Pos2, brush: &BrushSettings, radius: f32, shape: OutlineShape, tilt: [f32; 2]) {
+fn outline(painter: &Painter, xf: &ViewXform, at: Pos2, brush: &BrushSettings, radius: f32, shape: OutlineShape, tilt: [f32; 2]) {
     match shape {
         OutlineShape::NoOutline => {}
         OutlineShape::Circle => two_tone(painter, |s| painter.circle_stroke(at, radius, s)),
@@ -58,7 +58,6 @@ fn outline(app: &PhotocraftApp, painter: &Painter, xf: &ViewXform, at: Pos2, bru
             }
         }
     }
-    let _ = app;
 }
 
 /// The custom painting cursor at `at`, or `None` when the shape is the tool icon (the standard
@@ -82,7 +81,7 @@ pub fn custom(
     if !painting || cur.show_outline_while_painting {
         let r = if cur.effective_outline_size && brush.pressure_size { radius * pressure.clamp(0.0, 1.0) } else { radius };
         let tilt = app.stylus.sample().map_or([0.0, 0.0], |s| [s.tilt_x, s.tilt_y]);
-        outline(app, painter, xf, at, brush, r.max(1.0), cur.outline_shape, tilt);
+        outline(painter, xf, at, brush, r.max(1.0), cur.outline_shape, tilt);
     }
     Some(match cur.cursor_shape {
         CursorShape::ToolIcon => CursorIcon::Default,

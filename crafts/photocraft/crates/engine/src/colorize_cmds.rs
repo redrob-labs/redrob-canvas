@@ -5,7 +5,6 @@
 
 use redrob_photo_algo::colorize::{ColorizeOptions, KeyStroke};
 use redrob_photo_doc::{Layer, LayerContent, LayerId};
-use redrob_photo_geom::Rect;
 use serde_json::{Value, json};
 
 use crate::commands::CommandSpec;
@@ -149,6 +148,7 @@ pub fn specs() -> Vec<CommandSpec> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use redrob_photo_geom::Rect;
 
     #[test]
     fn colorize_writes_a_layer_below_the_line_art_and_rewrites_it() {
