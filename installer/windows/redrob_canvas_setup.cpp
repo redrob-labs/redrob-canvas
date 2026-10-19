@@ -1460,6 +1460,9 @@ int SetupApp::RunSilent(HINSTANCE hinst, bool deleteData) {
 }
 
 DWORD SetupApp::RunPayload() {
+  // This is a worker thread: COM is per thread, and without it the shortcut writer's CoCreateInstance
+  // fails, so the install finished with no Start menu entry and Windows search never found Canvas.
+  const HRESULT com = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
   // Redrob Code first, when chosen, so Canvas opens already able to find it. Its failure is reported at
   // the end and never stops the Canvas install.
   if (installCode_ && !codeDone_) {
@@ -1469,6 +1472,7 @@ DWORD SetupApp::RunPayload() {
   }
   PostMessage(hwnd_, kStageMsg, (WPARAM)Stage::Installing, 0);
   const DWORD result = InstallCanvas();
+  if (SUCCEEDED(com)) CoUninitialize();
   PostMessage(hwnd_, kPayloadMsgDone, (WPARAM)result, 0);
   return result;
 }
