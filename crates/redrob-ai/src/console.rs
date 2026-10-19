@@ -20,7 +20,9 @@ use std::time::Duration;
 
 use base64::Engine as _;
 use image::{RgbaImage, imageops::FilterType};
-pub use redrob_agent::ImageModel;
+/// The daemon client's error, which [`AiError::Agent`] carries: the shell branches on its
+/// `InsufficientCredit` (402) and `Busy` (429) variants.
+pub use redrob_agent::{Error as AgentError, ImageModel};
 use redrob_agent::{
     EngineConfig, ImageEditRequest, ImageGenerationRequest, ImageResponse, RedrobClient,
 };
