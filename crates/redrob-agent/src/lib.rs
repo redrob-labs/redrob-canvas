@@ -11,6 +11,7 @@
 mod client;
 mod engine;
 mod error;
+mod images;
 mod session;
 mod sse;
 mod types;
@@ -22,6 +23,7 @@ pub use engine::{
     REDROB_PROVIDER_ID, unavailable_message,
 };
 pub use error::{Error, Result};
+pub use images::{ImageEditRequest, ImageGenerationRequest, ImageModel, ImageResponse};
 pub use redrob_engine_client::Unavailable;
 pub use session::{AgentSession, ApprovalGate, ChatProvider, ToolExecutor};
 pub use types::{

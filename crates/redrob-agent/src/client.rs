@@ -17,6 +17,10 @@ use crate::{
     AccountStatus, ApiKey, AssistantResponse, CancellationToken, ChatEvent, ChatRequest,
     CompletionLimits, DeviceAuthorization, DevicePollOptions, EngineConfig, Error, FinishReason,
     Model, REDROB_PROVIDER_ID, Result, ToolCall, Usage,
+    images::{
+        ImageEditRequest, ImageGenerationRequest, ImageGenerationWire, ImageModel, ImageResponse,
+        ImageResponseWire, edit_multipart,
+    },
     sse::SseParser,
     types::CONSOLE_BASE_URL,
     wire::{
@@ -176,6 +180,64 @@ impl RedrobClient {
         let response = ensure_success(response).await?;
         let models: ModelsWire = response.json().await?;
         Ok(models.data.into_iter().map(Into::into).collect())
+    }
+
+    /// The console's image models: the `kind: "image"` entries of `GET /v1/models`. Empty when
+    /// the console serves none (or the daemon lists only chat models).
+    pub async fn image_models(&self) -> Result<Vec<ImageModel>> {
+        let response = self
+            .send(|record| {
+                Ok(self.headers(record, self.http.get(Self::endpoint(record, "models")?)))
+            })
+            .await?;
+        let response = ensure_success(response).await?;
+        let list: Value = response.json().await?;
+        Ok(ImageModel::from_models_list(&list))
+    }
+
+    /// `POST /v1/images/generations`: one image from a prompt.
+    pub async fn generate_image(&self, request: &ImageGenerationRequest) -> Result<ImageResponse> {
+        if request.model.trim().is_empty() || request.prompt.trim().is_empty() {
+            return Err(Error::InvalidConfiguration(
+                "an image generation needs a model and a prompt".into(),
+            ));
+        }
+        let wire = ImageGenerationWire::from(request);
+        let response = self
+            .send(|record| {
+                Ok(self.headers(
+                    record,
+                    self.http
+                        .post(Self::endpoint(record, "images/generations")?)
+                        .json(&wire),
+                ))
+            })
+            .await?;
+        image_answer(response).await
+    }
+
+    /// `POST /v1/images/edits` (multipart): the image, an optional mask whose transparent
+    /// pixels are the area to change, and a prompt.
+    pub async fn edit_image(&self, request: &ImageEditRequest) -> Result<ImageResponse> {
+        if request.model.trim().is_empty() || request.image_png.is_empty() {
+            return Err(Error::InvalidConfiguration(
+                "an image edit needs a model and an image".into(),
+            ));
+        }
+        let (body, boundary) = edit_multipart(request);
+        let content_type = format!("multipart/form-data; boundary={boundary}");
+        let response = self
+            .send(|record| {
+                Ok(self.headers(
+                    record,
+                    self.http
+                        .post(Self::endpoint(record, "images/edits")?)
+                        .header(reqwest::header::CONTENT_TYPE, content_type.as_str())
+                        .body(body.clone()),
+                ))
+            })
+            .await?;
+        image_answer(response).await
     }
 
     pub async fn stream_chat(&self, request: ChatRequest) -> Result<ChatEventStream> {
@@ -516,6 +578,41 @@ async fn ensure_success(response: reqwest::Response) -> Result<reqwest::Response
         return Err(Error::EngineNotAuthenticated);
     }
     Err(Error::HttpStatus { status, body })
+}
+
+/// An Images API answer: 402 and 429 become their own errors, any other failure the usual one,
+/// and a success must carry at least one image.
+async fn image_answer(response: reqwest::Response) -> Result<ImageResponse> {
+    let status = response.status();
+    if status == StatusCode::PAYMENT_REQUIRED {
+        let body = read_limited_body(response).await?;
+        let message = serde_json::from_str::<Value>(&body)
+            .ok()
+            .and_then(|value| {
+                value
+                    .pointer("/error/message")
+                    .and_then(Value::as_str)
+                    .map(str::to_owned)
+            })
+            .unwrap_or_default();
+        return Err(Error::InsufficientCredit(message));
+    }
+    if status == StatusCode::TOO_MANY_REQUESTS {
+        let retry_after = response
+            .headers()
+            .get(reqwest::header::RETRY_AFTER)
+            .and_then(|value| value.to_str().ok())
+            .and_then(|value| value.trim().parse::<u64>().ok())
+            .map(Duration::from_secs);
+        return Err(Error::Busy { retry_after });
+    }
+    let response = ensure_success(response).await?;
+    let wire: ImageResponseWire = response.json().await?;
+    let answer = ImageResponse::from(wire);
+    if answer.b64_images.is_empty() {
+        return Err(Error::Protocol("the image answer carried no image".into()));
+    }
+    Ok(answer)
 }
 
 /// Branches on the daemon's error `code`, never on its message, which is localized.

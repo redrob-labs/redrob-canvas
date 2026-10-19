@@ -389,6 +389,59 @@ const KO: &[(&str, &str)] = &[
     ),
     ("Hide", "숨기기"),
     ("an AI job is running", "AI 작업이 실행 중입니다"),
+    // AI dock: the Redrob Console image backend.
+    ("Backend", "백엔드"),
+    ("Local (IOPaint)", "로컬 (IOPaint)"),
+    (
+        "Erase, Generative Fill and Expand run on Redrob's image models with your Redrob Console sign-in; usage is billed to your console credit.",
+        "지우기, 생성형 채우기, 캔버스 확장이 Redrob Console 로그인으로 Redrob 이미지 모델에서 실행됩니다. 사용량은 콘솔 크레딧에서 차감됩니다.",
+    ),
+    (
+        "Refresh the Redrob Console image models",
+        "Redrob Console 이미지 모델 새로 고침",
+    ),
+    ("Console model", "콘솔 모델"),
+    ("Generate image", "이미지 생성"),
+    (
+        "Describe the image to generate",
+        "생성할 이미지를 설명하세요",
+    ),
+    (
+        "A new layer the size of the document, from the prompt (Redrob Console).",
+        "프롬프트로 문서 크기의 새 레이어를 만듭니다 (Redrob Console).",
+    ),
+    (
+        "Runs on Redrob Console: no local engine needed.",
+        "Redrob Console에서 실행되므로 로컬 엔진이 필요 없습니다.",
+    ),
+    (
+        "Redrob Console image models are not available: sign in, then refresh",
+        "Redrob Console 이미지 모델을 쓸 수 없습니다. 로그인한 뒤 새로 고치세요",
+    ),
+    (
+        "pick a Redrob Console model",
+        "Redrob Console 모델을 고르세요",
+    ),
+    (
+        "Not enough Redrob credit for this image. Add credit in Redrob Console, then try again.",
+        "이 이미지에 필요한 Redrob 크레딧이 부족합니다. Redrob Console에서 크레딧을 충전한 뒤 다시 시도하세요.",
+    ),
+    (
+        "The Redrob image server is busy. Try again in {seconds} s.",
+        "Redrob 이미지 서버가 바쁩니다. {seconds}초 뒤에 다시 시도하세요.",
+    ),
+    (
+        "The Redrob image server is busy. Try again in a moment.",
+        "Redrob 이미지 서버가 바쁩니다. 잠시 뒤에 다시 시도하세요.",
+    ),
+    (
+        "Sign in to Redrob Console to use its image models.",
+        "이미지 모델을 쓰려면 Redrob Console에 로그인하세요.",
+    ),
+    (
+        "Redrob Code is not running, so Redrob Console cannot be reached.",
+        "Redrob Code가 실행 중이 아니어서 Redrob Console에 연결할 수 없습니다.",
+    ),
     // Updates.
     ("Check for updates…", "업데이트 확인…"),
     ("Check for updates automatically", "자동으로 업데이트 확인"),

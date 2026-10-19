@@ -22,6 +22,18 @@ pub enum Error {
     #[error("the Redrob Code engine is not signed in to the Redrob console")]
     EngineNotAuthenticated,
 
+    /// 402 from an image route: the console account cannot pay for the request. The text is
+    /// the console's own message, when it sent one.
+    #[error("not enough Redrob credit for this request")]
+    InsufficientCredit(String),
+
+    /// 429 from an image route: the image server's queue is full. `retry_after` is the
+    /// `Retry-After` header, when it gave whole seconds.
+    #[error("the Redrob image server is busy")]
+    Busy {
+        retry_after: Option<std::time::Duration>,
+    },
+
     #[error("HTTP transport failed")]
     Http(#[source] reqwest::Error),
 
