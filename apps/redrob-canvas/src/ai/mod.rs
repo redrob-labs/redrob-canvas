@@ -11,8 +11,9 @@ pub mod panel;
 pub mod tools;
 
 use std::sync::{
-    Arc, mpsc,
+    Arc,
     atomic::{AtomicBool, Ordering},
+    mpsc,
 };
 
 use redrob_ai::{
@@ -572,10 +573,7 @@ impl AiPanel {
             match answer {
                 Ok(models) => {
                     if !models.is_empty() {
-                        self.push_log(format!(
-                            "Redrob Console: {} image model(s)",
-                            models.len()
-                        ));
+                        self.push_log(format!("Redrob Console: {} image model(s)", models.len()));
                     }
                     self.console.models = models;
                 }
@@ -880,10 +878,7 @@ pub fn gather_input(
                 }
             }
             other => {
-                return Err(format!(
-                    "{} does not run on Redrob Console",
-                    other.label()
-                ));
+                return Err(format!("{} does not run on Redrob Console", other.label()));
             }
         });
     }

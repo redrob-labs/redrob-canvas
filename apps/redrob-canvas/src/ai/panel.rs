@@ -183,10 +183,7 @@ fn backend_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>
              Console sign-in; usage is billed to your console credit.",
         ));
         let refresh = ui
-            .add_enabled(
-                !panel.console.probing(),
-                egui::Button::new("⟳").small(),
-            )
+            .add_enabled(!panel.console.probing(), egui::Button::new("⟳").small())
             .on_hover_text(t("Refresh the Redrob Console image models"));
         if refresh.clicked() {
             actions.push(Action::RefreshConsole);
@@ -228,8 +225,11 @@ fn console_model_combo(
                         Some(price) => format!("{} · ${price:.3}/MP", model.display_name()),
                         None => model.display_name().to_owned(),
                     };
-                    let item =
-                        ui.selectable_value(settings.console_model_mut(op), model.id.clone(), label);
+                    let item = ui.selectable_value(
+                        settings.console_model_mut(op),
+                        model.id.clone(),
+                        label,
+                    );
                     if let Some(description) = &model.description {
                         item.on_hover_text(description.as_str());
                     }

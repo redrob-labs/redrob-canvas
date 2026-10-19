@@ -20,12 +20,12 @@ use std::time::Duration;
 
 use base64::Engine as _;
 use image::{RgbaImage, imageops::FilterType};
-/// The daemon client's error, which [`AiError::Agent`] carries: the shell branches on its
-/// `InsufficientCredit` (402) and `Busy` (429) variants.
-pub use redrob_agent::{Error as AgentError, ImageModel};
 use redrob_agent::{
     EngineConfig, ImageEditRequest, ImageGenerationRequest, ImageResponse, RedrobClient,
 };
+/// The daemon client's error, which [`AiError::Agent`] carries: the shell branches on its
+/// `InsufficientCredit` (402) and `Busy` (429) variants.
+pub use redrob_agent::{Error as AgentError, ImageModel};
 
 use crate::{AiError, Expand, Mask, Result, Rgba8Image, pixels::MAX_EXPAND, region};
 
@@ -81,11 +81,8 @@ impl Operation {
 
     /// The models `models` offers for this operation, in the console's order.
     pub fn models(self, models: &[ImageModel]) -> Vec<ImageModel> {
-        let mut list: Vec<ImageModel> = models
-            .iter()
-            .filter(|m| self.accepts(m))
-            .cloned()
-            .collect();
+        let mut list: Vec<ImageModel> =
+            models.iter().filter(|m| self.accepts(m)).cloned().collect();
         if self == Operation::Erase {
             // Erase models first: they are what Erase is for.
             list.sort_by_key(|m| !m.mask_required);
@@ -191,8 +188,7 @@ impl ConsoleImages {
             .checked_add(expand.top)
             .and_then(|h| h.checked_add(expand.bottom))
             .ok_or_else(|| AiError::Geometry("expanded height overflows".into()))?;
-        let opaque =
-            Rgba8Image::from_rgb(image.width, image.height, &image.flatten_over_white())?;
+        let opaque = Rgba8Image::from_rgb(image.width, image.height, &image.flatten_over_white())?;
         let mut canvas = Rgba8Image::transparent(width, height)?;
         canvas.blit(&opaque, expand.left, expand.top)?;
         // 255 = fill (the new border), 0 = keep (the picture).

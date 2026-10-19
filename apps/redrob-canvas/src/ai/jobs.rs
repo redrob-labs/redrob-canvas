@@ -6,8 +6,9 @@
 
 use std::{
     sync::{
-        Arc, mpsc,
+        Arc,
         atomic::{AtomicBool, Ordering},
+        mpsc,
     },
     time::{Duration, Instant},
 };

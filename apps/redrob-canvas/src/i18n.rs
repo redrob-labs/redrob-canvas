@@ -402,7 +402,10 @@ const KO: &[(&str, &str)] = &[
     ),
     ("Console model", "콘솔 모델"),
     ("Generate image", "이미지 생성"),
-    ("Describe the image to generate", "생성할 이미지를 설명하세요"),
+    (
+        "Describe the image to generate",
+        "생성할 이미지를 설명하세요",
+    ),
     (
         "A new layer the size of the document, from the prompt (Redrob Console).",
         "프롬프트로 문서 크기의 새 레이어를 만듭니다 (Redrob Console).",
@@ -415,7 +418,10 @@ const KO: &[(&str, &str)] = &[
         "Redrob Console image models are not available: sign in, then refresh",
         "Redrob Console 이미지 모델을 쓸 수 없습니다. 로그인한 뒤 새로 고치세요",
     ),
-    ("pick a Redrob Console model", "Redrob Console 모델을 고르세요"),
+    (
+        "pick a Redrob Console model",
+        "Redrob Console 모델을 고르세요",
+    ),
     (
         "Not enough Redrob credit for this image. Add credit in Redrob Console, then try again.",
         "이 이미지에 필요한 Redrob 크레딧이 부족합니다. Redrob Console에서 크레딧을 충전한 뒤 다시 시도하세요.",
