@@ -10,6 +10,8 @@
 //!   [`iopaint::Client`] speaks its HTTP API (inpaint, outpaint, the plugins), moving pixels as
 //!   raw files through the engine's exchange directory when both sit on one machine
 //!   ([`iopaint::transport`]) and sending only the region a request touches ([`region`]).
+//! - [`console`]: the Redrob Console image models (generate, fill, expand, erase), the second
+//!   backend, reached through the shared Redrob Code daemon with the user's console sign-in.
 //! - [`vectorize`]: Image Trace, a thin wrapper over `redrob_vector_trace`.
 //! - [`agent`]: the mode agent, an [`redrob_agent::AgentSession`] on its own runtime thread that
 //!   calls whatever tools the current mode exposes through [`agent::ModeTools`].
@@ -24,6 +26,8 @@
 
 #[cfg(feature = "engine")]
 pub mod agent;
+#[cfg(feature = "engine")]
+pub mod console;
 mod error;
 #[cfg(feature = "engine")]
 pub mod iopaint;

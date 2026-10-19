@@ -5,11 +5,12 @@
 //! applies after the frame's drawing.
 
 use egui::RichText;
+use redrob_ai::console::{ImageModel, Operation};
 use redrob_ai::iopaint::{Device, EngineState, Plugin, TransportMode, models};
 
 use super::bridge::Capabilities;
 use super::jobs::ToolKind;
-use super::{Action, AiPanel, Speaker, Tab};
+use super::{Action, AiPanel, Backend, Speaker, Tab, ToolSettings};
 use crate::i18n::t;
 use crate::shell::Mode;
 
@@ -36,6 +37,23 @@ pub fn menu(ui: &mut egui::Ui, panel: &mut AiPanel, caps: &Capabilities) {
                 panel.open = true;
                 panel.tab = Tab::Tools;
                 ui.close();
+            }
+        }
+        if panel.console.available() {
+            for kind in ToolKind::CONSOLE_ONLY {
+                let enabled = kind.available(caps) && !busy;
+                let button = ui.add_enabled(enabled, egui::Button::new(t(kind.label())));
+                let button = match kind.unavailable_reason(caps) {
+                    Some(reason) if !enabled => button.on_disabled_hover_text(reason),
+                    _ if busy => button.on_disabled_hover_text(t("an AI job is running")),
+                    _ => button,
+                };
+                if button.clicked() {
+                    panel.queued.push(Action::Run(kind));
+                    panel.open = true;
+                    panel.tab = Tab::Tools;
+                    ui.close();
+                }
             }
         }
         ui.separator();
@@ -97,6 +115,7 @@ fn tools_tab(
     egui::ScrollArea::vertical()
         .auto_shrink([false, false])
         .show(ui, |ui| {
+            backend_row(ui, panel, actions);
             engine_row(ui, panel, actions);
             ui.add_space(6.0);
             if let Some((text, is_error)) = &panel.status {
@@ -120,6 +139,11 @@ fn tools_tab(
             for kind in ToolKind::ALL {
                 card(ui, panel, caps, kind, actions);
             }
+            if panel.console.available() {
+                for kind in ToolKind::CONSOLE_ONLY {
+                    card(ui, panel, caps, kind, actions);
+                }
+            }
             ui.add_space(6.0);
             egui::CollapsingHeader::new("Log")
                 .default_open(false)
@@ -134,6 +158,84 @@ fn tools_tab(
                         });
                 });
         });
+}
+
+/// Local IOPaint or Redrob Console, for Erase, Generative Fill and Expand. Not drawn at all while
+/// the console lists no image models (signed out, no daemon, or a console without them).
+fn backend_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>) {
+    if !panel.console.available() {
+        return;
+    }
+    ui.horizontal_wrapped(|ui| {
+        ui.label(RichText::new(t("Backend")).strong());
+        ui.selectable_value(
+            &mut panel.settings.backend,
+            Backend::Local,
+            t("Local (IOPaint)"),
+        );
+        ui.selectable_value(
+            &mut panel.settings.backend,
+            Backend::Console,
+            t("Redrob Console"),
+        )
+        .on_hover_text(t(
+            "Erase, Generative Fill and Expand run on Redrob's image models with your Redrob \
+             Console sign-in; usage is billed to your console credit.",
+        ));
+        let refresh = ui
+            .add_enabled(!panel.console.probing(), egui::Button::new("⟳").small())
+            .on_hover_text(t("Refresh the Redrob Console image models"));
+        if refresh.clicked() {
+            actions.push(Action::RefreshConsole);
+        }
+    });
+    ui.add_space(4.0);
+}
+
+/// The id a console model combo is kept under, one per operation.
+fn console_combo_id(op: Operation) -> &'static str {
+    match op {
+        Operation::Fill => "redrob_canvas_ai_console_fill_model",
+        Operation::Expand => "redrob_canvas_ai_console_expand_model",
+        Operation::Erase => "redrob_canvas_ai_console_erase_model",
+        Operation::Generate => "redrob_canvas_ai_console_generate_model",
+    }
+}
+
+/// The per-operation model picker over the console's image models.
+fn console_model_combo(
+    ui: &mut egui::Ui,
+    settings: &mut ToolSettings,
+    op: Operation,
+    choices: &[ImageModel],
+) {
+    let current = settings.console_model(op).to_owned();
+    let shown = choices
+        .iter()
+        .find(|m| m.id == current)
+        .map_or_else(|| short_model(&current), |m| m.display_name().to_owned());
+    ui.horizontal(|ui| {
+        ui.label(t("Console model"));
+        egui::ComboBox::from_id_salt(console_combo_id(op))
+            .selected_text(shown)
+            .width(ui.available_width().min(200.0))
+            .show_ui(ui, |ui| {
+                for model in choices {
+                    let label = match model.price_per_megapixel_usd {
+                        Some(price) => format!("{} · ${price:.3}/MP", model.display_name()),
+                        None => model.display_name().to_owned(),
+                    };
+                    let item = ui.selectable_value(
+                        settings.console_model_mut(op),
+                        model.id.clone(),
+                        label,
+                    );
+                    if let Some(description) = &model.description {
+                        item.on_hover_text(description.as_str());
+                    }
+                }
+            });
+    });
 }
 
 fn engine_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>) {
@@ -318,7 +420,13 @@ fn card(
     actions: &mut Vec<Action>,
 ) {
     let available = kind.available(caps);
-    let fill_models = if kind == ToolKind::GenerativeFill {
+    let console_op = kind
+        .console_operation()
+        .filter(|_| panel.settings.routes_to_console(kind));
+    let console_models = console_op
+        .map(|op| panel.console.models_for(op))
+        .unwrap_or_default();
+    let fill_models = if kind == ToolKind::GenerativeFill && console_op.is_none() {
         model_choices(panel, false)
     } else {
         Vec::new()
@@ -326,7 +434,7 @@ fn card(
     let frame = egui::Frame::group(ui.style());
     frame.show(ui, |ui| {
         ui.set_width(ui.available_width());
-        ui.label(RichText::new(kind.label()).strong());
+        ui.label(RichText::new(t(kind.label())).strong());
         if matches!(kind, ToolKind::RemoveBackground | ToolKind::SelectSubject) {
             remove_bg_model_combo(
                 ui,
@@ -396,25 +504,28 @@ fn card(
                         .hint_text("Negative prompt")
                         .desired_width(f32::INFINITY),
                 );
-                ui.horizontal(|ui| {
-                    ui.label("Fill model");
-                    egui::ComboBox::from_id_salt("redrob_canvas_ai_fill_model")
-                        .selected_text(short_model(&settings.fill_model))
-                        .width(ui.available_width().min(200.0))
-                        .show_ui(ui, |ui| {
-                            for choice in fill_models {
-                                let label = short_model(&choice);
-                                ui.selectable_value(&mut settings.fill_model, choice, label);
-                            }
-                        });
-                });
-                ui.label(
-                    RichText::new(
-                        "Selection + prompt on a new layer masked by the selection. Loads the \
-                         fill model (a download the first time); Erase switches back to lama.",
-                    )
-                    .small(),
-                );
+                if console_op.is_none() {
+                    ui.horizontal(|ui| {
+                        ui.label("Fill model");
+                        egui::ComboBox::from_id_salt("redrob_canvas_ai_fill_model")
+                            .selected_text(short_model(&settings.fill_model))
+                            .width(ui.available_width().min(200.0))
+                            .show_ui(ui, |ui| {
+                                for choice in fill_models {
+                                    let label = short_model(&choice);
+                                    ui.selectable_value(&mut settings.fill_model, choice, label);
+                                }
+                            });
+                    });
+                    ui.label(
+                        RichText::new(
+                            "Selection + prompt on a new layer masked by the selection. Loads \
+                             the fill model (a download the first time); Erase switches back to \
+                             lama.",
+                        )
+                        .small(),
+                    );
+                }
             }
             ToolKind::Outpaint => {
                 ui.horizontal_wrapped(|ui| {
@@ -477,9 +588,35 @@ fn card(
                     ui.label(RichText::new("The paths open in Vector mode.").small());
                 }
             }
+            ToolKind::Generate => {
+                ui.add(
+                    egui::TextEdit::multiline(&mut settings.generate_prompt)
+                        .hint_text(t("Describe the image to generate"))
+                        .desired_rows(2)
+                        .desired_width(f32::INFINITY),
+                );
+                ui.label(
+                    RichText::new(t(
+                        "A new layer the size of the document, from the prompt (Redrob Console).",
+                    ))
+                    .small(),
+                );
+            }
+        }
+        if let Some(op) = console_op {
+            console_model_combo(ui, &mut panel.settings, op, &console_models);
+            if kind != ToolKind::Generate {
+                ui.label(
+                    RichText::new(t("Runs on Redrob Console: no local engine needed."))
+                        .small()
+                        .weak(),
+                );
+            }
         }
         let busy = panel.is_busy();
-        let needs_engine = kind.needs_engine() && panel.engine_state() != EngineState::Ready;
+        let needs_engine = kind.needs_engine()
+            && console_op.is_none()
+            && panel.engine_state() != EngineState::Ready;
         let enabled = available && !busy && !needs_engine;
         let run = ui.add_enabled(enabled, egui::Button::new("Run"));
         let run = if busy {

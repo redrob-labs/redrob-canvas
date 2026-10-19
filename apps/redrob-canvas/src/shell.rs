@@ -1144,6 +1144,7 @@ impl ShellApp {
             self.handle_tool_request(request);
         }
         self.ai.poll_agent();
+        self.ai.poll_console();
         self.ai.drain_engine_log();
         let (caps, size) = self.with_bridge(|b| (b.capabilities(), b.document_size()));
         self.caps = caps;
@@ -1167,6 +1168,7 @@ impl ShellApp {
             Action::SetModel => self.ai.set_model(),
             Action::AgentSend(text) => self.ai.agent_send(text),
             Action::AgentReset => self.ai.agent_reset(),
+            Action::RefreshConsole => self.ai.refresh_console(),
             Action::CancelJob => {
                 if let Some(reply) = self.ai.jobs.cancel() {
                     let _ = reply.send(Err("cancelled".into()));
