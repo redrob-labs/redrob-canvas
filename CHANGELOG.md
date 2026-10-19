@@ -4,6 +4,17 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.12.0 — 2026-10-20
+
+### Added
+
+- **Redrob Console as an image backend.** Generate, generative fill, expand and erase can run on
+  Redrob Console's image API instead of the local engine, with no GPU on your machine. Models:
+  FLUX.2 klein 4B (generate, fill, expand), Z-Image Turbo and ERNIE-Image Turbo (generate) and
+  LaMa (erase). It uses your signed-in Console key and is billed on Console per megapixel. The
+  local IOPaint engine stays as the other choice. Expand renders the new border at about 1 MP and
+  scales it, so a very large canvas can get a soft edge.
+
 ## 0.11.1 — 2026-10-19
 
 ### Fixed
