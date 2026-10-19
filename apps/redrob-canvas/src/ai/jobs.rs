@@ -5,12 +5,16 @@
 //! machine over `std::sync::mpsc`, so it is testable without an engine or a runtime.
 
 use std::{
-    sync::mpsc,
+    sync::{
+        Arc, mpsc,
+        atomic::{AtomicBool, Ordering},
+    },
     time::{Duration, Instant},
 };
 
 use redrob_ai::{
-    Expand, Mask, Rgba8Image,
+    AiError, Expand, Mask, Rgba8Image,
+    console::{AgentError, ConsoleImages, Operation},
     iopaint::{Device, Engine, InpaintOptions, Plugin, models},
     vectorize::TraceResult,
 };
@@ -31,6 +35,9 @@ pub enum ToolKind {
     FaceRestore,
     SelectSubject,
     Vectorize,
+    /// A new image from a prompt (Redrob Console only; not in [`ToolKind::ALL`], which are the
+    /// tools every backend serves -- the panel adds it when the console lists image models).
+    Generate,
 }
 
 impl ToolKind {
@@ -46,6 +53,9 @@ impl ToolKind {
         ToolKind::Vectorize,
     ];
 
+    /// The tools that exist only on the Redrob Console backend.
+    pub const CONSOLE_ONLY: [ToolKind; 1] = [ToolKind::Generate];
+
     pub fn label(self) -> &'static str {
         match self {
             ToolKind::Erase => "Erase",
@@ -57,6 +67,7 @@ impl ToolKind {
             ToolKind::FaceRestore => "Face restore",
             ToolKind::SelectSubject => "Select subject",
             ToolKind::Vectorize => "Vectorize",
+            ToolKind::Generate => "Generate image",
         }
     }
 
@@ -72,6 +83,7 @@ impl ToolKind {
             ToolKind::FaceRestore => "face_restore",
             ToolKind::SelectSubject => "select_subject",
             ToolKind::Vectorize => "vectorize",
+            ToolKind::Generate => "generate_image",
         }
     }
 
@@ -79,9 +91,21 @@ impl ToolKind {
         Self::ALL.into_iter().find(|k| k.tool_name() == name)
     }
 
-    /// Whether the tool needs the local IOPaint engine (Vectorize traces in-process).
+    /// Whether the tool needs the local IOPaint engine (Vectorize traces in-process, Generate is
+    /// the console's). A tool routed to the console does not, whatever this says.
     pub fn needs_engine(self) -> bool {
-        !matches!(self, ToolKind::Vectorize)
+        !matches!(self, ToolKind::Vectorize | ToolKind::Generate)
+    }
+
+    /// The Redrob Console operation that serves this tool, when the console can.
+    pub fn console_operation(self) -> Option<Operation> {
+        match self {
+            ToolKind::Erase => Some(Operation::Erase),
+            ToolKind::GenerativeFill => Some(Operation::Fill),
+            ToolKind::Outpaint => Some(Operation::Expand),
+            ToolKind::Generate => Some(Operation::Generate),
+            _ => None,
+        }
     }
 
     /// Whether the tool reads the selection mask.
@@ -108,6 +132,7 @@ impl ToolKind {
                 | ToolKind::RemoveBackground
                 | ToolKind::Upscale
                 | ToolKind::FaceRestore
+                | ToolKind::Generate
         )
     }
 
@@ -210,6 +235,52 @@ pub enum JobInput {
         image: Rgba8Image,
         preset: String,
     },
+    /// Generative fill (or, with `erase`, an erase) on the Redrob Console.
+    ConsoleFill {
+        image: Rgba8Image,
+        mask: Mask,
+        prompt: Option<String>,
+        model: String,
+        seed: Option<i64>,
+        erase: bool,
+    },
+    /// Expand canvas on the Redrob Console.
+    ConsoleExpand {
+        image: Rgba8Image,
+        expand: Expand,
+        prompt: Option<String>,
+        model: String,
+        seed: Option<i64>,
+    },
+    /// Generate on the Redrob Console, at the document's size.
+    ConsoleGenerate {
+        prompt: String,
+        model: String,
+        size: (u32, u32),
+        seed: Option<i64>,
+    },
+}
+
+impl JobInput {
+    /// Whether this job runs on the Redrob Console (and so needs no local engine).
+    pub fn uses_console(&self) -> bool {
+        matches!(
+            self,
+            JobInput::ConsoleFill { .. }
+                | JobInput::ConsoleExpand { .. }
+                | JobInput::ConsoleGenerate { .. }
+        )
+    }
+}
+
+/// What a console job needs besides its input: the client, the language its messages are in
+/// (the shell's strings are per UI thread), and the flag that tells the panel the console
+/// sign-in is gone so it hides the backend until a fresh probe.
+#[derive(Clone)]
+pub struct ConsoleJob {
+    pub images: ConsoleImages,
+    pub lang: &'static str,
+    pub signed_out: Arc<AtomicBool>,
 }
 
 /// What a finished job hands back to the UI thread, to apply through the bridge.
@@ -377,8 +448,27 @@ impl ModelChoice {
     }
 }
 
-/// Runs `input` against `engine`, returning what to apply. Async: call on the runtime.
-pub async fn run_job(engine: Option<Engine>, input: JobInput) -> Result<JobOutput, String> {
+/// Runs `input` against `engine` (or the console), returning what to apply. Async: call on the
+/// runtime.
+pub async fn run_job(
+    engine: Option<Engine>,
+    console: Option<ConsoleJob>,
+    input: JobInput,
+) -> Result<JobOutput, String> {
+    if input.uses_console() {
+        let console = console.ok_or_else(|| {
+            "Redrob Console image models are not available: sign in, then refresh".to_string()
+        })?;
+        return match run_console_job(&console.images, input).await {
+            Ok(output) => Ok(output),
+            Err(error) => {
+                if is_signed_out(&error) {
+                    console.signed_out.store(true, Ordering::Release);
+                }
+                Err(console_error_message(console.lang, &error))
+            }
+        };
+    }
     match input {
         JobInput::Vectorize { image, preset } => {
             let size = (image.width, image.height);
@@ -528,7 +618,128 @@ async fn run_engine_job(engine: &Engine, input: JobInput) -> redrob_ai::Result<J
         JobInput::Vectorize { .. } => Err(redrob_ai::AiError::Geometry(
             "Vectorize does not use the engine".into(),
         )),
+        JobInput::ConsoleFill { .. }
+        | JobInput::ConsoleExpand { .. }
+        | JobInput::ConsoleGenerate { .. } => Err(redrob_ai::AiError::Geometry(
+            "a Redrob Console job does not use the local engine".into(),
+        )),
     }
+}
+
+async fn run_console_job(console: &ConsoleImages, input: JobInput) -> redrob_ai::Result<JobOutput> {
+    match input {
+        JobInput::ConsoleFill {
+            image,
+            mask,
+            prompt,
+            model,
+            seed,
+            erase,
+        } => {
+            let prompt = if erase { None } else { prompt };
+            let (result, (x, y)) = console
+                .fill(&model, &image, &mask, prompt.as_deref(), seed)
+                .await?;
+            Ok(JobOutput::Layer {
+                name: if erase { "AI erase" } else { "Generative fill" }.to_owned(),
+                image: result,
+                offset: (x as i32, y as i32),
+            })
+        }
+        JobInput::ConsoleExpand {
+            image,
+            expand,
+            prompt,
+            model,
+            seed,
+        } => {
+            let result = console
+                .expand(&model, &image, expand, prompt.as_deref(), seed)
+                .await?;
+            Ok(JobOutput::Expanded {
+                name: "AI expand".into(),
+                image: result,
+                expand,
+            })
+        }
+        JobInput::ConsoleGenerate {
+            prompt,
+            model,
+            size,
+            seed,
+        } => {
+            let result = console
+                .generate(&model, &prompt, size.0, size.1, seed)
+                .await?;
+            Ok(JobOutput::Layer {
+                name: "AI image".into(),
+                image: result,
+                offset: (0, 0),
+            })
+        }
+        _ => Err(AiError::Geometry(
+            "a local job does not run on the Redrob Console".into(),
+        )),
+    }
+}
+
+/// Whether `error` means the daemon has no console sign-in (or the console refused the key).
+fn is_signed_out(error: &AiError) -> bool {
+    match error {
+        AiError::Agent(AgentError::EngineNotAuthenticated) => true,
+        AiError::Agent(AgentError::HttpStatus { status, .. }) => status.as_u16() == 401,
+        _ => false,
+    }
+}
+
+/// A console failure as the user reads it, in `lang`: no credit (402) and busy (429, with its
+/// Retry-After) get their own sentences; the rest is the error's own text.
+pub fn console_error_message(lang: &str, error: &AiError) -> String {
+    use crate::i18n::{fmt, tr};
+    match error {
+        AiError::Agent(AgentError::InsufficientCredit(_)) => tr(
+            lang,
+            "Not enough Redrob credit for this image. Add credit in Redrob Console, then try again.",
+        )
+        .to_owned(),
+        AiError::Agent(AgentError::Busy {
+            retry_after: Some(wait),
+        }) => fmt(
+            tr(
+                lang,
+                "The Redrob image server is busy. Try again in {seconds} s.",
+            ),
+            &[("seconds", &wait.as_secs().max(1).to_string())],
+        ),
+        AiError::Agent(AgentError::Busy { retry_after: None }) => tr(
+            lang,
+            "The Redrob image server is busy. Try again in a moment.",
+        )
+        .to_owned(),
+        other if is_signed_out(other) => tr(
+            lang,
+            "Sign in to Redrob Console to use its image models.",
+        )
+        .to_owned(),
+        AiError::Agent(AgentError::EngineUnavailable(_)) => tr(
+            lang,
+            "Redrob Code is not running, so Redrob Console cannot be reached.",
+        )
+        .to_owned(),
+        AiError::Agent(AgentError::HttpStatus { body, .. }) => {
+            console_body_message(body).unwrap_or_else(|| error.to_string())
+        }
+        other => other.to_string(),
+    }
+}
+
+/// The `error.message` of an OpenAI-shaped error body.
+fn console_body_message(body: &str) -> Option<String> {
+    serde_json::from_str::<serde_json::Value>(body)
+        .ok()?
+        .pointer("/error/message")?
+        .as_str()
+        .map(str::to_owned)
 }
 
 #[cfg(test)]

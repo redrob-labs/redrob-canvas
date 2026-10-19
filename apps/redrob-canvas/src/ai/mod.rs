@@ -10,11 +10,15 @@ pub mod jobs;
 pub mod panel;
 pub mod tools;
 
-use std::sync::{Arc, mpsc};
+use std::sync::{
+    Arc, mpsc,
+    atomic::{AtomicBool, Ordering},
+};
 
 use redrob_ai::{
     Expand,
     agent::{AgentEvent, AgentHandle, AgentOptions},
+    console::{ConsoleImages, ImageModel, Operation},
     iopaint::{
         Device, Engine, EnginePaths, EngineState, InpaintOptions, Plugin, TransportMode, models,
     },
@@ -22,7 +26,7 @@ use redrob_ai::{
 use serde_json::Value;
 use tokio::sync::broadcast;
 
-use self::jobs::{JobInput, JobQueue, JobResult, ModelChoice, ToolKind};
+use self::jobs::{ConsoleJob, JobInput, JobQueue, JobResult, ModelChoice, ToolKind};
 use self::tools::{ModeInfo, ShellTools, ToolRequest};
 use crate::shell::Mode;
 
@@ -49,7 +53,22 @@ pub enum Action {
     AgentSend(String),
     AgentReset,
     CancelJob,
+    /// Ask the Redrob Console again which image models it serves (after signing in).
+    RefreshConsole,
 }
+
+/// Where Erase, Generative Fill and Expand run.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum Backend {
+    /// The local IOPaint engine.
+    #[default]
+    Local,
+    /// The Redrob Console image models, with the user's console sign-in.
+    Console,
+}
+
+/// The `x-redrob-app` label the console image requests carry.
+pub const CONSOLE_APP: &str = "redrob-canvas";
 
 /// The cards' parameters.
 #[derive(Clone, Debug, PartialEq)]
@@ -75,6 +94,16 @@ pub struct ToolSettings {
     pub seed: i64,
     pub expand: Expand,
     pub upscale: u32,
+    /// Where Erase, Generative Fill and Expand run. Only `Console` while the console lists image
+    /// models; the panel falls back to `Local` when it stops.
+    pub backend: Backend,
+    /// The console model each operation uses (empty = the operation's default).
+    pub console_fill_model: String,
+    pub console_expand_model: String,
+    pub console_erase_model: String,
+    pub console_generate_model: String,
+    /// Generate's prompt.
+    pub generate_prompt: String,
     /// `"GFPGAN"` or `"RestoreFormer"`.
     pub face_plugin: &'static str,
     /// `"RemoveBG"` or `"AnimeSeg"`.
@@ -106,6 +135,12 @@ impl Default for ToolSettings {
                 bottom: 0,
             },
             upscale: 2,
+            backend: Backend::Local,
+            console_fill_model: String::new(),
+            console_expand_model: String::new(),
+            console_erase_model: String::new(),
+            console_generate_model: String::new(),
+            generate_prompt: String::new(),
             face_plugin: "GFPGAN",
             subject_plugin: "RemoveBG",
             preset: redrob_ai::vectorize::preset_names()
@@ -147,6 +182,36 @@ impl ToolSettings {
             negative_prompt: (!negative.is_empty()).then_some(negative),
             ..self.inpaint_options(Some(""), Some(""))
         }
+    }
+
+    /// The console model `op` uses.
+    pub fn console_model(&self, op: Operation) -> &str {
+        match op {
+            Operation::Fill => &self.console_fill_model,
+            Operation::Expand => &self.console_expand_model,
+            Operation::Erase => &self.console_erase_model,
+            Operation::Generate => &self.console_generate_model,
+        }
+    }
+
+    pub fn console_model_mut(&mut self, op: Operation) -> &mut String {
+        match op {
+            Operation::Fill => &mut self.console_fill_model,
+            Operation::Expand => &mut self.console_expand_model,
+            Operation::Erase => &mut self.console_erase_model,
+            Operation::Generate => &mut self.console_generate_model,
+        }
+    }
+
+    /// Whether `kind` runs on the Redrob Console with these settings.
+    pub fn routes_to_console(&self, kind: ToolKind) -> bool {
+        kind == ToolKind::Generate
+            || (self.backend == Backend::Console && kind.console_operation().is_some())
+    }
+
+    /// The seed a console request sends (`-1` = random, so none).
+    pub fn console_seed(&self) -> Option<i64> {
+        (self.seed >= 0).then_some(self.seed)
     }
 
     /// The model, device and plugins Generative Fill holds.
@@ -207,6 +272,45 @@ upscale, face_restore and vectorize work in every mode. \
 vectorize switches to Vector mode with the traced paths. Say briefly what you did; do not invent \
 results a tool did not return.";
 
+/// Whether the console's image models have been asked for.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+enum Probe {
+    #[default]
+    NotStarted,
+    Running,
+    Done,
+}
+
+/// The Redrob Console backend: its client and the image models it listed. Asked for when the
+/// dock opens (that is when the shared daemon is looked up), and again on Refresh, when the dock
+/// is reopened while the console listed nothing, and after a job found the sign-in gone.
+#[derive(Default)]
+pub struct ConsoleState {
+    client: Option<ConsoleImages>,
+    pub models: Vec<ImageModel>,
+    probe: Probe,
+    rx: Option<mpsc::Receiver<Result<Vec<ImageModel>, String>>>,
+    signed_out: Arc<AtomicBool>,
+    was_open: bool,
+}
+
+impl ConsoleState {
+    /// Whether the console backend is offered: a client and at least one image model.
+    pub fn available(&self) -> bool {
+        self.client.is_some() && !self.models.is_empty()
+    }
+
+    /// Whether the model list is being fetched.
+    pub fn probing(&self) -> bool {
+        self.probe == Probe::Running
+    }
+
+    /// The models `op` can use.
+    pub fn models_for(&self, op: Operation) -> Vec<ImageModel> {
+        op.models(&self.models)
+    }
+}
+
 /// The state behind the AI dock.
 pub struct AiPanel {
     pub open: bool,
@@ -225,6 +329,7 @@ pub struct AiPanel {
     /// The last job's outcome, shown under the cards (`true` = error).
     pub status: Option<(String, bool)>,
     pub agent: AgentChat,
+    pub console: ConsoleState,
     tools: Arc<ShellTools>,
     tool_rx: mpsc::Receiver<ToolRequest>,
     /// Actions the top bar / menu asked for, applied by the shell after drawing.
@@ -266,6 +371,12 @@ impl AiPanel {
             log: Vec::new(),
             status: None,
             agent: AgentChat::default(),
+            console: ConsoleState {
+                client: ConsoleImages::new(CONSOLE_APP)
+                    .map_err(|e| log::warn!("no Redrob Console image client: {e}"))
+                    .ok(),
+                ..ConsoleState::default()
+            },
             tools: Arc::new(tools),
             tool_rx,
             queued: Vec::new(),
@@ -421,6 +532,82 @@ impl AiPanel {
             || self.settings.transport != self.shown_transport
     }
 
+    /// Asks the console for its image models again.
+    pub fn refresh_console(&mut self) {
+        if self.console.probe != Probe::Running {
+            self.console.probe = Probe::NotStarted;
+        }
+    }
+
+    /// Once a frame: starts the console probe while the dock is open, takes its answer, and
+    /// keeps the settings consistent with what the console lists.
+    pub fn poll_console(&mut self) {
+        if self.console.signed_out.swap(false, Ordering::AcqRel) {
+            self.console.models.clear();
+            self.console.probe = Probe::NotStarted;
+        }
+        if self.open && !self.console.was_open && !self.console.available() {
+            self.refresh_console();
+        }
+        self.console.was_open = self.open;
+        if self.open
+            && self.console.probe == Probe::NotStarted
+            && let Some(client) = self.console.client.clone()
+        {
+            let (tx, rx) = mpsc::channel();
+            let started = self.spawn(async move {
+                let _ = tx.send(client.models().await.map_err(|e| e.to_string()));
+            });
+            if started {
+                self.console.rx = Some(rx);
+                self.console.probe = Probe::Running;
+            } else {
+                self.console.probe = Probe::Done;
+            }
+        }
+        let answer = self.console.rx.as_ref().and_then(|rx| rx.try_recv().ok());
+        if let Some(answer) = answer {
+            self.console.rx = None;
+            self.console.probe = Probe::Done;
+            match answer {
+                Ok(models) => {
+                    if !models.is_empty() {
+                        self.push_log(format!(
+                            "Redrob Console: {} image model(s)",
+                            models.len()
+                        ));
+                    }
+                    self.console.models = models;
+                }
+                Err(e) => {
+                    // Signed out, daemon not running, or a console without image models: the
+                    // backend is simply not offered.
+                    self.push_log(format!("Redrob Console image models: {e}"));
+                    self.console.models.clear();
+                }
+            }
+        }
+        if !self.console.available() {
+            if self.console.probe == Probe::Done && self.settings.backend == Backend::Console {
+                self.settings.backend = Backend::Local;
+            }
+            return;
+        }
+        for op in [
+            Operation::Fill,
+            Operation::Expand,
+            Operation::Erase,
+            Operation::Generate,
+        ] {
+            let listed = self.console.models_for(op);
+            let current = self.settings.console_model(op).to_owned();
+            if !listed.iter().any(|m| m.id == current) {
+                *self.settings.console_model_mut(op) =
+                    op.default_model(&self.console.models).unwrap_or_default();
+            }
+        }
+    }
+
     /// Starts `input` as the one running job. `reply` is the agent's pending tool call, answered
     /// when the result is applied.
     pub fn start_job(
@@ -429,7 +616,13 @@ impl AiPanel {
         input: JobInput,
         reply: Option<tools::ToolReply>,
     ) -> Result<(), String> {
-        if kind.needs_engine() {
+        if input.uses_console() && !self.console.available() {
+            return Err(crate::i18n::t(
+                "Redrob Console image models are not available: sign in, then refresh",
+            )
+            .to_owned());
+        }
+        if kind.needs_engine() && !input.uses_console() {
             match self.engine_state() {
                 EngineState::Ready => {}
                 EngineState::Busy => return Err("the AI engine is still working".into()),
@@ -441,8 +634,13 @@ impl AiPanel {
             .start(kind, reply)
             .map_err(|running| format!("{} is still running", running.label()))?;
         let engine = self.engine.clone();
+        let console = self.console.client.clone().map(|images| ConsoleJob {
+            images,
+            lang: crate::i18n::current().code,
+            signed_out: Arc::clone(&self.console.signed_out),
+        });
         let started = self.spawn(async move {
-            let output = jobs::run_job(engine, input).await;
+            let output = jobs::run_job(engine, console, input).await;
             sender.send(output);
         });
         if !started {
@@ -609,6 +807,25 @@ pub fn gather_input(
     settings: &ToolSettings,
     args: Option<&Value>,
 ) -> Result<JobInput, String> {
+    if kind == ToolKind::Generate {
+        let prompt = arg_str(args, "prompt")
+            .unwrap_or(&settings.generate_prompt)
+            .trim()
+            .to_owned();
+        if prompt.is_empty() {
+            return Err("type a prompt".into());
+        }
+        let size = bridge
+            .document_size()
+            .filter(|(w, h)| *w > 0 && *h > 0)
+            .unwrap_or((1024, 1024));
+        return Ok(JobInput::ConsoleGenerate {
+            prompt,
+            model: console_model(settings, Operation::Generate)?,
+            size,
+            seed: settings.console_seed(),
+        });
+    }
     let image = bridge
         .snapshot()
         .ok_or_else(|| "open a document first".to_string())?;
@@ -620,6 +837,56 @@ pub fn gather_input(
             .selection_mask()
             .ok_or_else(|| "select the area first".to_string())
     };
+    if settings.routes_to_console(kind) {
+        return Ok(match kind {
+            ToolKind::Erase => JobInput::ConsoleFill {
+                mask: selection()?,
+                image,
+                prompt: None,
+                model: console_model(settings, Operation::Erase)?,
+                seed: settings.console_seed(),
+                erase: true,
+            },
+            ToolKind::GenerativeFill => {
+                let mask = selection()?;
+                let prompt = arg_str(args, "prompt")
+                    .unwrap_or(&settings.fill_prompt)
+                    .trim()
+                    .to_owned();
+                if prompt.is_empty() {
+                    return Err("type a prompt".into());
+                }
+                JobInput::ConsoleFill {
+                    image,
+                    mask,
+                    prompt: Some(prompt),
+                    model: console_model(settings, Operation::Fill)?,
+                    seed: settings.console_seed(),
+                    erase: false,
+                }
+            }
+            ToolKind::Outpaint => {
+                let expand = expand_from(args, settings)?;
+                let prompt = arg_str(args, "prompt")
+                    .unwrap_or(&settings.prompt)
+                    .trim()
+                    .to_owned();
+                JobInput::ConsoleExpand {
+                    image,
+                    expand,
+                    prompt: (!prompt.is_empty()).then_some(prompt),
+                    model: console_model(settings, Operation::Expand)?,
+                    seed: settings.console_seed(),
+                }
+            }
+            other => {
+                return Err(format!(
+                    "{} does not run on Redrob Console",
+                    other.label()
+                ));
+            }
+        });
+    }
     Ok(match kind {
         ToolKind::Erase => JobInput::Erase {
             mask: selection()?,
@@ -662,18 +929,7 @@ pub fn gather_input(
             }
         }
         ToolKind::Outpaint => {
-            let expand = Expand {
-                left: arg_u32(args, "left").unwrap_or(settings.expand.left),
-                top: arg_u32(args, "top").unwrap_or(settings.expand.top),
-                right: arg_u32(args, "right").unwrap_or(settings.expand.right),
-                bottom: arg_u32(args, "bottom").unwrap_or(settings.expand.bottom),
-            };
-            if !expand.is_valid() {
-                return Err(format!(
-                    "give 1 to {} pixels on at least one side",
-                    redrob_ai::pixels::MAX_EXPAND
-                ));
-            }
+            let expand = expand_from(args, settings)?;
             JobInput::Outpaint {
                 image,
                 expand,
@@ -714,7 +970,36 @@ pub fn gather_input(
                 .map(str::to_owned)
                 .unwrap_or_else(|| settings.preset.clone()),
         },
+        ToolKind::Generate => {
+            return Err("Generate runs on Redrob Console".into());
+        }
     })
+}
+
+/// The sides an expand adds: the agent's arguments, else the card's.
+fn expand_from(args: Option<&Value>, settings: &ToolSettings) -> Result<Expand, String> {
+    let expand = Expand {
+        left: arg_u32(args, "left").unwrap_or(settings.expand.left),
+        top: arg_u32(args, "top").unwrap_or(settings.expand.top),
+        right: arg_u32(args, "right").unwrap_or(settings.expand.right),
+        bottom: arg_u32(args, "bottom").unwrap_or(settings.expand.bottom),
+    };
+    if !expand.is_valid() {
+        return Err(format!(
+            "give 1 to {} pixels on at least one side",
+            redrob_ai::pixels::MAX_EXPAND
+        ));
+    }
+    Ok(expand)
+}
+
+/// The console model the card picked for `op`.
+fn console_model(settings: &ToolSettings, op: Operation) -> Result<String, String> {
+    let model = settings.console_model(op).trim();
+    if model.is_empty() {
+        return Err(crate::i18n::t("pick a Redrob Console model").to_owned());
+    }
+    Ok(model.to_owned())
 }
 
 /// `{"a":1,"b":"x"}` as `a: 1, b: x` for a tool bubble.
