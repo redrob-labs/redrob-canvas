@@ -4,6 +4,14 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.11.1 — 2026-10-19
+
+### Fixed
+
+- **Windows setup now makes the Start menu shortcut.** The windowed installer ran the install on a
+  worker thread without COM, so the shortcut writer failed silently and Redrob Canvas never showed
+  up in Start or Windows search. The silent (launcher) install was not affected.
+
 ## 0.11.0 — 2026-10-18
 
 ### Added
