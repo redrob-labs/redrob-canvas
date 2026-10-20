@@ -4,6 +4,19 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.12.2 — 2026-10-20
+
+### Fixed
+
+- **Windows: the app icon shows.** `redrob-canvas.exe` now carries the Redrob Canvas icon, so
+  Explorer, the taskbar, the Start menu and Alt-Tab show it instead of a blank one, and the window
+  sets the same icon.
+- **Canvas follows the launcher's language.** On start-up Canvas reads the language picked in
+  Redrob Launcher (its installer or settings). Your own choice in Canvas still wins; with neither,
+  Canvas follows the system.
+- **One Help menu.** About, Language and Check for updates moved from the shell's own Help menu
+  to the **Redrob Canvas** menu at the left of the top bar, so only the editor's Help is left.
+
 ## 0.12.1 — 2026-10-20
 
 ### Fixed

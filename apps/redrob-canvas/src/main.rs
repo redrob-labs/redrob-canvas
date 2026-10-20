@@ -23,12 +23,20 @@ fn native_options() -> eframe::NativeOptions {
             .with_title(services::APP_NAME)
             .with_inner_size([1440.0, 900.0])
             .with_min_inner_size([760.0, 480.0])
-            .with_drag_and_drop(true),
+            .with_drag_and_drop(true)
+            .with_icon(app_icon()),
         centered: true,
         // eframe saves the window geometry and egui panel sizes beside the preferences.
         persistence_path: services::persistence_path(),
         ..Default::default()
     }
+}
+
+/// The window and taskbar icon. Without it eframe shows egui's own logo.
+fn app_icon() -> egui::IconData {
+    const PNG: &[u8] =
+        include_bytes!("../../../resources/icons/hicolor/256x256/apps/redrob-canvas.png");
+    eframe::icon_data::from_png_bytes(PNG).unwrap_or_default()
 }
 
 /// `--mode photo|vector|layout`: the editor the window opens on.
