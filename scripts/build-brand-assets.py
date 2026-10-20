@@ -2,29 +2,24 @@
 # SPDX-License-Identifier: MIT OR Apache-2.0
 """Build every Redrob Canvas brand asset from the design system's published files, and pin them.
 
-    scripts/build-brand-assets.py --design-system ~/workplace/redrob-design-system
+    scripts/build-brand-assets.py --design-system ~/workplace/redrob-design-system \\
+        --ui <unpacked `npm pack @redrob-labs/ui@1.8.0`>/package
 
-Nothing here draws a mark. Every symbol pixel and every symbol path comes from a file the design
-system ships, and the files those come from are pinned by sha256 in brand/SOURCES.json together
-with the sha256 of every output. scripts/check-brand.py, which tools/check_design_system.py and CI
-run, refuses an output tree that differs from the pins, so a hand edit, a re-trace or a recolor
-fails the gate. Ported from redrob-shape's scripts/build-brand-assets.py.
-
-Redrob Canvas is not one of the seven suite products, so it has no doorway glyph and no product
-color (20-color.md: "No eighth product color"; assets/Products/README.md: "Something in the doorway
-means a product"). Its icon is therefore the group's icon, as Redrob Shape's is: the favicon, a
-white symbol on a Redrob Blue tile with an empty doorway (10-logo.md, assets/Favicons/README.md).
+Nothing here draws a mark. The app icon comes from the 2026 app-icon delivery that
+@redrob-labs/ui ships (dist/brand/app-icons/redrob-canvas/); the lockups and splash come from the
+design system. Every file read is pinned by sha256 in brand/SOURCES.json together with the sha256
+of every output. scripts/check-brand.py, which tools/check_design_system.py and CI run, refuses an
+output tree that differs from the pins, so a hand edit, a re-trace or a recolor fails the gate.
+Ported from redrob-shape's scripts/build-brand-assets.py.
 
 What is derived, and how:
-  - Icon sizes the design system ships (16, 32, 48, 64, 512) are copied byte for byte. 128 and 256
-    exist only as downsizes of the 512 file, whose spec (radius 22%, mark 66%) the design system
-    gives for the whole 192-512 band. The one upscale is the 1024 macOS element (ic10): the design
-    system ships nothing larger than 512, and the .icns would otherwise be blurred by macOS itself.
+  - Every desktop icon (hicolor PNGs, .ico, .icns, installer PNGs, the window icon and the launcher
+    PNG) is the rounded `icon-web` variant, transparent corners, because the launcher, Windows and
+    Linux show the PNG unmasked. It is rendered once at 1024 px by headless Chromium (ImageMagick's
+    SVG reader drops the gradients) and every smaller size is a Lanczos downsize of that render.
   - The .ico, the .icns and the freedesktop hicolor set are containers around those pixels.
-  - redrob-canvas.svg is favicon.svg, byte for byte. redrob-canvas-small.svg carries favicon.svg's
-    own symbol path, unchanged, in Solid White with no tile: the mark for a dark ground that is
-    not Redrob Blue (the shell's chrome, a symbolic icon theme), as assets/Favicons/README.md's
-    symbol-white-*.png are.
+  - redrob-canvas.svg is the delivery's icon-web.svg, byte for byte. redrob-canvas-small.svg is
+    its symbol.svg, byte for byte: the white symbol alone, for a dark ground that is not the tile.
   - The lockups follow assets/Products/README.md's product-lockup rule: the Redrob Primary lockup
     placed untouched, 400px tall, with the name in Pretendard SemiBold at 70% of the height, set 40%
     of the height after the wordmark, on the wordmark's baseline. The construction is proven before
@@ -33,7 +28,8 @@ What is derived, and how:
     redrob-shape's splash.
   - The installer PNGs are the 256 icon and the white lockup scaled, never redrawn.
 
-Needs ImageMagick 7 (`magick`) for resizing and the lockups; the check does not.
+Needs ImageMagick 7 (`magick`) for resizing and the lockups, and a Chromium headless shell
+(`--chromium`, default: Playwright's) for the one SVG render; the check needs neither.
 """
 
 import argparse
@@ -49,14 +45,18 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCES_JSON = ROOT / "brand" / "SOURCES.json"
 
-FAVICONS = "assets/Favicons"
+UI_PACKAGE = "@redrob-labs/ui@1.8.0"
+APP_ICON_KEY = "redrob-canvas"
+APP_ICONS = "dist/brand/app-icons"
+APP_ICON_SOURCES = {
+    "icon-web": f"{APP_ICONS}/{APP_ICON_KEY}/{APP_ICON_KEY}-icon-web.svg",
+    "symbol": f"{APP_ICONS}/{APP_ICON_KEY}/{APP_ICON_KEY}-symbol.svg",
+}
+CHROMIUM = Path.home() / (
+    ".cache/ms-playwright/chromium_headless_shell-1243/chrome-headless-shell-linux64/chrome-headless-shell"
+)
+
 SOURCES = {
-    "favicon-16": f"{FAVICONS}/favicon-16x16.png",
-    "favicon-32": f"{FAVICONS}/favicon-32x32.png",
-    "favicon-48": f"{FAVICONS}/favicon-48x48.png",
-    "favicon-64": f"{FAVICONS}/favicon-64x64.png",
-    "icon-512": f"{FAVICONS}/icon-512.png",
-    "favicon-svg": f"{FAVICONS}/favicon.svg",
     "lockup": "assets/Logos/redrob-logo-primary.png",
     "lockup-white": "assets/Logos/redrob-logo-primary-white.png",
     "browser-lockup-white": "assets/Products/redrob-browser-lockup-white.png",
@@ -142,21 +142,27 @@ def write_icns(path, entries):
     path.write_bytes(b"icns" + struct.pack(">I", 8 + len(body)) + body)
 
 
-def symbol_path(favicon_svg):
-    """The white symbol path from favicon.svg, unchanged."""
-    paths = re.findall(r'<path fill="(#[0-9A-Fa-f]+)" d="([^"]+)"/>', favicon_svg)
-    white = [d for fill, d in paths if fill.upper() in {"#FFF", "#FFFFFF"}]
-    if len(white) != 1:
-        sys.exit("favicon.svg no longer has exactly one white symbol path")
-    return white[0]
-
-
-def symbol_svg(d, fill, label):
-    # favicon.svg's own 64-unit coordinates; only the tile is left out.
-    return (
-        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64"'
-        f' role="img" aria-label="{label}"><title>{label}</title><path fill="{fill}" d="{d}"/></svg>\n'
+def render_svg(chromium, svg, size, out, scratch):
+    """Rasterize the SVG at size x size on a transparent ground with headless Chromium."""
+    page = scratch / "render.html"
+    page.write_text(
+        "<!doctype html><html><head><style>html,body{margin:0;background:transparent}"
+        f"img{{display:block;width:{size}px;height:{size}px}}</style></head>"
+        f'<body><img src="{svg.as_uri()}"></body></html>\n',
+        encoding="utf-8",
     )
+    subprocess.run(
+        [str(chromium), "--headless", "--no-sandbox", "--hide-scrollbars", "--disable-gpu",
+         "--allow-file-access-from-files", "--default-background-color=00000000",
+         f"--window-size={size},{size}", f"--screenshot={out}", page.as_uri()],
+        check=True, capture_output=True,
+    )
+    raw = scratch / "render-raw.png"
+    out.rename(raw)
+    magick(raw, "-define", "png:exclude-chunks=date,time", "-strip", f"PNG32:{out}")
+    if png_size(out.read_bytes()) != (size, size):
+        sys.exit(f"Chromium rendered {svg.name} at the wrong size")
+    return out
 
 
 def resize(source, size, out):
@@ -221,26 +227,40 @@ def build_splash(path, design, black, font, scratch):
     )
 
 
-def build(design):
+def app_icon_files(ui):
+    """The delivery's SVGs, checked against the package's own manifest before anything uses them."""
+    manifest = json.loads((ui / APP_ICONS / "manifest.json").read_text(encoding="utf-8"))
+    listed = {}
+    for entry in manifest["icons"]:
+        for variant, meta in entry["files"].items():
+            listed[f"{APP_ICONS}/{meta['path']}"] = meta["sha256"]
+    for rel in APP_ICON_SOURCES.values():
+        if rel not in listed:
+            sys.exit(f"{UI_PACKAGE} manifest.json does not list {rel}")
+        if sha256(ui / rel) != listed[rel]:
+            sys.exit(f"{rel} does not match {UI_PACKAGE}'s manifest.json")
+    return {rel: listed[rel] for rel in APP_ICON_SOURCES.values()}
+
+
+def build(design, ui, chromium):
     missing = [rel for rel in SOURCES.values() if not (design / rel).is_file()]
+    missing += [rel for rel in APP_ICON_SOURCES.values() if not (ui / rel).is_file()]
     if missing:
-        sys.exit(f"design system files missing: {missing}")
+        sys.exit(f"source files missing: {missing}")
+    app_icon_pins = app_icon_files(ui)
     read = {key: (design / rel).read_bytes() for key, rel in SOURCES.items()}
     tokens_css = read["tokens"].decode("utf-8")
-    blue, black, ink = token(tokens_css, "blue-6"), token(tokens_css, "redrob-black"), token(tokens_css, "ink-primary")
-    favicon_svg = read["favicon-svg"].decode("utf-8")
-    if blue.upper() not in favicon_svg.upper():
-        sys.exit("favicon.svg's tile is not tokens.css --blue-6")
-    d = symbol_path(favicon_svg)
+    black, ink = token(tokens_css, "redrob-black"), token(tokens_css, "ink-primary")
     font = design / SOURCES["pretendard-semibold"]
+    icon_web = ui / APP_ICON_SOURCES["icon-web"]
+    symbol = ui / APP_ICON_SOURCES["symbol"]
 
     with tempfile.TemporaryDirectory() as temporary:
         scratch = Path(temporary)
         verify_construction(design, font, scratch)
-        icon_512 = design / SOURCES["icon-512"]
-        resized = {size: resize(icon_512, size, scratch / f"icon-{size}.png") for size in (128, 256, 1024)}
-        pngs = {16: read["favicon-16"], 32: read["favicon-32"], 48: read["favicon-48"], 64: read["favicon-64"],
-                128: resized[128], 256: resized[256], 512: read["icon-512"]}
+        master = render_svg(chromium, icon_web, 1024, scratch / "icon-1024.png", scratch)
+        pngs = {size: resize(master, size, scratch / f"icon-{size}.png") for size in HICOLOR_SIZES}
+        pngs[1024] = master.read_bytes()
 
         def write_lockup(logo_key, colour):
             return lambda p: compose_lockup(design / SOURCES[logo_key], PRODUCT, colour, LOCKUP_HEIGHT, font, p, scratch)
@@ -250,12 +270,12 @@ def build(design):
                    "-strip", "-define", "png:exclude-chunks=date,time", f"PNG32:{p}")
 
         outputs = {
-            OUT_SVG_APP: lambda p: p.write_bytes(read["favicon-svg"]),
-            OUT_SVG_SMALL: lambda p: p.write_text(symbol_svg(d, "#FFF", "Redrob"), encoding="utf-8"),
+            OUT_SVG_APP: lambda p: p.write_bytes(icon_web.read_bytes()),
+            OUT_SVG_SMALL: lambda p: p.write_bytes(symbol.read_bytes()),
             OUT_ICO: lambda p: write_ico(p, [pngs[16], pngs[32], pngs[48], pngs[64], pngs[256]]),
             OUT_ICNS: lambda p: write_icns(p, [
                 ("icp4", pngs[16]), ("icp5", pngs[32]), ("icp6", pngs[64]),
-                ("ic07", pngs[128]), ("ic08", pngs[256]), ("ic09", pngs[512]), ("ic10", resized[1024]),
+                ("ic07", pngs[128]), ("ic08", pngs[256]), ("ic09", pngs[512]), ("ic10", pngs[1024]),
                 ("ic11", pngs[32]), ("ic12", pngs[64]), ("ic13", pngs[256]), ("ic14", pngs[512]),
             ]),
             **{f"{ICONS}/hicolor/{s}x{s}/apps/redrob-canvas.png": (lambda data: lambda p: p.write_bytes(data))(pngs[s])
@@ -272,21 +292,16 @@ def build(design):
             target.parent.mkdir(parents=True, exist_ok=True)
             make(target)
 
-    copied = {
-        OUT_SVG_APP: SOURCES["favicon-svg"],
-        f"{ICONS}/hicolor/16x16/apps/redrob-canvas.png": SOURCES["favicon-16"],
-        f"{ICONS}/hicolor/32x32/apps/redrob-canvas.png": SOURCES["favicon-32"],
-        f"{ICONS}/hicolor/48x48/apps/redrob-canvas.png": SOURCES["favicon-48"],
-        f"{ICONS}/hicolor/64x64/apps/redrob-canvas.png": SOURCES["favicon-64"],
-        f"{ICONS}/hicolor/512x512/apps/redrob-canvas.png": SOURCES["icon-512"],
-    }
     pins = {
         "//": "Written by scripts/build-brand-assets.py; checked by scripts/check-brand.py. Do not edit.",
         "design_system": "redrob-design-system (the published distribution)",
         "sources": {rel: sha256(design / rel) for rel in SOURCES.values()},
-        "symbol_path_sha256": hashlib.sha256(d.encode("utf-8")).hexdigest(),
-        "tokens": {"blue-6": blue, "redrob-black": black, "ink-primary": ink},
-        "copied_unchanged": copied,
+        "app_icons": {"package": UI_PACKAGE, "variant": "icon-web", "sources": app_icon_pins},
+        "tokens": {"redrob-black": black, "ink-primary": ink},
+        "copied_unchanged": {
+            OUT_SVG_APP: APP_ICON_SOURCES["icon-web"],
+            OUT_SVG_SMALL: APP_ICON_SOURCES["symbol"],
+        },
         "owned_dirs": [ICONS, BRAND],
         "outputs": {rel: sha256(ROOT / rel) for rel in sorted(outputs)},
     }
@@ -299,8 +314,10 @@ def build(design):
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     parser.add_argument("--design-system", required=True, type=Path)
+    parser.add_argument("--ui", required=True, type=Path, help=f"the unpacked {UI_PACKAGE} (its package/ dir)")
+    parser.add_argument("--chromium", type=Path, default=CHROMIUM)
     args = parser.parse_args()
-    build(args.design_system.expanduser().resolve())
+    build(args.design_system.expanduser().resolve(), args.ui.expanduser().resolve(), args.chromium.expanduser())
 
 
 if __name__ == "__main__":

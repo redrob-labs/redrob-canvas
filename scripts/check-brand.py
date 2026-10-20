@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: MIT OR Apache-2.0
-"""Refuse brand assets that are not exactly what build-brand-assets.py made from the design system.
+"""Refuse brand assets that are not exactly what build-brand-assets.py made from their sources.
 
     scripts/check-brand.py
 
-No dependencies: the gate and CI run it without ImageMagick and without the design system. A build
-reads no pixels, so a hand-drawn or recolored mark passes every other check for as long as nobody
-looks; this one compares bytes against the pins brand/SOURCES.json recorded when the files were
-built from the design system, and refuses any file under resources/icons or resources/brand that
-the pins do not account for (resources/icons/tools, the shell's own tool glyphs, is listed in
-DESIGN_SYSTEM_PIN.json instead and is left alone).
+No dependencies: the gate and CI run it without ImageMagick, Chromium, the design system or the
+@redrob-labs/ui package. A build reads no pixels, so a hand-drawn or recolored mark passes every
+other check for as long as nobody looks; this one compares bytes against the pins
+brand/SOURCES.json recorded when the files were built, and refuses any file under resources/icons
+or resources/brand that the pins do not account for (resources/icons/tools, the shell's own tool
+glyphs, is listed in DESIGN_SYSTEM_PIN.json instead and is left alone).
 """
 
 import hashlib
@@ -48,21 +48,23 @@ def main():
         elif sha256(path) != digest:
             errors.append(f"{rel} was changed by hand: rebuild it with scripts/build-brand-assets.py")
 
-    # Files the design system ships are carried unchanged, so their pins must agree.
+    # Files carried unchanged from a delivery must agree with that delivery's pin.
+    app_icon_sources = pins.get("app_icons", {}).get("sources", {})
+    delivered = {}
     for rel, source in pins["copied_unchanged"].items():
-        if outputs.get(rel) != pins["sources"].get(source):
-            errors.append(f"{rel} is not byte-identical to the design system's {source}")
+        expected = pins["sources"].get(source) or app_icon_sources.get(source)
+        if outputs.get(rel) != expected:
+            errors.append(f"{rel} is not byte-identical to {source}")
+        elif source in app_icon_sources:
+            delivered[rel] = source
 
-    # Every SVG mark carries favicon.svg's own symbol path, untouched, and no effect on it.
+    # An SVG built here (not a byte-for-byte delivered app icon, whose own mask is the drawing) may
+    # apply no effect to the mark.
     for rel in outputs:
         if not rel.endswith(".svg") or not (ROOT / rel).is_file():
             continue
         text = (ROOT / rel).read_text(encoding="utf-8")
-        for fill, d in re.findall(r'<path fill="(#[0-9A-Fa-f]+)" d="([^"]+)"/>', text):
-            if fill.upper() in {"#FFF", "#FFFFFF", "#000", "#000000"}:
-                if hashlib.sha256(d.encode()).hexdigest() != pins["symbol_path_sha256"]:
-                    errors.append(f"{rel} carries a symbol path that is not the design system's")
-        if re.search(r"\b(filter|mask|opacity|transform)=", text):
+        if rel not in delivered and re.search(r"\b(filter|mask|opacity|transform)=", text):
             errors.append(f"{rel} applies an effect to the mark (filter, mask, opacity or transform)")
         if re.search(r"GPL|GNU General Public", text):
             errors.append(f"{rel} carries GPL text; this tree is MIT OR Apache-2.0")
