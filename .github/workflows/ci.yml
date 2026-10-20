@@ -62,12 +62,24 @@ jobs:
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          fetch-depth: 2
       - name: Did any Rust input change?
         id: rs
+        # The PR's merge commit against its first parent (the base). A diff whose only Rust-input
+        # lines are `version = "x.y.z"` (a release bump of Cargo.toml / Cargo.lock) changes no code.
         run: |
-          git fetch -q origin "${{ github.base_ref }}" --depth=1
-          if git diff --quiet "origin/${{ github.base_ref }}"...HEAD -- '*.rs' '*.toml' Cargo.lock '*.wgsl' '*.ttf' '*.tsv' '*.ftl' '*.json' crafts/*/assets .github/workflows/ci.yml; then
-            echo changed=false >> "$GITHUB_OUTPUT"; else echo changed=true >> "$GITHUB_OUTPUT"; fi
+          paths=('*.rs' '*.toml' Cargo.lock '*.wgsl' '*.ttf' '*.tsv' '*.ftl' '*.json' 'crafts/*/assets/*' .github/workflows/ci.yml)
+          if [ "${{ github.event_name }}" != pull_request ]; then
+            changed=true
+          elif git diff --quiet HEAD^1 HEAD -- "${paths[@]}"; then
+            changed=false
+          elif git diff -U0 HEAD^1 HEAD -- "${paths[@]}" | grep -E '^[-+][^-+]' | grep -qvE '^[-+]version = "[0-9.]+"$'; then
+            changed=true
+          else
+            changed=false
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
       - name: System libraries for the desktop app
         if: steps.rs.outputs.changed == 'true'
         run: |
