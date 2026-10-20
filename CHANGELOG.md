@@ -4,6 +4,14 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.12.1 — 2026-10-20
+
+### Fixed
+
+- **Windows: Canvas starts again.** 0.12.0 closed at launch with no window ("thread 'main' has
+  overflowed its stack"). Windows gives the main thread 1 MiB of stack where Linux and macOS give
+  8 MiB; the Windows build now asks for 8 MiB too.
+
 ## 0.12.0 — 2026-10-20
 
 ### Added
