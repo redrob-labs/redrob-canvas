@@ -1,11 +1,12 @@
-# The one pull-request workflow. `checks` runs the repository scripts: the upstream pins, the
-# upstream-identifier guard, the generated third-party notices, the design-system guard and the
-# tools' own tests. `rust` runs formatting, clippy and the tests of OUR crates (the shell
-# `redrob-canvas`, `redrob-ai`, `redrob-agent`) with `--profile ci` (root Cargo.toml: every
-# dependency at opt-level 0, no incremental); the editor subtrees under crafts/ are compiled only as
-# dependencies, and `rust` is skipped when no Rust input changed or when the pull request targets
-# main (that code already passed here on its way into develop). The release workflow does not
-# repeat any of this; PR policy is the org-wide workflow.
+# The one pull-request workflow. `changes` decides what the pull request needs: nothing heavy for a
+# docs-only or version-only diff, and no Rust job when no Rust input changed. `checks` runs the
+# repository scripts: the upstream pins, the upstream-identifier guard, the generated third-party
+# notices, the design-system guard and the tools' own tests. `rust` runs formatting and clippy of
+# OUR crates (the shell `redrob-canvas`, `redrob-ai`, `redrob-agent`) with `--profile ci` (root
+# Cargo.toml: every dependency at opt-level 0, no incremental); clippy --all-targets type-checks the
+# test code too. The tests themselves (~5 min) run only on a manual workflow_dispatch. `rust` is
+# skipped when the pull request targets main (that code already passed here on its way into
+# develop). A skipped job satisfies its required check. PR policy is the org-wide workflow.
 name: CI
 
 on:
@@ -28,8 +29,61 @@ env:
   OUR_CRATES: -p redrob-canvas -p redrob-ai -p redrob-agent
 
 jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      heavy: ${{ steps.diff.outputs.heavy }}
+      rust: ${{ steps.diff.outputs.rust }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
+        with:
+          fetch-depth: 2
+      - name: What did the pull request change?
+        id: diff
+        # The PR's merge commit against its first parent (the base). Any error leaves both outputs
+        # true, so a broken detector runs everything rather than skipping it.
+        run: |
+          set +e
+          if [ "${{ github.event_name }}" != pull_request ]; then
+            echo "heavy=true" >> "$GITHUB_OUTPUT"; echo "rust=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          files=$(git diff --name-only HEAD^1 HEAD) || { echo "heavy=true" >> "$GITHUB_OUTPUT"; echo "rust=true" >> "$GITHUB_OUTPUT"; exit 0; }
+          # Files that are neither docs nor a pure version file.
+          rest=$(printf '%s\n' "$files" | grep -vE '(\.md$|^docs/|^LICENSE|^CHANGELOG|(^|/)VERSION$|(^|/)REDROB_VERSION$|-version\.txt$)' | grep -v '^$')
+          if [ -z "$rest" ]; then
+            heavy=false
+          else
+            # Every changed line of the rest is a version string (Cargo.toml `version = "x.y.z"`,
+            # Cargo.lock entries of our own crates, a package.json "version").
+            mapfile -t restarr <<< "$rest"
+            if git diff -U0 HEAD^1 HEAD -- "${restarr[@]}" | grep -E '^[-+][^-+]' | grep -qvE '^[-+](version = "[0-9][0-9A-Za-z.+-]*"|[[:space:]]*"version": "[0-9][0-9A-Za-z.+-]*",?)$'; then
+              heavy=true
+            else
+              heavy=false
+            fi
+          fi
+          rust=false
+          if [ "$heavy" = true ]; then
+            paths=('*.rs' '*.toml' Cargo.lock '*.wgsl' '*.ttf' '*.tsv' '*.ftl' '*.json' 'crafts/*/assets/*' .github/workflows/ci.yml)
+            # A diff whose only Rust-input lines are `version = "x.y.z"`, a build profile's
+            # `codegen-units` / `lto`, or `# ` comments changes no code clippy sees.
+            if git diff --quiet HEAD^1 HEAD -- "${paths[@]}"; then
+              rust=false
+            elif git diff -U0 HEAD^1 HEAD -- "${paths[@]}" | grep -E '^[-+][^-+]' | grep -qvE '^[-+](version = "[0-9.]+"|codegen-units = [0-9]+|lto = ("[a-z]+"|true|false)|#( .*)?)$'; then
+              rust=true
+            fi
+          fi
+          echo "files changed: $(printf '%s\n' "$files" | wc -l); heavy=$heavy rust=$rust"
+          echo "heavy=$heavy" >> "$GITHUB_OUTPUT"
+          echo "rust=$rust" >> "$GITHUB_OUTPUT"
+
   checks:
     name: pins, upstream ids, notices, design system
+    needs: changes
+    # `!= 'false'`: an empty output (the detector failed) runs the job instead of skipping it.
+    if: always() && needs.changes.outputs.heavy != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -56,57 +110,37 @@ jobs:
 
   rust:
     name: fmt, clippy, test (profile ci)
+    needs: changes
     # A release PR into main carries code that already passed here on its way into develop.
-    if: github.base_ref != 'main'
+    # `!= 'false'`: an empty output (the detector failed) runs the job instead of skipping it.
+    if: always() && github.base_ref != 'main' && needs.changes.outputs.rust != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
-        with:
-          fetch-depth: 2
-      - name: Did any Rust input change?
-        id: rs
-        # The PR's merge commit against its first parent (the base). A diff whose only Rust-input
-        # lines are `version = "x.y.z"` (a release bump of Cargo.toml / Cargo.lock), a build
-        # profile's `codegen-units` / `lto`, or `# ` comments changes no code the tests see.
-        run: |
-          paths=('*.rs' '*.toml' Cargo.lock '*.wgsl' '*.ttf' '*.tsv' '*.ftl' '*.json' 'crafts/*/assets/*' .github/workflows/ci.yml)
-          if [ "${{ github.event_name }}" != pull_request ]; then
-            changed=true
-          elif git diff --quiet HEAD^1 HEAD -- "${paths[@]}"; then
-            changed=false
-          elif git diff -U0 HEAD^1 HEAD -- "${paths[@]}" | grep -E '^[-+][^-+]' | grep -qvE '^[-+](version = "[0-9.]+"|codegen-units = [0-9]+|lto = ("[a-z]+"|true|false)|#( .*)?)$'; then
-            changed=true
-          else
-            changed=false
-          fi
-          echo "changed=$changed" >> "$GITHUB_OUTPUT"
       - name: System libraries for the desktop app
-        if: steps.rs.outputs.changed == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev \
             libgl1-mesa-dev libgtk-3-dev
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
-        if: steps.rs.outputs.changed == 'true'
         with:
           toolchain: "1.95.0"
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
-        if: steps.rs.outputs.changed == 'true'
         with:
           key: ci-profile
       - name: Formatting
-        if: steps.rs.outputs.changed == 'true'
         run: cargo fmt --all -- --check
       - name: Clippy
-        if: steps.rs.outputs.changed == 'true'
         run: |
           # shellcheck disable=SC2086 # OUR_CRATES is a list of flags on purpose
           cargo clippy $OUR_CRATES --all-targets --locked --profile ci -- -D warnings
-      - name: Tests
-        if: steps.rs.outputs.changed == 'true'
+      # ~5 min; pull requests get clippy --all-targets (test code type-checked), the suite runs
+      # when CI is started by hand (Actions -> CI -> Run workflow).
+      - name: Tests (manual run only)
+        if: github.event_name == 'workflow_dispatch'
         run: |
           # shellcheck disable=SC2086
           cargo test $OUR_CRATES --locked --profile ci
