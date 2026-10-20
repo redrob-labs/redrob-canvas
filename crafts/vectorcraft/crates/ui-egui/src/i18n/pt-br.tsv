@@ -2732,9 +2732,6 @@ imageTrace	Outline	Contorno
 @plural	{n} stroke|{n} strokes	{n} traçado|{n} traçados
 
 # About › Contributors / Models (credits.rs)
-	About	Sobre
-	Contributors	Colaboradores
-	Models	Modelos
 	Username	Nome de usuário
 	Display name	Nome de exibição
 	Real name	Nome real

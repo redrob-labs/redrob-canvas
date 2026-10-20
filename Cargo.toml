@@ -21,7 +21,7 @@ exclude = [
 ]
 
 [workspace.package]
-version = "0.12.2"
+version = "0.12.3"
 edition = "2024"
 license = "MIT OR Apache-2.0"
 rust-version = "1.95"
@@ -216,6 +216,7 @@ opt-level = 0
 
 [profile.release]
 lto = "thin"
-codegen-units = 1
+# 16, not 1: the release legs compile the last big crates on every core instead of one.
+codegen-units = 16
 panic = "abort"
 strip = true
