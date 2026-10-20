@@ -4,6 +4,13 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## Unreleased
+
+### Changed
+
+- **The 2026 app icon.** Redrob Canvas has its own icon now, from the 2026 Redrob app-icon set:
+  the window, taskbar, Dock, Start menu, installers and the Redrob Launcher catalog all show it.
+
 ## 0.12.3 — 2026-10-20
 
 ### Changed
