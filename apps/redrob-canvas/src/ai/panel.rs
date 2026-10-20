@@ -183,11 +183,15 @@ fn backend_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>
                  usage is billed to your Redrob Console credit.",
             ));
         });
-        ui.selectable_value(&mut panel.settings.backend, Backend::Local, t("This computer"))
-            .on_hover_text(t(
-                "Runs on your computer with the AI engine below. Free, but needs a one-time \
+        ui.selectable_value(
+            &mut panel.settings.backend,
+            Backend::Local,
+            t("This computer"),
+        )
+        .on_hover_text(t(
+            "Runs on your computer with the AI engine below. Free, but needs a one-time \
                  install of about 1.5 GB.",
-            ));
+        ));
         let refresh = ui
             .add_enabled(!panel.console.probing(), egui::Button::new("⟳").small())
             .on_hover_text(t("Check Redrob Console again"));
@@ -199,8 +203,10 @@ fn backend_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>
         let text = if panel.console.probing() {
             t("Checking Redrob Console…")
         } else {
-            t("To use Online: in Redrob Launcher, sign in and turn the engine on (it comes with \
-               Redrob Code). Then press ⟳.")
+            t(
+                "To use Online: in Redrob Launcher, sign in and turn the engine on (it comes with \
+               Redrob Code). Then press ⟳.",
+            )
         };
         ui.label(RichText::new(text).small().weak());
     }
@@ -301,7 +307,9 @@ fn engine_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>)
         };
         if ui
             .add_enabled(installable, egui::Button::new(install_label))
-            .on_hover_text(t("Downloads IOPaint and PyTorch into the app's data folder (about 1.5 GB)"))
+            .on_hover_text(t(
+                "Downloads IOPaint and PyTorch into the app's data folder (about 1.5 GB)",
+            ))
             .clicked()
         {
             actions.push(Action::Install);
@@ -489,8 +497,10 @@ fn card(
         match kind {
             ToolKind::Erase => {
                 ui.label(
-                    RichText::new(t("Removes what is in the selection and fills it in from its surroundings."))
-                        .small(),
+                    RichText::new(t(
+                        "Removes what is in the selection and fills it in from its surroundings.",
+                    ))
+                    .small(),
                 );
             }
             ToolKind::Inpaint => {
@@ -525,9 +535,11 @@ fn card(
                 });
                 if !models::is_diffusion_model(&settings.model) {
                     ui.label(
-                        RichText::new(t("Pick a diffusion model under Advanced to paint from a prompt."))
-                            .small()
-                            .color(ui.visuals().warn_fg_color),
+                        RichText::new(t(
+                            "Pick a diffusion model under Advanced to paint from a prompt.",
+                        ))
+                        .small()
+                        .color(ui.visuals().warn_fg_color),
                     );
                 }
             }
@@ -585,7 +597,10 @@ fn card(
             }
             ToolKind::RemoveBackground => {
                 ui.label(
-                    RichText::new(t("Puts the subject on a new layer with a transparent background.")).small(),
+                    RichText::new(t(
+                        "Puts the subject on a new layer with a transparent background.",
+                    ))
+                    .small(),
                 );
             }
             ToolKind::Upscale => {

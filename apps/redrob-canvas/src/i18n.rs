@@ -539,9 +539,18 @@ const KO: &[(&str, &str)] = &[
     ("Face restore", "얼굴 복원"),
     ("Select subject", "피사체 선택"),
     ("Vectorize", "벡터로 바꾸기"),
-    ("pixel selections are not available in this mode", "이 모드에서는 픽셀 선택을 쓸 수 없습니다"),
-    ("this mode cannot take an image layer", "이 모드에는 이미지 레이어를 넣을 수 없습니다"),
-    ("expanding the canvas is not available in this mode", "이 모드에서는 캔버스를 넓힐 수 없습니다"),
+    (
+        "pixel selections are not available in this mode",
+        "이 모드에서는 픽셀 선택을 쓸 수 없습니다",
+    ),
+    (
+        "this mode cannot take an image layer",
+        "이 모드에는 이미지 레이어를 넣을 수 없습니다",
+    ),
+    (
+        "expanding the canvas is not available in this mode",
+        "이 모드에서는 캔버스를 넓힐 수 없습니다",
+    ),
     ("select the area first", "먼저 영역을 선택하세요"),
     ("not available", "쓸 수 없음"),
     ("Log", "기록"),
@@ -617,13 +626,19 @@ const KO: &[(&str, &str)] = &[
     ("Top", "위"),
     ("Right", "오른쪽"),
     ("Bottom", "아래"),
-    ("Uses the Inpaint prompt when one is set.", "인페인트 프롬프트가 있으면 그것을 씁니다."),
+    (
+        "Uses the Inpaint prompt when one is set.",
+        "인페인트 프롬프트가 있으면 그것을 씁니다.",
+    ),
     (
         "Puts the subject on a new layer with a transparent background.",
         "피사체를 투명 배경의 새 레이어에 놓습니다.",
     ),
     ("Preset", "프리셋"),
-    ("The paths open in Vector mode.", "경로는 벡터 모드에서 열립니다."),
+    (
+        "The paths open in Vector mode.",
+        "경로는 벡터 모드에서 열립니다.",
+    ),
     ("Run", "실행"),
     (
         "install and start the AI engine first, or choose Online",
@@ -634,7 +649,10 @@ const KO: &[(&str, &str)] = &[
         "열린 문서를 어떻게 고칠지 에이전트에게 말하세요. 에이전트는 모드와 문서 크기를 보고 도구 탭의 도구를 실행할 수 있습니다.",
     ),
     ("thinking…", "생각 중…"),
-    ("Message the agent (Ctrl+Enter to send)", "에이전트에게 메시지 (Ctrl+Enter로 보내기)"),
+    (
+        "Message the agent (Ctrl+Enter to send)",
+        "에이전트에게 메시지 (Ctrl+Enter로 보내기)",
+    ),
     ("Send", "보내기"),
     ("New chat", "새 대화"),
     ("You", "나"),
