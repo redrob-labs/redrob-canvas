@@ -44,7 +44,7 @@ LEGS = [
         # arm64, not universal: one target, built on the runner's own Apple silicon, so the name
         # promises exactly what the binary runs on.
         "label": "macOS arm64",
-        "runner": "macos-15",
+        "runner": "macos-15-xlarge",
         "target": "aarch64-apple-darwin",
         "slug": "macos-arm64",
         "archive_suffix": "macos-arm64.zip",
