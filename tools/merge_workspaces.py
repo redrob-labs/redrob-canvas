@@ -33,7 +33,7 @@ CRAFT_LIBS = {
 VENDORED = ["krilla", "hayro", "hayro-interpret", "hayro-syntax", "hayro-jbig2"]
 
 OUR_PACKAGE = {
-    "version": "0.12.3",
+    "version": "0.13.0",
     "edition": "2024",
     "license": "MIT OR Apache-2.0",
     "rust-version": "1.95",
