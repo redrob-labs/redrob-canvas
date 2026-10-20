@@ -4,6 +4,23 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.12.3 — 2026-10-20
+
+### Changed
+
+- **A plainer AI panel, in your language.** The AI menu and panel are translated (Korean
+  included). "Where AI runs" is always shown: **Online (Redrob Console)**, with nothing to
+  install, or **This computer**, with a one-time install of about 1.5 GB. When Online is not
+  available yet the panel says how to turn it on. The engine's model, transport, device and
+  plugins moved under **Advanced**.
+- **About shows only About.** The Contributors and Models tabs are gone from the editors' About
+  window.
+
+### Fixed
+
+- **Windows: no cmd window when the AI engine installs or starts.** It now runs in the
+  background.
+
 ## 0.12.2 — 2026-10-20
 
 ### Fixed

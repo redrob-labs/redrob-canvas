@@ -1159,7 +1159,7 @@ impl ShellApp {
         match action {
             Action::Run(kind) => {
                 if let Err(e) = self.start_tool(kind, None, None) {
-                    self.ai.status = Some((format!("{}: {e}", kind.label()), true));
+                    self.ai.status = Some((format!("{}: {e}", t(kind.label())), true));
                     self.ai.push_log(format!("{}: {e}", kind.label()));
                 }
             }
@@ -1175,7 +1175,7 @@ impl ShellApp {
                     let _ = reply.send(Err("cancelled".into()));
                 }
                 self.ai.status = Some((
-                    "Cancelled; the engine finishes its request in the background".into(),
+                    t("Cancelled; the engine finishes its request in the background").to_owned(),
                     false,
                 ));
             }

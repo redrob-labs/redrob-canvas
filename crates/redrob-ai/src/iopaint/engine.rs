@@ -30,6 +30,17 @@ use super::models::DEFAULT_REMOVE_BG_MODEL;
 use super::transport::{FileExchange, Transport, TransportMode};
 use crate::{AiError, Result};
 
+/// A command for an install step or the engine itself. On Windows it runs with no console window
+/// (`CREATE_NO_WINDOW`): Canvas is a windowed app, so a console child would pop a cmd window up,
+/// and pip / uv under it would inherit that. Their output is read through the pipes either way.
+fn quiet_command(program: impl AsRef<std::ffi::OsStr>) -> Command {
+    #[allow(unused_mut)] // only Windows changes it
+    let mut cmd = Command::new(program);
+    #[cfg(windows)]
+    cmd.creation_flags(0x0800_0000);
+    cmd
+}
+
 /// The Python file the engine starts IOPaint through.
 pub const SHIM_SOURCE: &str = include_str!("redrob_shim.py");
 
@@ -775,7 +786,7 @@ impl Engine {
             .split_first()
             .ok_or_else(|| AiError::Process("empty command".into()))?;
         self.append_log(&format!("$ {}", argv.join(" ")));
-        let mut child = Command::new(program)
+        let mut child = quiet_command(program)
             .args(args)
             .env("PYTHONUTF8", "1")
             .env("PIP_DISABLE_PIP_VERSION_CHECK", "1")
@@ -906,7 +917,7 @@ impl Engine {
             }
         };
         *lock(&self.inner.shim_has_files) = false;
-        let mut child = Command::new(program)
+        let mut child = quiet_command(program)
             .args(&args)
             .env("PYTHONUTF8", "1")
             .env("PYTHONUNBUFFERED", "1")

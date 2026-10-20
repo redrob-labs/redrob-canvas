@@ -67,14 +67,15 @@ jobs:
       - name: Did any Rust input change?
         id: rs
         # The PR's merge commit against its first parent (the base). A diff whose only Rust-input
-        # lines are `version = "x.y.z"` (a release bump of Cargo.toml / Cargo.lock) changes no code.
+        # lines are `version = "x.y.z"` (a release bump of Cargo.toml / Cargo.lock), a build
+        # profile's `codegen-units` / `lto`, or `# ` comments changes no code the tests see.
         run: |
           paths=('*.rs' '*.toml' Cargo.lock '*.wgsl' '*.ttf' '*.tsv' '*.ftl' '*.json' 'crafts/*/assets/*' .github/workflows/ci.yml)
           if [ "${{ github.event_name }}" != pull_request ]; then
             changed=true
           elif git diff --quiet HEAD^1 HEAD -- "${paths[@]}"; then
             changed=false
-          elif git diff -U0 HEAD^1 HEAD -- "${paths[@]}" | grep -E '^[-+][^-+]' | grep -qvE '^[-+]version = "[0-9.]+"$'; then
+          elif git diff -U0 HEAD^1 HEAD -- "${paths[@]}" | grep -E '^[-+][^-+]' | grep -qvE '^[-+](version = "[0-9.]+"|codegen-units = [0-9]+|lto = ("[a-z]+"|true|false)|#( .*)?)$'; then
             changed=true
           else
             changed=false

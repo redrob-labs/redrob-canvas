@@ -29,6 +29,7 @@ use tokio::sync::broadcast;
 
 use self::jobs::{ConsoleJob, JobInput, JobQueue, JobResult, ModelChoice, ToolKind};
 use self::tools::{ModeInfo, ShellTools, ToolRequest};
+use crate::i18n::t;
 use crate::shell::Mode;
 
 /// The dock's two tabs.
@@ -576,6 +577,10 @@ impl AiPanel {
                         self.push_log(format!("Redrob Console: {} image model(s)", models.len()));
                     }
                     self.console.models = models;
+                    // Nothing installed on this computer: Online is the one that works now.
+                    if self.console.available() && self.engine_state() == EngineState::Missing {
+                        self.settings.backend = Backend::Console;
+                    }
                 }
                 Err(e) => {
                     // Signed out, daemon not running, or a console without image models: the
@@ -645,7 +650,7 @@ impl AiPanel {
             self.jobs.cancel();
             return Err("the AI runtime did not start".into());
         }
-        self.status = Some((format!("{}…", kind.label()), false));
+        self.status = Some((format!("{}…", t(kind.label())), false));
         self.push_log(format!("{}: started", kind.label()));
         Ok(())
     }
