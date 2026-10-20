@@ -591,7 +591,19 @@ impl ShellApp {
             .show(ui, |ui| {
                 ui.horizontal_centered(|ui| {
                     ui.add_space(8.0);
-                    ui.label(egui::RichText::new(services::APP_NAME).strong());
+                    // The app menu: About, Language and updates. Under the app name rather than a
+                    // second "Help", since each editor below draws its own Help menu.
+                    ui.menu_button(egui::RichText::new(services::APP_NAME).strong(), |ui| {
+                        if ui
+                            .button(tf("About {app}", &[("app", services::APP_NAME)]))
+                            .clicked()
+                        {
+                            ui.close();
+                            self.about_open = true;
+                        }
+                        ui.menu_button(t("Language"), |ui| self.language_menu(ui));
+                        crate::update::menu_items(ui);
+                    });
                     ui.add_space(12.0);
                     ui.separator();
                     let mut next = self.mode;
@@ -614,17 +626,6 @@ impl ShellApp {
                     ui.menu_button(t("Mode"), |ui| self.mode_menu(ui));
                     ui.separator();
                     ai::panel::menu(ui, &mut self.ai, &caps);
-                    ui.menu_button(t("Help"), |ui| {
-                        if ui
-                            .button(tf("About {app}", &[("app", services::APP_NAME)]))
-                            .clicked()
-                        {
-                            ui.close();
-                            self.about_open = true;
-                        }
-                        ui.menu_button(t("Language"), |ui| self.language_menu(ui));
-                        crate::update::menu_items(ui);
-                    });
                     self.status_line(ui);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                         ui.add_space(8.0);

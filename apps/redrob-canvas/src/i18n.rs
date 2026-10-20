@@ -143,6 +143,44 @@ pub fn from_tags<S: AsRef<str>>(tags: &[S]) -> &'static LangInfo {
         .unwrap_or_else(english)
 }
 
+/// Redrob Launcher's shared `language.json` (the launcher's `docs/shared-language.md`): the
+/// language picked in the launcher's installer or settings, for every Redrob app. It stands in
+/// for the system language, so "auto" here follows the launcher; Canvas's own Language choice
+/// still wins. `None` when there is no file, or when the launcher only guessed from the system.
+fn launcher() -> Option<&'static LangInfo> {
+    if std::env::var(LOCALE_ENV).is_ok_and(|t| !t.trim().is_empty()) {
+        return None;
+    }
+    let path = shared_dir()?.join(PREF_FILE);
+    let v: serde_json::Value = serde_json::from_str(&std::fs::read_to_string(path).ok()?).ok()?;
+    // Per-app overrides are keyed by the launcher's app id.
+    let own = v
+        .get("apps")
+        .and_then(|a| a.get("redrob-canvas"))
+        .and_then(serde_json::Value::as_str);
+    let chosen = v.get("chosen").and_then(serde_json::Value::as_bool) == Some(true);
+    let all = v.get("language").and_then(serde_json::Value::as_str).filter(|_| chosen);
+    own.or(all).and_then(from_tag)
+}
+
+/// The launcher's shared directory: `REDROB_SHARED_DIR`, else `%APPDATA%\Redrob\Shared`,
+/// `~/Library/Application Support/ai.redrob.shared` or `$XDG_CONFIG_HOME/redrob-shared`.
+fn shared_dir() -> Option<PathBuf> {
+    let env = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(PathBuf::from);
+    if let Some(d) = env("REDROB_SHARED_DIR") {
+        return Some(d);
+    }
+    if cfg!(windows) {
+        env("APPDATA").map(|r| r.join("Redrob").join("Shared"))
+    } else if cfg!(target_os = "macos") {
+        env("HOME").map(|h| h.join("Library/Application Support/ai.redrob.shared"))
+    } else {
+        env("XDG_CONFIG_HOME")
+            .or_else(|| env("HOME").map(|h| h.join(".config")))
+            .map(|r| r.join("redrob-shared"))
+    }
+}
+
 /// The system's language: `REDROB_CANVAS_LOCALE`, else the OS preferred-languages list.
 pub fn system() -> &'static LangInfo {
     if let Ok(tag) = std::env::var(LOCALE_ENV)
@@ -213,7 +251,7 @@ impl Language {
     pub fn load() -> Self {
         Self {
             persist: true,
-            ..Self::new(load_pref(), system())
+            ..Self::new(load_pref(), launcher().unwrap_or_else(system))
         }
     }
 
