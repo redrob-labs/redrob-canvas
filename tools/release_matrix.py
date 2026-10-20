@@ -32,7 +32,8 @@ STEM = "redrob-canvas"
 LEGS = [
     {
         "label": "Linux x86_64",
-        "runner": "ubuntu-24.04",
+        # The organization's 16-core larger runner (Ubuntu 24.04 image, billed per minute).
+        "runner": "redrob-linux-16",
         "target": "x86_64-unknown-linux-gnu",
         "slug": "linux-x86_64",
         "archive_suffix": "linux-x86_64.tar.gz",
@@ -54,7 +55,8 @@ LEGS = [
     },
     {
         "label": "Windows x64",
-        "runner": "windows-2025",
+        # The organization's 16-core larger runner (Windows Server 2025 image, billed per minute).
+        "runner": "redrob-windows-16",
         "target": "x86_64-pc-windows-msvc",
         # x64, the launcher's token, not x86_64: the launcher installs the first asset whose
         # os-arch token it knows, and `windows-x86_64` is not one it knows.
