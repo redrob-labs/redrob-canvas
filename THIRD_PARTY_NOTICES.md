@@ -6333,7 +6333,7 @@ Software.
 ### `27134d28cc9b59382a58cf09ef56dddf8eaf8bb36fb4d0c758dd1d6dea5fffbe`
 
 Used by:
-- redrob-vector-affinity 0.12.3 - README.md
+- redrob-vector-affinity 0.13.0 - README.md
 
 Original byte length: `10879`; trailing newline: `yes`.
 
@@ -6515,7 +6515,7 @@ see that for related crates.
 ### `27523bf034ac593e83b838309d61b9a687be8ef1c4003bc44fc03327a8ac85f8`
 
 Used by:
-- redrob-photo-heif 0.12.3 - README.md
+- redrob-photo-heif 0.13.0 - README.md
 
 Original byte length: `2117`; trailing newline: `yes`.
 
@@ -9494,7 +9494,7 @@ see that for related crates.
 ### `3be727326332611977840d101e9cd326a5ceb542a19aa465791a2e5589214732`
 
 Used by:
-- redrob-craft-ui 0.12.3 - README.md
+- redrob-craft-ui 0.13.0 - README.md
 
 Original byte length: `14450`; trailing newline: `yes`.
 
@@ -10375,7 +10375,7 @@ THE SOFTWARE.
 ### `451de5fd712baafadc5aa8e95781e3daf5f4955857e8bdb21304be2068ed3ec3`
 
 Used by:
-- redrob-photo-cms 0.12.3 - README.md
+- redrob-photo-cms 0.13.0 - README.md
 
 Original byte length: `4800`; trailing newline: `yes`.
 
@@ -13387,7 +13387,7 @@ SOFTWARE.
 ### `5ccb43e3c0a9dcdd55edc6bd44b4e4e935b6ebebbb62bf1a69f26169a66ce0ab`
 
 Used by:
-- redrob-photo-codecs 0.12.3 - README.md
+- redrob-photo-codecs 0.13.0 - README.md
 
 Original byte length: `18808`; trailing newline: `yes`.
 
@@ -14276,7 +14276,7 @@ This is the Windows adapter for [AccessKit](https://accesskit.dev/). It exposes 
 ### `62589fc11862600571d597382badeafaf0901647957f4b6d7c322698209bc440`
 
 Used by:
-- redrob-photo-affinity 0.12.3 - README.md
+- redrob-photo-affinity 0.13.0 - README.md
 
 Original byte length: `10404`; trailing newline: `yes`.
 
@@ -15476,7 +15476,7 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 ### `66a9483fc1edeb17dc7631224f22b53a397c28dbf706e544bea1b42dfbea0965`
 
 Used by:
-- redrob-vector-pathops 0.12.3 - README.md
+- redrob-vector-pathops 0.13.0 - README.md
 
 Original byte length: `6173`; trailing newline: `yes`.
 
@@ -23737,7 +23737,7 @@ SOFTWARE.
 ### `9cfd886fb5f2ce20bf68b2ff83f5a76912a24e84823d04f9608e10acb16202c7`
 
 Used by:
-- redrob-photo-psd 0.12.3 - README.md
+- redrob-photo-psd 0.13.0 - README.md
 
 Original byte length: `12847`; trailing newline: `yes`.
 
@@ -30250,7 +30250,7 @@ The current MSRV is 1.69.0. For this project, it is primarily driven by the few 
 ### `c132a1c34a60f72a4bdc0107e57e644e3cc8f5222df5d92623e03376c2f99b73`
 
 Used by:
-- redrob-photo-raw 0.12.3 - README.md
+- redrob-photo-raw 0.13.0 - README.md
 
 Original byte length: `13736`; trailing newline: `yes`.
 
@@ -31405,7 +31405,7 @@ DEALINGS IN THE SOFTWARE.
 ### `c7d57e9f7841bec62a0bf157475c5af4e07a76a766bbea3c0431cb780d1c121a`
 
 Used by:
-- redrob-craft-cms 0.12.3 - README.md
+- redrob-craft-cms 0.13.0 - README.md
 
 Original byte length: `11133`; trailing newline: `yes`.
 
@@ -35395,7 +35395,7 @@ SOFTWARE.
 ### `f23849cce108c0d894838046a0e0d22a33080b638ef9999ba28c7246f85b9ff5`
 
 Used by:
-- redrob-craft-settings 0.12.3 - README.md
+- redrob-craft-settings 0.13.0 - README.md
 
 Original byte length: `8518`; trailing newline: `yes`.
 
@@ -35698,7 +35698,7 @@ ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation a
 ### `f39ce60244ba2e0651d722968fac8b00f7807f495d3f9d6386d947cb0cc64e8b`
 
 Used by:
-- redrob-craft-print 0.12.3 - README.md
+- redrob-craft-print 0.13.0 - README.md
 
 Original byte length: `10418`; trailing newline: `yes`.
 
@@ -36023,7 +36023,7 @@ see that for related crates.
 ### `f53fe018b7f736a75eff9483c1d8d4cbcb2021c19018839fa7aa02faba322299`
 
 Used by:
-- redrob-craft-pdf 0.12.3 - README.md
+- redrob-craft-pdf 0.13.0 - README.md
 
 Original byte length: `14327`; trailing newline: `yes`.
 
@@ -38425,7 +38425,7 @@ DEALINGS IN THE SOFTWARE.
 ### `fb67c10761d3ffb3ee394e0cb3a055ba040da32d78207291e72f6c8bc1a4ddb5`
 
 Used by:
-- redrob-craft-atomic 0.12.3 - README.md
+- redrob-craft-atomic 0.13.0 - README.md
 
 Original byte length: `8625`; trailing newline: `yes`.
 
