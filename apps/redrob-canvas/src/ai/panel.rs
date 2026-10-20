@@ -22,13 +22,13 @@ pub const MAX_WIDTH: f32 = 640.0;
 /// The top bar's "AI" menu: every tool, disabled when the mode cannot serve it or a job runs,
 /// plus the dock toggle. Clicks are queued on the panel.
 pub fn menu(ui: &mut egui::Ui, panel: &mut AiPanel, caps: &Capabilities) {
-    ui.menu_button("AI", |ui| {
+    ui.menu_button(t("AI"), |ui| {
         let busy = panel.is_busy();
         for kind in ToolKind::ALL {
             let enabled = kind.available(caps) && !busy;
-            let button = ui.add_enabled(enabled, egui::Button::new(kind.label()));
+            let button = ui.add_enabled(enabled, egui::Button::new(t(kind.label())));
             let button = match kind.unavailable_reason(caps) {
-                Some(reason) if !enabled => button.on_disabled_hover_text(reason),
+                Some(reason) if !enabled => button.on_disabled_hover_text(t(reason)),
                 _ if busy => button.on_disabled_hover_text(t("an AI job is running")),
                 _ => button,
             };
@@ -44,7 +44,7 @@ pub fn menu(ui: &mut egui::Ui, panel: &mut AiPanel, caps: &Capabilities) {
                 let enabled = kind.available(caps) && !busy;
                 let button = ui.add_enabled(enabled, egui::Button::new(t(kind.label())));
                 let button = match kind.unavailable_reason(caps) {
-                    Some(reason) if !enabled => button.on_disabled_hover_text(reason),
+                    Some(reason) if !enabled => button.on_disabled_hover_text(t(reason)),
                     _ if busy => button.on_disabled_hover_text(t("an AI job is running")),
                     _ => button,
                 };
@@ -76,7 +76,11 @@ pub fn menu(ui: &mut egui::Ui, panel: &mut AiPanel, caps: &Capabilities) {
 
 /// The top bar's right slot: the dock toggle.
 pub fn toggle(ui: &mut egui::Ui, panel: &mut AiPanel) {
-    let text = if panel.is_busy() { "AI ◌" } else { "AI" };
+    let text = if panel.is_busy() {
+        format!("{} ◌", t("AI"))
+    } else {
+        t("AI").to_owned()
+    };
     if ui
         .selectable_label(panel.open, text)
         .on_hover_text(t("AI tools and agent (toggle the right panel)"))
@@ -130,7 +134,7 @@ fn tools_tab(
                 ui.horizontal(|ui| {
                     ui.spinner();
                     ui.label(format!("{:.0} s", elapsed.as_secs_f32()));
-                    if ui.small_button("Cancel").clicked() {
+                    if ui.small_button(t("Cancel")).clicked() {
                         actions.push(Action::CancelJob);
                     }
                 });
@@ -145,7 +149,7 @@ fn tools_tab(
                 }
             }
             ui.add_space(6.0);
-            egui::CollapsingHeader::new("Log")
+            egui::CollapsingHeader::new(t("Log"))
                 .default_open(false)
                 .show(ui, |ui| {
                     egui::ScrollArea::vertical()
@@ -160,35 +164,46 @@ fn tools_tab(
         });
 }
 
-/// Local IOPaint or Redrob Console, for Erase, Generative Fill and Expand. Not drawn at all while
-/// the console lists no image models (signed out, no daemon, or a console without them).
+/// Where Erase, Generative Fill and Expand run: Redrob Console (online, nothing to install) or
+/// this computer (the IOPaint engine, installed once). Always drawn, so the online choice is
+/// visible even before the console answers; it is only selectable once the console lists image
+/// models (signed in through Redrob Launcher, with the shared engine running).
 fn backend_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>) {
-    if !panel.console.available() {
-        return;
-    }
+    let online = panel.console.available();
+    ui.label(RichText::new(t("Where AI runs")).strong());
     ui.horizontal_wrapped(|ui| {
-        ui.label(RichText::new(t("Backend")).strong());
-        ui.selectable_value(
-            &mut panel.settings.backend,
-            Backend::Local,
-            t("Local (IOPaint)"),
-        );
-        ui.selectable_value(
-            &mut panel.settings.backend,
-            Backend::Console,
-            t("Redrob Console"),
-        )
-        .on_hover_text(t(
-            "Erase, Generative Fill and Expand run on Redrob's image models with your Redrob \
-             Console sign-in; usage is billed to your console credit.",
-        ));
+        ui.add_enabled_ui(online, |ui| {
+            ui.selectable_value(
+                &mut panel.settings.backend,
+                Backend::Console,
+                t("Online (Redrob Console)"),
+            )
+            .on_hover_text(t(
+                "Erase, Generative Fill and Expand run on Redrob's servers. Nothing to install; \
+                 usage is billed to your Redrob Console credit.",
+            ));
+        });
+        ui.selectable_value(&mut panel.settings.backend, Backend::Local, t("This computer"))
+            .on_hover_text(t(
+                "Runs on your computer with the AI engine below. Free, but needs a one-time \
+                 install of about 1.5 GB.",
+            ));
         let refresh = ui
             .add_enabled(!panel.console.probing(), egui::Button::new("⟳").small())
-            .on_hover_text(t("Refresh the Redrob Console image models"));
+            .on_hover_text(t("Check Redrob Console again"));
         if refresh.clicked() {
             actions.push(Action::RefreshConsole);
         }
     });
+    if !online {
+        let text = if panel.console.probing() {
+            t("Checking Redrob Console…")
+        } else {
+            t("To use Online: in Redrob Launcher, sign in and turn the engine on (it comes with \
+               Redrob Code). Then press ⟳.")
+        };
+        ui.label(RichText::new(text).small().weak());
+    }
     ui.add_space(4.0);
 }
 
@@ -241,11 +256,16 @@ fn console_model_combo(
 fn engine_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>) {
     let state = panel.engine_state();
     let state_text = match &state {
-        EngineState::Error(reason) => format!("error: {reason}"),
-        other => other.as_str().to_owned(),
+        EngineState::Missing => t("Not installed").to_owned(),
+        EngineState::Installing => t("Installing…").to_owned(),
+        EngineState::Stopped => t("Off").to_owned(),
+        EngineState::Starting => t("Starting…").to_owned(),
+        EngineState::Ready => t("Ready").to_owned(),
+        EngineState::Busy => t("Working…").to_owned(),
+        EngineState::Error(reason) => format!("{}: {reason}", t("Error")),
     };
     ui.horizontal(|ui| {
-        ui.label(RichText::new("Engine").strong());
+        ui.label(RichText::new(t("AI engine on this computer")).strong());
         let color = match state {
             EngineState::Ready => ui.visuals().selection.stroke.color,
             EngineState::Error(_) => ui.visuals().error_fg_color,
@@ -253,7 +273,18 @@ fn engine_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>)
         };
         ui.label(RichText::new(state_text).color(color));
     });
-    ui.label(RichText::new(panel.engine_message()).small().weak());
+    if state == EngineState::Missing {
+        ui.label(
+            RichText::new(t(
+                "Install once to use the AI tools on this computer (about 1.5 GB). It runs in \
+                 the background; no window opens.",
+            ))
+            .small()
+            .weak(),
+        );
+    } else {
+        ui.label(RichText::new(t(&panel.engine_message())).small().weak());
+    }
     ui.horizontal_wrapped(|ui| {
         let has_engine = panel.engine().is_some();
         let installable =
@@ -264,33 +295,41 @@ fn engine_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>)
             EngineState::Starting | EngineState::Ready | EngineState::Busy
         );
         let install_label = if state == EngineState::Missing {
-            "Install"
+            t("Install")
         } else {
-            "Reinstall"
+            t("Reinstall")
         };
         if ui
             .add_enabled(installable, egui::Button::new(install_label))
-            .on_hover_text("IOPaint 1.6.0 and PyTorch into the app's data folder (about 1.5 GB)")
+            .on_hover_text(t("Downloads IOPaint and PyTorch into the app's data folder (about 1.5 GB)"))
             .clicked()
         {
             actions.push(Action::Install);
         }
         if ui
-            .add_enabled(startable, egui::Button::new("Start"))
+            .add_enabled(startable, egui::Button::new(t("Start")))
             .clicked()
         {
             actions.push(Action::Start);
         }
         if ui
-            .add_enabled(stoppable, egui::Button::new("Stop"))
+            .add_enabled(stoppable, egui::Button::new(t("Stop")))
             .clicked()
         {
             actions.push(Action::Stop);
         }
     });
+    egui::CollapsingHeader::new(t("Advanced"))
+        .id_salt("redrob_canvas_ai_engine_advanced")
+        .default_open(false)
+        .show(ui, |ui| engine_advanced(ui, panel, actions));
+}
+
+/// The engine's model, transport, device and plugins: for people who know IOPaint.
+fn engine_advanced(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>) {
     let choices = model_choices(panel, true);
     ui.horizontal(|ui| {
-        ui.label("Model");
+        ui.label(t("Model"));
         egui::ComboBox::from_id_salt("redrob_canvas_ai_model")
             .selected_text(short_model(&panel.settings.model))
             .width(ui.available_width().min(200.0))
@@ -302,7 +341,7 @@ fn engine_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>)
             });
     });
     ui.horizontal(|ui| {
-        ui.label("Transport");
+        ui.label(t("Transport"));
         for mode in TransportMode::ALL {
             ui.selectable_value(&mut panel.settings.transport, mode, mode.as_str())
                 .on_hover_text(mode.label());
@@ -313,14 +352,14 @@ fn engine_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>)
             let in_use = engine.transport_in_use();
             if in_use != panel.settings.transport {
                 ui.label(
-                    RichText::new(format!("using {}", in_use.as_str()))
+                    RichText::new(format!("{} {}", t("using"), in_use.as_str()))
                         .small()
                         .weak(),
                 )
-                .on_hover_text(
+                .on_hover_text(t(
                     "The running engine has no file routes (started without the shim, or \
                      not on this machine); pixels go as base64 until it is restarted.",
-                );
+                ));
             }
         }
     });
@@ -328,7 +367,7 @@ fn engine_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>)
         actions.push(Action::SetModel);
     }
     ui.horizontal(|ui| {
-        ui.label("Device");
+        ui.label(t("Device"));
         for device in Device::ALL {
             if device == Device::Mps && !cfg!(target_os = "macos") {
                 continue;
@@ -336,7 +375,7 @@ fn engine_row(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>)
             ui.selectable_value(&mut panel.settings.device, device, device.as_str());
         }
     });
-    egui::CollapsingHeader::new("Plugins (loaded at start)")
+    egui::CollapsingHeader::new(t("Plugins (loaded at start)"))
         .default_open(false)
         .show(ui, |ui| {
             for plugin in Plugin::ALL {
@@ -398,7 +437,7 @@ fn remove_bg_choices(panel: &AiPanel) -> Vec<String> {
 fn remove_bg_model_combo(ui: &mut egui::Ui, panel: &mut AiPanel, id: &str) {
     let choices = remove_bg_choices(panel);
     ui.horizontal(|ui| {
-        ui.label("Subject model");
+        ui.label(t("Subject model"));
         egui::ComboBox::from_id_salt(id)
             .selected_text(short_model(&panel.settings.remove_bg_model))
             .width(ui.available_width().min(180.0))
@@ -450,43 +489,43 @@ fn card(
         match kind {
             ToolKind::Erase => {
                 ui.label(
-                    RichText::new("Fills the selection from its surroundings (erase model).")
+                    RichText::new(t("Removes what is in the selection and fills it in from its surroundings."))
                         .small(),
                 );
             }
             ToolKind::Inpaint => {
                 ui.add(
                     egui::TextEdit::multiline(&mut settings.prompt)
-                        .hint_text("Prompt")
+                        .hint_text(t("Prompt"))
                         .desired_rows(2)
                         .desired_width(f32::INFINITY),
                 );
                 ui.add(
                     egui::TextEdit::singleline(&mut settings.negative_prompt)
-                        .hint_text("Negative prompt")
+                        .hint_text(t("Negative prompt"))
                         .desired_width(f32::INFINITY),
                 );
                 ui.horizontal_wrapped(|ui| {
-                    ui.label("Steps");
+                    ui.label(t("Steps"));
                     ui.add(egui::DragValue::new(&mut settings.steps).range(1..=150));
-                    ui.label("Strength");
+                    ui.label(t("Strength"));
                     ui.add(
                         egui::DragValue::new(&mut settings.strength)
                             .range(0.0..=1.0)
                             .speed(0.01),
                     );
-                    ui.label("Guidance");
+                    ui.label(t("Guidance"));
                     ui.add(
                         egui::DragValue::new(&mut settings.guidance)
                             .range(0.0..=30.0)
                             .speed(0.1),
                     );
-                    ui.label("Seed");
+                    ui.label(t("Seed"));
                     ui.add(egui::DragValue::new(&mut settings.seed).range(-1..=i64::MAX));
                 });
                 if !models::is_diffusion_model(&settings.model) {
                     ui.label(
-                        RichText::new("Pick a diffusion model above to paint from a prompt.")
+                        RichText::new(t("Pick a diffusion model under Advanced to paint from a prompt."))
                             .small()
                             .color(ui.visuals().warn_fg_color),
                     );
@@ -495,18 +534,18 @@ fn card(
             ToolKind::GenerativeFill => {
                 ui.add(
                     egui::TextEdit::multiline(&mut settings.fill_prompt)
-                        .hint_text("What to generate in the selection")
+                        .hint_text(t("What to generate in the selection"))
                         .desired_rows(2)
                         .desired_width(f32::INFINITY),
                 );
                 ui.add(
                     egui::TextEdit::singleline(&mut settings.fill_negative_prompt)
-                        .hint_text("Negative prompt")
+                        .hint_text(t("Negative prompt"))
                         .desired_width(f32::INFINITY),
                 );
                 if console_op.is_none() {
                     ui.horizontal(|ui| {
-                        ui.label("Fill model");
+                        ui.label(t("Fill model"));
                         egui::ComboBox::from_id_salt("redrob_canvas_ai_fill_model")
                             .selected_text(short_model(&settings.fill_model))
                             .width(ui.available_width().min(200.0))
@@ -518,11 +557,10 @@ fn card(
                             });
                     });
                     ui.label(
-                        RichText::new(
-                            "Selection + prompt on a new layer masked by the selection. Loads \
-                             the fill model (a download the first time); Erase switches back to \
-                             lama.",
-                        )
+                        RichText::new(t(
+                            "Draws what you describe into the selection, on a new layer. The \
+                             first run downloads the fill model.",
+                        ))
                         .small(),
                     );
                 }
@@ -535,7 +573,7 @@ fn card(
                         ("Right", &mut settings.expand.right),
                         ("Bottom", &mut settings.expand.bottom),
                     ] {
-                        ui.label(label);
+                        ui.label(t(label));
                         ui.add(
                             egui::DragValue::new(value)
                                 .range(0..=redrob_ai::pixels::MAX_EXPAND)
@@ -543,11 +581,11 @@ fn card(
                         );
                     }
                 });
-                ui.label(RichText::new("Uses the Inpaint prompt when one is set.").small());
+                ui.label(RichText::new(t("Uses the Inpaint prompt when one is set.")).small());
             }
             ToolKind::RemoveBackground => {
                 ui.label(
-                    RichText::new("The subject on a new transparent layer (RemoveBG).").small(),
+                    RichText::new(t("Puts the subject on a new layer with a transparent background.")).small(),
                 );
             }
             ToolKind::Upscale => {
@@ -574,7 +612,7 @@ fn card(
             }
             ToolKind::Vectorize => {
                 ui.horizontal(|ui| {
-                    ui.label("Preset");
+                    ui.label(t("Preset"));
                     egui::ComboBox::from_id_salt("redrob_canvas_ai_preset")
                         .selected_text(settings.preset.clone())
                         .show_ui(ui, |ui| {
@@ -585,7 +623,7 @@ fn card(
                         });
                 });
                 if caps.mode != Mode::Vector {
-                    ui.label(RichText::new("The paths open in Vector mode.").small());
+                    ui.label(RichText::new(t("The paths open in Vector mode.")).small());
                 }
             }
             ToolKind::Generate => {
@@ -618,13 +656,13 @@ fn card(
             && console_op.is_none()
             && panel.engine_state() != EngineState::Ready;
         let enabled = available && !busy && !needs_engine;
-        let run = ui.add_enabled(enabled, egui::Button::new("Run"));
+        let run = ui.add_enabled(enabled, egui::Button::new(t("Run")));
         let run = if busy {
-            run.on_disabled_hover_text("an AI job is running")
+            run.on_disabled_hover_text(t("an AI job is running"))
         } else if !available {
-            run.on_disabled_hover_text(kind.unavailable_reason(caps).unwrap_or("not available"))
+            run.on_disabled_hover_text(t(kind.unavailable_reason(caps).unwrap_or("not available")))
         } else if needs_engine {
-            run.on_disabled_hover_text("start the AI engine first")
+            run.on_disabled_hover_text(t("install and start the AI engine first, or choose Online"))
         } else {
             run
         };
@@ -632,7 +670,7 @@ fn card(
             actions.push(Action::Run(kind));
         }
         if !available && let Some(reason) = kind.unavailable_reason(caps) {
-            ui.label(RichText::new(reason).small().weak());
+            ui.label(RichText::new(t(reason)).small().weak());
         }
     });
 }
@@ -648,10 +686,10 @@ fn agent_tab(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>) 
         .show(ui, |ui| {
             if panel.agent.transcript.is_empty() {
                 ui.label(
-                    RichText::new(
+                    RichText::new(t(
                         "Ask the agent to edit the open document. It can see the mode and \
                          document size and run the tools on the Tools tab.",
-                    )
+                    ))
                     .weak(),
                 );
             }
@@ -661,7 +699,7 @@ fn agent_tab(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>) 
             if panel.agent.busy {
                 ui.horizontal(|ui| {
                     ui.spinner();
-                    ui.label(RichText::new("thinking…").weak());
+                    ui.label(RichText::new(t("thinking…")).weak());
                 });
             }
         });
@@ -675,7 +713,7 @@ fn agent_tab(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>) 
     }
     let response = ui.add(
         egui::TextEdit::multiline(&mut panel.agent.input)
-            .hint_text("Message the agent (Ctrl+Enter to send)")
+            .hint_text(t("Message the agent (Ctrl+Enter to send)"))
             .desired_rows(2)
             .desired_width(f32::INFINITY),
     );
@@ -689,12 +727,12 @@ fn agent_tab(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>) 
     ui.horizontal(|ui| {
         let can_send = !panel.agent.busy && !panel.agent.input.trim().is_empty();
         let send_clicked = ui
-            .add_enabled(can_send, egui::Button::new("Send"))
+            .add_enabled(can_send, egui::Button::new(t("Send")))
             .clicked();
         if send_clicked || (send_shortcut && can_send) {
             actions.push(Action::AgentSend(std::mem::take(&mut panel.agent.input)));
         }
-        if ui.button("New chat").clicked() {
+        if ui.button(t("New chat")).clicked() {
             actions.push(Action::AgentReset);
         }
     });
@@ -702,10 +740,10 @@ fn agent_tab(ui: &mut egui::Ui, panel: &mut AiPanel, actions: &mut Vec<Action>) 
 
 fn bubble_ui(ui: &mut egui::Ui, speaker: Speaker, text: &str) {
     let (who, color) = match speaker {
-        Speaker::User => ("You", ui.visuals().strong_text_color()),
-        Speaker::Agent => ("Agent", ui.visuals().text_color()),
-        Speaker::Tool => ("Tool", ui.visuals().weak_text_color()),
-        Speaker::Error => ("Error", ui.visuals().error_fg_color),
+        Speaker::User => (t("You"), ui.visuals().strong_text_color()),
+        Speaker::Agent => (t("Agent"), ui.visuals().text_color()),
+        Speaker::Tool => (t("Tool"), ui.visuals().weak_text_color()),
+        Speaker::Error => (t("Error"), ui.visuals().error_fg_color),
     };
     let fill = match speaker {
         Speaker::User => ui.visuals().faint_bg_color,
@@ -827,8 +865,8 @@ mod tests {
                 },
             );
         harness.run();
-        harness.get_by_label("Engine");
-        harness.get_by_label("Transport");
+        harness.get_by_label("AI engine on this computer");
+        harness.get_by_label("Advanced");
         harness.get_by_label("Fill model");
         for kind in ToolKind::ALL {
             harness.get_by_label(kind.label());

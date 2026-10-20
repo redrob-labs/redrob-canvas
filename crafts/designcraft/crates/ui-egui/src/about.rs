@@ -96,15 +96,8 @@ pub fn show(app: &mut DesignApp, ctx: &egui::Context) {
             pos2(ui.max_rect().right() + margin.rightf(), top + ui.spacing().interact_size.y),
         );
         crate::modal_drag::title_drag(ui, instance, title_row);
-        ui.horizontal(|ui| {
-            for (i, l) in ABOUT_TABS.iter().enumerate() {
-                let i = i as u8;
-                if ui.selectable_label(app.ui.about_tab == i, crate::rtl::widget(ui, crate::i18n::tr(&app.ui.language, l))).clicked() {
-                    app.ui.about_tab = i;
-                }
-            }
-        });
-        ui.separator();
+        // Redrob Canvas shows only the About tab: no tab row for Contributors.
+        // `help.about {tab}` still switches it, for automation.
         if app.ui.about_tab != 0 {
             let h = 400.0_f32.min(ctx.content_rect().height() * 0.7).max(160.0);
             ui.allocate_ui_with_layout(vec2(ui.available_width(), h), egui::Layout::top_down(egui::Align::Min), |ui| {
