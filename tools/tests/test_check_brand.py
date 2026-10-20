@@ -68,7 +68,8 @@ class CheckBrand(unittest.TestCase):
         self._with_svg(lambda s: "<!-- SPDX-License-Identifier: GPL-3.0-or-later -->\n" + s, "carries GPL text")
 
     def test_rejects_a_retraced_symbol(self) -> None:
-        self._with_svg(lambda s: s.replace('d="M54.4', 'd="M54.5', 1), "not the design system's")
+        # The small SVG is the app-icon delivery's symbol.svg; a retrace breaks the delivery pin.
+        self._with_svg(lambda s: s.replace('d="M', 'd="M1 ', 1), "not byte-identical")
 
     def test_rejects_an_effect_on_the_mark(self) -> None:
         self._with_svg(lambda s: s.replace("<path ", '<path opacity="0.5" ', 1), "applies an effect")

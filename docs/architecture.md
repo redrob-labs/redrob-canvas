@@ -76,8 +76,9 @@ shell and reaches whichever mode is active through a small trait the editors alr
 
 The shell paints from the Redrob design-system tokens vendored under `third_party/redrob-ui/` and
 pinned in `DESIGN_SYSTEM_PIN.json`; the app icon, lockups and splash under `resources/` are built by
-`scripts/build-brand-assets.py` from the design system's shipped files (the Redrob favicon tile, the
-Primary lockup) and pinned in `brand/SOURCES.json`. `tools/check_design_system.py` fails CI on a drifted
+`scripts/build-brand-assets.py` (the app icon from the 2026 app-icon delivery in `@redrob-labs/ui`
+1.8.0, the lockups and splash from the design system's Primary lockup) and pinned in
+`brand/SOURCES.json`. `tools/check_design_system.py` fails CI on a drifted
 pin, a hand-edited or unpinned brand file, GPL text in a generated SVG, or a colour literal in the
 shell's chrome. The editors keep their own themes inside their modes.
 

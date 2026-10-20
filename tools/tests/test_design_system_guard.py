@@ -55,7 +55,7 @@ class DesignSystemGuard(unittest.TestCase):
     def test_rejects_a_recoloured_icon(self) -> None:
         self._with_defect(
             "resources/icons/redrob-canvas.svg",
-            lambda b: b.replace(b'fill="#2B52FF"', b'fill="#FF0000"', 1),
+            lambda b: b.replace(b'stop-color="#2B52FF"', b'stop-color="#FF0000"', 1),
             "was changed by hand",
         )
 
