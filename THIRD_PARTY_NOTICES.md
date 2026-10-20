@@ -5,9 +5,9 @@ This file was generated without network access from the exact `Cargo.lock` resol
 
 Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). The four vendored editors under `crafts/` and their own NOTICE texts are recorded in `NOTICE` and `UPSTREAM_NOTICES.md`; the workspace crates they contribute appear in the inventory below as `workspace source`.
 
-- Cargo.lock SHA-256: `74ae1b41a5c27b106e482628c1b19cd4a3524c021c83f34dad45ea6e3f26c31c`
-- Resolved packages: **921**
-- Unique reproduced license/notice texts: **544**
+- Cargo.lock SHA-256: `2a493be6314516ecd4de0ac5f7ace17675ff6924e12bbfb86a8fbb9d4513757e`
+- Resolved packages: **922**
+- Unique reproduced license/notice texts: **545**
 - Generation mode: `cargo metadata --locked --offline`; no network content was used.
 
 ## Cargo.lock package inventory
@@ -883,6 +883,7 @@ Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COP
 | `winit` | `0.30.13` | git+https://github.com/skylartaylor/winit.git?rev=3d51077fd1a966f84df9ef287839dc84fd5b4ca7#3d51077fd1a966f84df9ef287839dc84fd5b4ca7 | `git:3d51077fd1a966f84df9ef287839dc84fd5b4ca7` | `Apache-2.0` | `LICENSE@6dc0e068dcf3a5bc` |
 | `winnow` | `1.0.4` | registry+https://github.com/rust-lang/crates.io-index | `23b97319f7b8343df12cc98938e5c3eb436064524c8d2b4e30a1d3a36eecdf81` | `MIT` | `LICENSE-MIT@cb5aedb296c5246d` |
 | `winprint` | `0.2.1` | git+https://github.com/storytold/winprint.rs?rev=5f80b9baf6b58937c401656634e42d33f00ddf49#5f80b9baf6b58937c401656634e42d33f00ddf49 | `git:5f80b9baf6b58937c401656634e42d33f00ddf49` | `BSD-3-Clause` | `LICENSE.md@970f241e73b246bc` |
+| `winresource` | `0.1.34` | registry+https://github.com/rust-lang/crates.io-index | `a2bc6d36480b829272a5bdabf08e6dca8004761c1da7e35efef800540c66221b` | `MIT` | `LICENSE@3564da09711c4756` |
 | `winsafe` | `0.0.29` | registry+https://github.com/rust-lang/crates.io-index | `9ef0ffc427f045c0cc9ebffd6f4f91153dcd2a1547b5c3c29ee3f541e16e95c6` | `MIT` | `LICENSE.md@3ee62f0338e87ec3` |
 | `winx` | `0.36.4` | registry+https://github.com/rust-lang/crates.io-index | `3f3fd376f71958b862e7afb20cfe5a22830e1963462f3a17f49d82a6c1d1f42d` | `Apache-2.0 WITH LLVM-exception` | `LICENSE@268872b9816f90fd` |
 | `wiremock` | `0.6.5` | registry+https://github.com/rust-lang/crates.io-index | `08db1edfb05d9b3c1542e521aea074442088292f00b5f28e435c714a98f85031` | `MIT/Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@23f18e03dc49df91` |
@@ -8517,6 +8518,42 @@ TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
    of your accepting any such warranty or additional liability.
 
 END OF TERMS AND CONDITIONS
+
+````
+
+### `3564da09711c475669c15346bb25a1530a7de683c13f4a51489c15a6d74438fa`
+
+Used by:
+- winresource 0.1.34 - LICENSE
+
+Original byte length: `1049`; trailing newline: `yes`.
+
+````text
+Copyright 2016 Max Resch
+
+Permission is hereby granted, free of charge, to any
+person obtaining a copy of this software and associated
+documentation files (the "Software"), to deal in the
+Software without restriction, including without
+limitation the rights to use, copy, modify, merge,
+publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software
+is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice
+shall be included in all copies or substantial portions
+of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF
+ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED
+TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT
+SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
+IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+DEALINGS IN THE SOFTWARE.
 
 ````
 
