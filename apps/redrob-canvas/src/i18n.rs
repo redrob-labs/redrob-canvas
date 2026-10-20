@@ -159,14 +159,21 @@ fn launcher() -> Option<&'static LangInfo> {
         .and_then(|a| a.get("redrob-canvas"))
         .and_then(serde_json::Value::as_str);
     let chosen = v.get("chosen").and_then(serde_json::Value::as_bool) == Some(true);
-    let all = v.get("language").and_then(serde_json::Value::as_str).filter(|_| chosen);
+    let all = v
+        .get("language")
+        .and_then(serde_json::Value::as_str)
+        .filter(|_| chosen);
     own.or(all).and_then(from_tag)
 }
 
 /// The launcher's shared directory: `REDROB_SHARED_DIR`, else `%APPDATA%\Redrob\Shared`,
 /// `~/Library/Application Support/ai.redrob.shared` or `$XDG_CONFIG_HOME/redrob-shared`.
 fn shared_dir() -> Option<PathBuf> {
-    let env = |k: &str| std::env::var_os(k).filter(|v| !v.is_empty()).map(PathBuf::from);
+    let env = |k: &str| {
+        std::env::var_os(k)
+            .filter(|v| !v.is_empty())
+            .map(PathBuf::from)
+    };
     if let Some(d) = env("REDROB_SHARED_DIR") {
         return Some(d);
     }
