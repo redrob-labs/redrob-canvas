@@ -530,85 +530,85 @@ Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COP
 | `redox_syscall` | `0.5.18` | registry+https://github.com/rust-lang/crates.io-index | `ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d` | `MIT` | `LICENSE@efcfee7981ff7243` |
 | `redox_syscall` | `0.9.4` | registry+https://github.com/rust-lang/crates.io-index | `737970939a87c6fa31e7acad13307bccbb017a073b695b6089a2c484f929e20e` | `MIT` | `LICENSE@efcfee7981ff7243` |
 | `redox_users` | `0.5.3` | registry+https://github.com/rust-lang/crates.io-index | `60dc65c0ff1a7ae1294b0c67b9f14baf70b644404010370171787bfac1038fc0` | `MIT` | `LICENSE@e6a8ae2d79608378` |
-| `redrob-agent` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-ai` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-agent` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-ai` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
 | `redrob-app-bridge` | `0.1.0` | git+https://github.com/redrob-labs/redrob-code?tag=v0.7.0#31a7dd330c33961f506a7346ad1fe9943691a6f5 | `git:31a7dd330c33961f506a7346ad1fe9943691a6f5` | `MIT` | `README.md@9280297c7cdba747` |
-| `redrob-canvas` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-craft-atomic` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@fb67c10761d3ffb3` |
-| `redrob-craft-cms` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@c7d57e9f7841bec6` |
-| `redrob-craft-pdf` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f53fe018b7f736a7` |
-| `redrob-craft-print` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f39ce60244ba2e06` |
-| `redrob-craft-quit` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-craft-settings` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f23849cce108c0d8` |
-| `redrob-craft-ui` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@3be7273263326119` |
+| `redrob-canvas` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-craft-atomic` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@fb67c10761d3ffb3` |
+| `redrob-craft-cms` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@c7d57e9f7841bec6` |
+| `redrob-craft-pdf` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f53fe018b7f736a7` |
+| `redrob-craft-print` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f39ce60244ba2e06` |
+| `redrob-craft-quit` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-craft-settings` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f23849cce108c0d8` |
+| `redrob-craft-ui` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@3be7273263326119` |
 | `redrob-engine-client` | `0.1.0` | git+https://github.com/redrob-labs/redrob-code?tag=v0.6.4#bcb8af0dc6f3b97c95208259da4c6a993e4935d9 | `git:bcb8af0dc6f3b97c95208259da4c6a993e4935d9` | `MIT` | (none shipped) |
 | `redrob-engine-client` | `0.1.0` | git+https://github.com/redrob-labs/redrob-code?tag=v0.7.0#31a7dd330c33961f506a7346ad1fe9943691a6f5 | `git:31a7dd330c33961f506a7346ad1fe9943691a6f5` | `MIT` | (none shipped) |
-| `redrob-layout-color` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-compose` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-doc` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-engine` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-epub` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-fonts` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-format` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-geom` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-idml` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-images` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-mcp` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-pdf` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-pptx` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-render` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-textimport` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-tools` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-ui-egui` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-affinity` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@62589fc118626005` |
-| `redrob-photo-algo` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-automation` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-cms` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@451de5fd712baafa` |
-| `redrob-photo-codecs` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@5ccb43e3c0a9dcdd` |
-| `redrob-photo-color` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-compose` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-doc` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-engine` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-format` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-geom` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-gpu` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-heif` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@27523bf034ac593e` |
-| `redrob-photo-io` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-ops` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-paint` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-plugins` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-psd` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@9cfd886fb5f2ce20` |
-| `redrob-photo-raster` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-raw` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@c132a1c34a60f72a` |
-| `redrob-photo-tablet` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-testkit` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-text` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-ui-egui` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-vector` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-affinity` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@27134d28cc9b5938` |
-| `redrob-vector-brush` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-cad` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-color` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-doc` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-effects` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-engine` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-eps` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-format` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-geom` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-mcp` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-metafile` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-pathops` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@66a9483fc1edeb17` |
-| `redrob-vector-pdf` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-plugins` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-render` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-scriptcheck` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-svg` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-testkit` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-text` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-three-d` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-tools` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-trace` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-ui-egui` | `0.13.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-color` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-compose` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-doc` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-engine` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-epub` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-fonts` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-format` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-geom` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-idml` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-images` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-mcp` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-pdf` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-pptx` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-render` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-textimport` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-tools` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-ui-egui` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-affinity` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@62589fc118626005` |
+| `redrob-photo-algo` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-automation` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-cms` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@451de5fd712baafa` |
+| `redrob-photo-codecs` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@5ccb43e3c0a9dcdd` |
+| `redrob-photo-color` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-compose` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-doc` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-engine` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-format` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-geom` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-gpu` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-heif` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@27523bf034ac593e` |
+| `redrob-photo-io` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-ops` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-paint` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-plugins` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-psd` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@9cfd886fb5f2ce20` |
+| `redrob-photo-raster` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-raw` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@c132a1c34a60f72a` |
+| `redrob-photo-tablet` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-testkit` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-text` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-ui-egui` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-vector` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-affinity` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@27134d28cc9b5938` |
+| `redrob-vector-brush` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-cad` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-color` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-doc` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-effects` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-engine` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-eps` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-format` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-geom` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-mcp` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-metafile` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-pathops` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@66a9483fc1edeb17` |
+| `redrob-vector-pdf` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-plugins` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-render` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-scriptcheck` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-svg` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-testkit` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-text` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-three-d` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-tools` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-trace` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-ui-egui` | `0.13.1` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
 | `ref-cast` | `1.0.27` | registry+https://github.com/rust-lang/crates.io-index | `7e440fb4e4b4147295338efb76001ab9e4efc0e5839df2c47fc5ac2381d365c3` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `ref-cast-impl` | `1.0.27` | registry+https://github.com/rust-lang/crates.io-index | `92ecd8964f8453721699a1ed72037b0db49ce2f5a5138486ee89bed6f67cdf3a` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `regex` | `1.13.1` | registry+https://github.com/rust-lang/crates.io-index | `f020237b6c8eed93db2e2cb53c00c60a8e1bc73da7d073199a1180401450218d` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@6485b8ed310d3f03` |
