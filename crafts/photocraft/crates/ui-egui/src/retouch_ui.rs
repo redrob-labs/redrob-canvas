@@ -689,6 +689,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
                 let r = app.run("select.subject", json!({}));
                 report_smart_result(app, r, tl!("No subject found — try Object Selection or the Lasso"));
             }
+            grow_expand_buttons(app, ui);
         }
         Tool::ObjectSelection => {
             crate::widgets::checkbox(ui, &mut o.object_finder, tl!("Object Finder"));
@@ -699,6 +700,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
                 let r = app.run("select.subject", json!({}));
                 report_smart_result(app, r, tl!("No subject found — try a rectangle around the object"));
             }
+            grow_expand_buttons(app, ui);
         }
         Tool::RedEye => {
             opt(ui, tl!("Pupil Size"));
@@ -711,6 +713,29 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui, tool: Tool) -> bo
         _ => {}
     }
     true
+}
+
+/// Select › Grow and Select › Modify › Expand… on a selection tool's options bar, so a subject
+/// picked with Object Selection, Quick Selection or the Magic Wand can take in what it missed (a
+/// tail, a thin edge) without hunting through the menus. They run the menu commands themselves
+/// and are greyed while there is no selection.
+pub(crate) fn grow_expand_buttons(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
+    let has_selection = app.session.active().is_some_and(|s| s.doc.selection.is_some());
+    let mut run = None;
+    ui.add_enabled_ui(has_selection, |ui| {
+        if crate::widgets::secondary_button(ui, tl!("Grow"), 0.0).clicked() {
+            run = Some("select.grow");
+        }
+        if crate::widgets::secondary_button(ui, tl!("Expand…"), 0.0).clicked() {
+            run = Some("select.modify.expand");
+        }
+    });
+    if let Some(id) = run
+        && let Err(e) = crate::menus::invoke(app, ui.ctx(), id, json!({}))
+    {
+        app.ui.status = e;
+        app.ui.status_error = true;
+    }
 }
 
 fn pattern_stamp_options(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
