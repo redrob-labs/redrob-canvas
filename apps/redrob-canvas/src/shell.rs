@@ -1498,6 +1498,9 @@ impl eframe::App for ShellApp {
         }
         // Only the active editor runs its frame logic (and so sees this frame's input).
         self.adopt_context(self.mode, ctx);
+        // Once, in every mode: a window bigger than its monitor (opened or restored at a larger
+        // monitor's size) is maximized into the work area, so its title bar can be reached.
+        redrob_photo_ui_egui::work_area::fit_window(ctx);
         match self.mode {
             Mode::Photo => eframe::App::logic(self.ensure_photo(), ctx, frame),
             Mode::Vector => {
