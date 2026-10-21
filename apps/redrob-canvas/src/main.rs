@@ -15,7 +15,9 @@ mod update;
 
 use shell::{Mode, ShellApp};
 
-/// The main window: 1440 × 900 (eframe shrinks it to the monitor), at least 760 × 480.
+/// The main window: 1440 × 900 (eframe shrinks it to the largest monitor, and the shell maximizes
+/// it on the first frame when it still doesn't fit its own, `work_area::fit_window`), at least
+/// 760 × 480, centred on the main monitor the first time only (`main`).
 fn native_options() -> eframe::NativeOptions {
     eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -30,6 +32,22 @@ fn native_options() -> eframe::NativeOptions {
         persistence_path: services::persistence_path(),
         ..Default::default()
     }
+}
+
+/// Whether eframe's saved state (`ui.ron`) holds a window position from an earlier session. The
+/// window entry is a RON string inside the file, so a text match is enough; eframe restores the
+/// inner position on macOS and the outer one elsewhere.
+fn has_saved_position(path: Option<&std::path::Path>) -> bool {
+    let Some(text) = path.and_then(|p| std::fs::read_to_string(p).ok()) else {
+        return false;
+    };
+    let key = if cfg!(target_os = "macos") {
+        "inner_position_pixels:Some("
+    } else {
+        "outer_position_pixels:Some("
+    };
+    let compact: String = text.chars().filter(|c| !c.is_whitespace()).collect();
+    compact.contains(key)
 }
 
 /// The window and taskbar icon. Without it eframe shows egui's own logo.
@@ -70,6 +88,12 @@ fn main() -> eframe::Result {
         }
     }
     let mut options = native_options();
+    // Centre only the first window. eframe centres after restoring the saved geometry, on the
+    // primary monitor, with the size clamped to the LARGEST monitor: a window closed on an
+    // external monitor reopened centred on a smaller laptop display at the monitor's size, its
+    // OS title bar (Minimize, Close, the strip that moves it) above the top of the screen and its
+    // right end past the edge, so it could be neither seen whole nor dragged back.
+    options.centered = !has_saved_position(options.persistence_path.as_deref());
     // Nothing draws or dispatches indirectly, so wgpu's indirect-call validation only costs a
     // compute shader at start-up that some drivers cannot compile (as the upstream apps found).
     if let eframe::egui_wgpu::WgpuSetup::CreateNew(create) = &mut options.wgpu_options.wgpu_setup {

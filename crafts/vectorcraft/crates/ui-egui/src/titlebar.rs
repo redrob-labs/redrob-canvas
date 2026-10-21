@@ -55,6 +55,9 @@ pub fn drag_area(ui: &Ui, rect: Rect) {
         toggle_maximize(ctx);
     } else if resp.drag_started_by(PointerButton::Primary) && ctx.data(|d| d.get_temp(resp.id).unwrap_or(false)) {
         ctx.send_viewport_cmd(ViewportCommand::StartDrag);
+        // The OS move loop takes the button release (egui#1245, winit#2192): end egui's drag now,
+        // or it stays "dragging" after the move and the mouse wheel stops scrolling.
+        ctx.stop_dragging();
     }
 }
 
