@@ -11,6 +11,11 @@ name: CI
 
 on:
   pull_request:
+  # A merge into develop compiles once more, only to save the build cache: a pull request can read
+  # develop's cache but not another pull request's, so without this every PR compiled from scratch.
+  push:
+    branches: [develop]
+    paths-ignore: ["**.md", "docs/**", "LICENSE*"]
   workflow_dispatch:
 
 permissions:
@@ -83,7 +88,7 @@ jobs:
     name: pins, upstream ids, notices, design system
     needs: changes
     # `!= 'false'`: an empty output (the detector failed) runs the job instead of skipping it.
-    if: always() && needs.changes.outputs.heavy != 'false'
+    if: always() && github.event_name != 'push' && needs.changes.outputs.heavy != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -134,16 +139,16 @@ jobs:
           key: ci-profile
       # Pull requests compile once (the release build compiles again, on every target). Formatting,
       # test-code lint and the tests run by hand (Actions -> CI -> Run workflow) before a release.
-      - name: Compile (pull request)
-        if: github.event_name == 'pull_request'
+      - name: Compile (pull request, and the develop cache warm-up)
+        if: github.event_name != 'workflow_dispatch'
         run: |
           # shellcheck disable=SC2086 # OUR_CRATES is a list of flags on purpose
           cargo clippy $OUR_CRATES --locked --profile ci -- -D warnings
       - name: Formatting (by hand)
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'workflow_dispatch'
         run: cargo fmt --all -- --check
       - name: Clippy and tests (by hand)
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'workflow_dispatch'
         run: |
           # shellcheck disable=SC2086
           cargo clippy $OUR_CRATES --all-targets --locked --profile ci -- -D warnings
