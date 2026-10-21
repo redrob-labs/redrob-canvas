@@ -4,6 +4,15 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.13.2 — 2026-10-21
+
+### Fixed
+
+- **Updating no longer stops at "the app's folder is in use".** A program Canvas started (such as
+  the shared Redrob Code engine) kept Canvas's folder as its working folder, so the setup could
+  not swap the folder and refused the update with nothing to close. The setup now replaces the
+  files in place when nothing is running from the folder.
+
 ## 0.13.1 — 2026-10-21
 
 ### Fixed

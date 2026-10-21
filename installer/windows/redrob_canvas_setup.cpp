@@ -1111,6 +1111,39 @@ static bool AnythingRunningFrom(const std::wstring& dir) {
   return found;
 }
 
+// Moves every file under `from` into the same place under `to`, replacing what is there. Used when the
+// install folder itself cannot be renamed: a process whose working directory is inside it (anything
+// Canvas started, such as the shared engine, inherits Canvas's bin\ folder) holds the folder, not its
+// files.
+static DWORD MoveTreeInto(const std::wstring& from, const std::wstring& to) {
+  CreateDirectoryW(to.c_str(), nullptr);
+  WIN32_FIND_DATAW fd;
+  HANDLE find = FindFirstFileW((from + L"\\*").c_str(), &fd);
+  if (find == INVALID_HANDLE_VALUE) return GetLastError();
+  DWORD result = 0;
+  do {
+    const std::wstring name = fd.cFileName;
+    if (name == L"." || name == L"..") continue;
+    const std::wstring src = from + L"\\" + name, dst = to + L"\\" + name;
+    if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+      const DWORD r = MoveTreeInto(src, dst);
+      if (r && !result) result = r;
+      continue;
+    }
+    if (Exists(dst)) {
+      const std::wstring old = dst + L".old";
+      DeleteFileW(old.c_str());
+      if (!MoveFileExW(dst.c_str(), old.c_str(), MOVEFILE_REPLACE_EXISTING)) DeleteFileW(dst.c_str());
+      MoveFileExW(old.c_str(), nullptr, MOVEFILE_DELAY_UNTIL_REBOOT);
+      DeleteFileW(old.c_str());
+    }
+    if (!MoveFileExW(src.c_str(), dst.c_str(), MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED) && !result)
+      result = GetLastError();
+  } while (FindNextFileW(find, &fd));
+  FindClose(find);
+  return result;
+}
+
 // Run a command hidden and wait. Returns its exit code, or the CreateProcess error.
 static DWORD RunHidden(std::wstring cmd, const wchar_t* cwd = nullptr) {
   STARTUPINFOW si = {sizeof(si)};
@@ -1228,20 +1261,33 @@ DWORD SetupApp::InstallCanvas() {
   if (!Exists(staging + kAppExeRel)) { DeleteTree(staging); return kResultNoExe; }
 
   // Swap. The rename fails, rather than half-copying, if anything still holds a file in the old folder.
+  bool inPlace = false;
   if (Exists(dir)) {
     if (!MoveFileExW(dir.c_str(), aside.c_str(), 0)) {
       const DWORD err = GetLastError();
-      DeleteTree(staging);
-      return err == ERROR_ACCESS_DENIED || err == ERROR_SHARING_VIOLATION ? kResultAppRunning : err;
+      const bool locked = err == ERROR_ACCESS_DENIED || err == ERROR_SHARING_VIOLATION;
+      // Nothing runs from the folder (checked above), so what holds it is a working directory:
+      // a process Canvas started (the shared engine) sits in bin\. Replace the files in place.
+      if (locked && !AnythingRunningFrom(dir)) {
+        const DWORD moved = MoveTreeInto(staging, dir);
+        DeleteTree(staging);
+        if (moved) return moved;
+        inPlace = true;
+      } else {
+        DeleteTree(staging);
+        return locked ? kResultAppRunning : err;
+      }
     }
   }
-  if (!MoveFileExW(staging.c_str(), dir.c_str(), 0)) {
-    const DWORD err = GetLastError();
-    if (Exists(aside)) MoveFileExW(aside.c_str(), dir.c_str(), 0);  // put the old install back
-    DeleteTree(staging);
-    return err;
+  if (!inPlace) {
+    if (!MoveFileExW(staging.c_str(), dir.c_str(), 0)) {
+      const DWORD err = GetLastError();
+      if (Exists(aside)) MoveFileExW(aside.c_str(), dir.c_str(), 0);  // put the old install back
+      DeleteTree(staging);
+      return err;
+    }
+    DeleteTree(aside);
   }
-  DeleteTree(aside);
 
   // The rest is best effort: Canvas is installed and runs without any of it.
   InstallUninstaller(dir);
@@ -1446,6 +1492,8 @@ std::wstring SetupApp::InstallRedrobCode() {
 int SetupApp::RunSilent(HINSTANCE hinst, bool deleteData) {
   hinst_ = hinst;
   silent_ = true;
+  // Do not hold the folder we are about to replace, whatever started us.
+  SetCurrentDirectoryW(LocalAppData().c_str());
   deleteData_ = deleteData;
   CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);  // the shortcut writer is COM
   DWORD result;
