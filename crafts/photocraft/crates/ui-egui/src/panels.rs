@@ -595,8 +595,8 @@ pub fn title_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
             let gap = egui::Rect::from_x_y_ranges(gap_l.max(full.left())..=gap_r.min(full.right()).max(gap_l), full.y_range());
             ui.ctx().data_mut(|d| d.insert_temp(crate::titlebar::modal_drag_area_id(), gap));
             let drag = ui.interact(gap, ui.id().with("titledrag"), Sense::click_and_drag());
-            if drag.drag_started() {
-                ui.ctx().send_viewport_cmd(egui::ViewportCommand::StartDrag);
+            if drag.drag_started_by(egui::PointerButton::Primary) {
+                crate::titlebar::start_window_drag(ui.ctx());
             }
             if drag.double_clicked() {
                 let max = ui.ctx().input(|i| i.viewport().maximized.unwrap_or(false));
@@ -626,17 +626,34 @@ pub fn title_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                 // this is the menus' inner edge, facing the title.
                 let menus_end = if app.services.native_menu.is_some() {
                     if rtl { ui.cursor().right() } else { ui.cursor().left() }
+                } else if custom {
+                    // The caption buttons and a drag gap come first: menus that don't fit beside
+                    // them (a narrow window, a long translation) are cut off rather than run under
+                    // Minimize / Close, and stay reachable from the keyboard (Alt, F10).
+                    let limit = if rtl {
+                        egui::Rect::everything_right_of(full.left() + caption_left + DRAG_MIN)
+                    } else {
+                        egui::Rect::everything_left_of(full.right() - caption_right - DRAG_MIN)
+                    };
+                    let clip = ui.clip_rect();
+                    ui.set_clip_rect(clip.intersect(limit));
+                    let end = crate::menus::menu_bar(app, ui);
+                    ui.set_clip_rect(clip);
+                    if rtl { end.max(limit.left()) } else { end.min(limit.right()) }
                 } else {
                     crate::menus::menu_bar(app, ui)
                 };
                 // The menu bar takes the whole row, so the far-end group gets its own rect: from
-                // the menus to the bar's end, or to the caption buttons.
+                // the menus to the bar's end, or to the caption buttons. The group starts at
+                // least [`DRAG_MIN`] past the menus, so a narrow window (a laptop at 150 %) drops
+                // workspace controls before the gap that drags the window shrinks to nothing.
+                let lead_gap = if custom { TITLE_GAP.max(DRAG_MIN) } else { TITLE_GAP };
                 let group = if rtl {
                     let left_edge = if caption_left > 0.0 { full.left() + caption_left + 4.0 } else { full.left() };
-                    egui::Rect::from_min_max(egui::pos2(left_edge, full.top()), egui::pos2((menus_end - TITLE_GAP).max(left_edge), full.bottom()))
+                    egui::Rect::from_min_max(egui::pos2(left_edge, full.top()), egui::pos2((menus_end - lead_gap).max(left_edge), full.bottom()))
                 } else {
                     let right_edge = if caption_right > 0.0 { full.right() - caption_right - 4.0 } else { full.right() };
-                    egui::Rect::from_min_max(egui::pos2((menus_end + TITLE_GAP).min(right_edge), full.top()), egui::pos2(right_edge, full.bottom()))
+                    egui::Rect::from_min_max(egui::pos2((menus_end + lead_gap).min(right_edge), full.top()), egui::pos2(right_edge, full.bottom()))
                 };
                 let mut group_ui = ui.new_child(egui::UiBuilder::new().max_rect(group).layout(crate::direction::trailing()));
                 let controls_end = {
@@ -746,6 +763,8 @@ pub fn sync_window_title(app: &mut PhotocraftApp, ctx: &egui::Context) {
 
 /// Minimum space kept between the window title and the menus or controls beside it.
 const TITLE_GAP: f32 = 16.0;
+/// With the app's own title bar, the narrowest free gap left to drag the window by.
+const DRAG_MIN: f32 = 48.0;
 /// The workspace switcher's narrowest width, and one 28 pt title-bar icon with its spacing.
 const WORKSPACE_MIN: f32 = 90.0;
 const ICON_SLOT: f32 = 34.0;
@@ -1303,6 +1322,7 @@ pub fn options_bar(app: &mut PhotocraftApp, ui: &mut egui::Ui) {
                             let r = app.run("select.subject", json!({}));
                             crate::retouch_ui::report_smart_result(app, r, tl!("No subject found — try Object Selection or the Lasso"));
                         }
+                        crate::retouch_ui::grow_expand_buttons(app, ui);
                         if widgets::secondary_button(ui, tl!("Select and Mask…"), 0.0).clicked() {
                             let _ = crate::menus::invoke(app, ui.ctx(), "select.selectAndMask", json!({}));
                         }

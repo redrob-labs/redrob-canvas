@@ -67,14 +67,22 @@ pub(crate) fn modal_drag_overlay(ctx: &egui::Context) {
     }
     egui::Area::new(Id::new("titlebar-modal-drag-overlay")).order(Order::Tooltip).fixed_pos(area.min).movable(false).sense(Sense::hover()).show(ctx, |ui| {
         let response = ui.allocate_rect(area, Sense::click_and_drag());
-        if response.drag_started() {
-            ctx.send_viewport_cmd(ViewportCommand::StartDrag);
+        if response.drag_started_by(PointerButton::Primary) {
+            start_window_drag(ctx);
         }
         if response.double_clicked() {
             let max = ctx.input(|i| i.viewport().maximized.unwrap_or(false));
             ctx.send_viewport_cmd(ViewportCommand::Maximized(!max));
         }
     });
+}
+
+/// Hand the window to the OS's move loop and end egui's drag at once. The move loop takes the
+/// button release (egui#1245, winit#2192), so egui kept the press down after the move: it stayed
+/// "dragging" and the mouse wheel stopped scrolling until the next click.
+pub(crate) fn start_window_drag(ctx: &egui::Context) {
+    ctx.send_viewport_cmd(ViewportCommand::StartDrag);
+    ctx.stop_dragging();
 }
 
 impl CaptionFamily {
@@ -266,7 +274,7 @@ pub fn caption_buttons(app: &mut PhotocraftApp, ui: &mut Ui, bar: Rect) {
     for (c, r, centre) in layout(&s, bar, bar.left().max(content.left()), bar.right().min(content.right())) {
         let resp = ui.interact(r, caption_id(c), if windows { Sense::click() } else { Sense::click_and_drag() });
         if resp.drag_started_by(PointerButton::Primary) {
-            ui.ctx().send_viewport_cmd(ViewportCommand::StartDrag);
+            start_window_drag(ui.ctx());
         }
         let pressed = resp.is_pointer_button_down_on() && resp.hovered();
         if windows {

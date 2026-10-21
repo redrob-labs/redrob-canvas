@@ -4,6 +4,19 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.13.1 — 2026-10-21
+
+### Fixed
+
+- **The window opens where you can reach it.** A window closed on a large monitor opened on a
+  laptop screen bigger than the screen, with its title bar above the top edge, so it could be
+  neither moved nor closed. The saved position is kept, and a window larger than the screen is
+  maximized into it.
+- **Grow and Expand… on the selection tools.** Object Selection, Quick Selection and Magic Wand
+  show Grow and Expand… on their options bar, next to the selection they change.
+- Dragging the title bar no longer leaves the window stuck dragging (scrolling stopped until the
+  next click).
+
 ## 0.13.0 — 2026-10-20
 
 ### Changed
