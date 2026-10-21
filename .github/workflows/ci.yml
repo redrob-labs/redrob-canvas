@@ -1,10 +1,10 @@
 # The one pull-request workflow. `changes` decides what the pull request needs: nothing heavy for a
 # docs-only or version-only diff, and no Rust job when no Rust input changed. `checks` runs the
 # repository scripts: the upstream pins, the upstream-identifier guard, the generated third-party
-# notices, the design-system guard and the tools' own tests. `rust` runs formatting and clippy of
-# OUR crates (the shell `redrob-canvas`, `redrob-ai`, `redrob-agent`) with `--profile ci` (root
-# Cargo.toml: every dependency at opt-level 0, no incremental); clippy --all-targets type-checks the
-# test code too. The tests themselves (~5 min) run only on a manual workflow_dispatch. `rust` is
+# notices and the design-system guard. On a pull request `rust` compiles OUR crates once (the shell
+# `redrob-canvas`, `redrob-ai`, `redrob-agent`): clippy without test code, `--profile ci` (root
+# Cargo.toml: every dependency at opt-level 0, no incremental). Formatting, clippy --all-targets,
+# the tests and the tools' own tests run only on a manual workflow_dispatch. `rust` is
 # skipped when the pull request targets main (that code already passed here on its way into
 # develop). A skipped job satisfies its required check. PR policy is the org-wide workflow.
 name: CI
@@ -105,7 +105,8 @@ jobs:
           python3 tools/generate_distribution_artifacts.py --check
       - name: Design system tokens, mark and brand assets are current
         run: python3 tools/check_design_system.py
-      - name: Tool tests
+      - name: Tool tests (by hand)
+        if: github.event_name != 'pull_request'
         run: python3 -m unittest discover -s tools/tests -p "test_*.py"
 
   rust:
@@ -131,16 +132,19 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ci-profile
-      - name: Formatting
-        run: cargo fmt --all -- --check
-      - name: Clippy
+      # Pull requests compile once (the release build compiles again, on every target). Formatting,
+      # test-code lint and the tests run by hand (Actions -> CI -> Run workflow) before a release.
+      - name: Compile (pull request)
+        if: github.event_name == 'pull_request'
         run: |
           # shellcheck disable=SC2086 # OUR_CRATES is a list of flags on purpose
-          cargo clippy $OUR_CRATES --all-targets --locked --profile ci -- -D warnings
-      # ~5 min; pull requests get clippy --all-targets (test code type-checked), the suite runs
-      # when CI is started by hand (Actions -> CI -> Run workflow).
-      - name: Tests (manual run only)
-        if: github.event_name == 'workflow_dispatch'
+          cargo clippy $OUR_CRATES --locked --profile ci -- -D warnings
+      - name: Formatting (by hand)
+        if: github.event_name != 'pull_request'
+        run: cargo fmt --all -- --check
+      - name: Clippy and tests (by hand)
+        if: github.event_name != 'pull_request'
         run: |
           # shellcheck disable=SC2086
+          cargo clippy $OUR_CRATES --all-targets --locked --profile ci -- -D warnings
           cargo test $OUR_CRATES --locked --profile ci
