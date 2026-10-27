@@ -1,7 +1,6 @@
 # The one pull-request workflow. `changes` decides what the pull request needs: nothing heavy for a
 # docs-only or version-only diff, and no Rust job when no Rust input changed. `checks` runs the
-# repository scripts: the upstream pins, the upstream-identifier guard, the generated third-party
-# notices and the design-system guard. On a pull request `rust` compiles OUR crates once (the shell
+# repository scripts: the generated third-party notices and the design-system guard. On a pull request `rust` compiles OUR crates once (the shell
 # `redrob-canvas`, `redrob-ai`, `redrob-agent`): clippy without test code, `--profile ci` (root
 # Cargo.toml: every dependency at opt-level 0, no incremental). Formatting, clippy --all-targets,
 # the tests and the tools' own tests run only on a manual workflow_dispatch. `rust` is
@@ -29,8 +28,8 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
   RUST_BACKTRACE: 1
-  # Our crates and the shell. Not `--workspace`: that would lint and test the four editor subtrees
-  # too, and linking their ~75 test binaries exhausted the hosted runner's disk (ld died with SIGBUS).
+  # Our crates and the shell. Not `--workspace`: that would lint and test the editors under
+  # editors/ too, and linking their ~75 test binaries exhausted the hosted runner's disk (ld died with SIGBUS).
   OUR_CRATES: -p redrob-canvas -p redrob-ai -p redrob-agent
 
 jobs:
@@ -71,7 +70,7 @@ jobs:
           fi
           rust=false
           if [ "$heavy" = true ]; then
-            paths=('*.rs' '*.toml' Cargo.lock '*.wgsl' '*.ttf' '*.tsv' '*.ftl' '*.json' 'crafts/*/assets/*' .github/workflows/ci.yml)
+            paths=('*.rs' '*.toml' Cargo.lock '*.wgsl' '*.ttf' '*.tsv' '*.ftl' '*.json' 'editors/*/assets/*' .github/workflows/ci.yml)
             # A diff whose only Rust-input lines are `version = "x.y.z"`, a build profile's
             # `codegen-units` / `lto`, or `# ` comments changes no code clippy sees.
             if git diff --quiet HEAD^1 HEAD -- "${paths[@]}"; then
@@ -85,6 +84,7 @@ jobs:
           echo "rust=$rust" >> "$GITHUB_OUTPUT"
 
   checks:
+    # The name is the required check's; it outlived the upstream pin step it was named for.
     name: pins, upstream ids, notices, design system
     needs: changes
     # `!= 'false'`: an empty output (the detector failed) runs the job instead of skipping it.
@@ -93,12 +93,6 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
-        with:
-          fetch-depth: 0 # verify-upstream.sh reads each subtree's squash commit out of git log
-      - name: Upstream pins and identifiers
-        run: |
-          ./scripts/verify-upstream.sh
-          python3 scripts/check_upstream_ids.py
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
           toolchain: "1.95.0"

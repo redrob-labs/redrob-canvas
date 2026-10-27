@@ -1,0 +1,25 @@
+[package]
+name = "redrob-layout-pptx"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Layout PowerPoint (PPTX) export: pages as slides of editable shapes, pictures and text"
+
+[lints]
+workspace = true
+
+[dependencies]
+redrob-layout-geom = { workspace = true }
+redrob-layout-color = { workspace = true }
+redrob-layout-doc = { workspace = true }
+redrob-layout-fonts = { workspace = true }
+redrob-layout-compose = { workspace = true }
+redrob-layout-images = { workspace = true }
+skrifa = { workspace = true }
+image = { workspace = true }
+thiserror = { workspace = true }
+zip = { workspace = true }
+
+[dev-dependencies]
+redrob-layout-fonts = { workspace = true, features = ["testing"] }
+quick-xml = { workspace = true }

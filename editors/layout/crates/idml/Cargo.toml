@@ -1,0 +1,20 @@
+[package]
+name = "redrob-layout-idml"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Layout IDML (InDesign Markup Language) import and export"
+
+[lints]
+workspace = true
+
+[dependencies]
+redrob-layout-geom = { workspace = true }
+redrob-layout-color = { workspace = true }
+redrob-layout-doc = { workspace = true }
+thiserror = { workspace = true }
+quick-xml = { workspace = true }
+zip = { workspace = true }
+
+[dev-dependencies]
+redrob-layout-compose = { workspace = true }

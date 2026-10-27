@@ -12,7 +12,7 @@ The tree every archive, package and installer is made from (release.yml, build-l
       LICENSE-MIT  LICENSE-APACHE            Contents/MacOS/redrob-canvas
       COPYRIGHT  NOTICE                      Contents/Resources/AppIcon.icns
       THIRD_PARTY_NOTICES.md                 Contents/Resources/licenses/...
-      UPSTREAM_NOTICES.md                  share/redrob-canvas/licenses/   (the same set, for the dmg)
+      SOURCE_ORIGINS.md                    share/redrob-canvas/licenses/   (the same set, for the dmg)
 
 The licences travel with every copy: MIT asks the notice to be retained in every copy and Apache 4(d)
 asks the NOTICE to travel with every distribution, so they are inside the bundle as well as beside it.
@@ -38,7 +38,7 @@ LICENSES = (
     "COPYRIGHT",
     "NOTICE",
     "THIRD_PARTY_NOTICES.md",
-    "UPSTREAM_NOTICES.md",
+    "SOURCE_ORIGINS.md",
 )
 ICNS = ROOT / "resources" / "icons" / "redrob-canvas.icns"
 BUNDLE_ID = "ai.redrob.canvas"

@@ -1,0 +1,23 @@
+[package]
+name = "redrob-vector-cad"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Vector CAD interchange: a hand-written ASCII DXF writer (R12 to 2018)"
+
+[lints]
+workspace = true
+
+[dependencies]
+redrob-vector-geom = { workspace = true }
+redrob-vector-color = { workspace = true }
+redrob-vector-doc = { workspace = true }
+redrob-vector-effects = { workspace = true }
+redrob-vector-brush = { workspace = true }
+redrob-vector-pathops = { workspace = true }
+redrob-vector-text = { workspace = true }
+kurbo = { workspace = true }
+image = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

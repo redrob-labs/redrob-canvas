@@ -1,0 +1,19 @@
+[package]
+name = "redrob-layout-color"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Layout color"
+
+[lints]
+workspace = true
+
+[dependencies]
+kurbo = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+moxcms = "0.8"
+
+[dev-dependencies]
+proptest = { workspace = true }
+serde_json = { workspace = true }

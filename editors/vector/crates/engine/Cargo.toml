@@ -1,0 +1,45 @@
+[package]
+name = "redrob-vector-engine"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Vector engine: sessions, history, selection, the command registry"
+
+[lints]
+workspace = true
+
+[dependencies]
+redrob-vector-geom = { workspace = true }
+redrob-vector-color = { workspace = true }
+redrob-vector-doc = { workspace = true }
+redrob-vector-tools = { workspace = true }
+redrob-vector-text = { workspace = true }
+redrob-vector-render = { workspace = true }
+redrob-vector-pathops = { workspace = true }
+redrob-vector-brush = { workspace = true }
+redrob-vector-trace = { workspace = true }
+redrob-vector-svg = { workspace = true }
+redrob-vector-format = { workspace = true }
+redrob-vector-pdf = { workspace = true }
+redrob-vector-cad = { workspace = true }
+redrob-vector-eps = { workspace = true }
+redrob-vector-metafile = { workspace = true }
+redrob-vector-plugins = { workspace = true }
+redrob-vector-affinity = { workspace = true }
+redrob-vector-scriptcheck = { workspace = true }
+image = { workspace = true }
+flate2 = { workspace = true }
+kurbo = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
+
+[dev-dependencies]
+redrob-vector-affinity = { workspace = true, features = ["synth"] }
+crc32fast = { workspace = true }
+redrob-vector-testkit = { workspace = true }
+proptest = { workspace = true }
+wat = { workspace = true }
+# Zstandard streams for the Illustrator editing data fuzz tests.
+ruzstd = { workspace = true }

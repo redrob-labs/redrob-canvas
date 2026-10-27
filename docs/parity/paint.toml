@@ -1,7 +1,7 @@
 # Paint-depth feature inventory for Redrob Canvas v0.9.0 parity (clean room).
 # Reference: Krita 5.3 as observed through its official manual (docs.krita.org) and by running the
 # installed binary as a black box. Behaviour text is our own wording; no reference source was read.
-# ours: none | partial | full against our crates (crafts/*, apps/*). priority: 1 daily, 2 common, 3 rare.
+# ours: none | partial | full against our crates (editors/*, apps/*). priority: 1 daily, 2 common, 3 rare.
 
 [[feature]]
 id = "PT-ENG-001"
@@ -11,7 +11,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/pixel_brush_engine.html"
 behaviour = "Default dab engine: stamps a generated, bitmap or text tip along the stroke at a spacing; every parameter (size, opacity, flow, ratio, rotation, scatter, softness, sharpness, mirror, source, mix, darken, HSV, airbrush, texture, masked tip) can be driven by sensors; multithreaded tips."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs"
 gap = ""
 priority = 1
 
@@ -23,7 +23,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/color_smudge_engine.html"
 behaviour = "Picks colour from under the tip and drags it; two modes (smear copies the previous dab area, dulling fills the dab with the average under it); colour rate adds foreground paint, smudge length and radius, smear alpha, overlay to sample all layers, paint thickness height map, gradient source, HSV jitter."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/mixer.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
+ours_where = "editors/photo/crates/paint/src/mixer.rs, editors/photo/crates/engine/src/brush_cmds.rs, editors/photo/crates/ui-egui/src/panels.rs"
 gap = ""
 priority = 1
 
@@ -35,7 +35,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/clone_engine.html"
 behaviour = "Paints a copy of another area; source set with a modifier-click; healing mode blends texture only; per-dab or per-stroke source movement; reset source each stroke; clone from all visible layers; source may be another layer."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/retouch.rs"
+ours_where = "editors/photo/crates/paint/src/retouch.rs"
 gap = ""
 priority = 1
 
@@ -47,7 +47,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/filter_brush_engine.html"
 behaviour = "Applies any filter (blur, sharpen, dodge, levels, ...) through a brush tip instead of separate retouch tools; the filter's own dialog appears in the brush editor."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 2
 
@@ -59,7 +59,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/deform_brush_engine.html"
 behaviour = "Fast pixel-pushing brush: grow, shrink, swirl both ways, move, colour deform, lens zoom in/out; deform amount, bilinear interpolation, counter, option to sample the undeformed image."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/deform.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/deform.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 2
 
@@ -71,7 +71,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/sketch_brush_engine.html"
 behaviour = "Line-based 'harmony' brush: connects the current point to nearby earlier points inside the tip area; line width, offset scale, density, distance density, magnetify, random RGB/opacity, distance opacity, simple mode, antialiasing."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/sketch.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/sketch.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 2
 
@@ -83,7 +83,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/hatching_brush_engine.html"
 behaviour = "Reveals a fixed hatching pattern through the tip: angle, separation, thickness, origin, crosshatch styles (none, perpendicular, +45/-45 orders, moire), separation and thickness dynamics, antialiased lines, coloured background."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/hatching.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/hatching.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -95,7 +95,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/spray_brush_engine.html"
 behaviour = "Scatters many particles (shapes or a tip bitmap) in an area: diameter, aspect, angle, scale, spacing, jitter; count or density; angular and radial distributions (uniform, gaussian, cluster, curve); particle shape dynamics and colour options."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/spray.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/spray.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 2
 
@@ -107,7 +107,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/shape_brush_engine.html"
 behaviour = "Experimental contour brush: the stroke outline becomes a filled shape; speed, smooth, displace, winding fill, hard edge."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/shape.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/shape.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -119,7 +119,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/quick_brush_engine.html"
 behaviour = "Round dabs only, size, spacing and blend mode; optimised for filling large areas fast."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/render.rs"
+ours_where = "editors/photo/crates/paint/src/render.rs"
 gap = "computed round tip covers this"
 priority = 2
 
@@ -131,7 +131,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/grid_brush_engine.html"
 behaviour = "Draws particles (ellipse, rectangle, line, pixel, antialiased pixel) on a grid under the cursor for halftone and retro effects; grid size, division (optionally by pressure), borders, jitter; random HSV/opacity, per-particle colour, sample input layer, fill background."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/grid.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/grid.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -143,7 +143,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/particle_brush_engine.html"
 behaviour = "Draws wires that follow the cursor with gravity and iterations; particle count, opacity weight, distance scales."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/particle.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/particle.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -155,7 +155,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/curve_engine.html"
 behaviour = "Evenly spaced lines plus extra curve lines connecting the stroke to earlier points; line width with dynamics, history size, curve opacity with dynamics, connection line toggle; mouse users get pressure-like width by speed."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/curve.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/curve.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -167,7 +167,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/bristle_engine.html"
 behaviour = "Simulates individual bristles seeded from the tip: scale, random offset, shear, density, mouse-speed pressure, threshold, connect hairs, antialiasing, composite bristles; ink depletion over time (opacity, saturation, curve) and soaking colour from the canvas."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/bristle.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/bristle.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 2
 
@@ -179,7 +179,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/dyna_brush_engine.html"
 behaviour = "Removed in 4.0; mass and drag satellite motion with circle, two, line, polygon, wire shapes. Kept in the manual for old presets."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/dyna.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/dyna.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -191,7 +191,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/chalk_engine.html"
 behaviour = "Removed in 4.0; round chalky tip with opacity and saturation fade. Kept for old presets."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/presets.rs"
+ours_where = "editors/photo/crates/paint/src/presets.rs"
 gap = "our dry-media chalk presets cover the look"
 priority = 3
 
@@ -203,7 +203,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/tangen_normal_brush_engine.html"
 behaviour = "Paints normal-map colours from stylus tilt (or drawing direction or rotation) so a 3D surface can be painted directly; tangent channel encoding, elevation sensitivity; used with a normalize filter and a phong bump filter for live preview."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/tangent.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/tangent.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -215,7 +215,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/mypaint_engine.html"
 behaviour = "Runs MyPaint brushes: nine inputs (pressure, fine/gross speed, random, stroke, direction, declination, ascension, custom) mapped by curves to radius, hardness, eraser, radius by random, antialiasing, elliptical dab angle and ratio, direction filter, colour hue/lightness/value change, speed, dabs, opacity, tracking, smudge, stroke and custom input groups; logarithmic radius."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/mypaint.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/mypaint.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 2
 
@@ -227,7 +227,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Any string in a chosen font becomes the tip; spacing and pipe mode (one character per dab) let a word be laid along the stroke."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/engines/mod.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_engines_ui.rs"
+ours_where = "editors/photo/crates/paint/src/engines/mod.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/ui-egui/src/brush_engines_ui.rs"
 gap = ""
 priority = 3
 
@@ -239,7 +239,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Circle or square generated tips with three mask types: default (fast), soft (fade by curve), gaussian."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/render.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 1
 
@@ -251,7 +251,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Diameter, ratio, fade (lockable horizontal/vertical), angle, spikes, density, randomness, spacing with auto (quadratic) spacing, smooth lines antialiasing, precision 1-5 with auto precision by size."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/render.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 1
 
@@ -263,7 +263,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Bitmap tips from .gbr, .gih and .abr; initial size scale, rotation and spacing per tip; all tips shown in one chooser."
 ours = "full"
-ours_where = "crafts/photocraft/crates/io/src/gbr.rs, crafts/photocraft/crates/io/src/abr_map.rs, crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/io/src/gbr.rs, editors/photo/crates/io/src/abr_map.rs, editors/photo/crates/paint/src/brush.rs, editors/photo/crates/engine/src/brush_extras_cmds.rs, editors/photo/crates/engine/src/preset_import_cmds.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 1
 
@@ -275,7 +275,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Coloured tips are read as greyscale coverage and painted in the foreground colour; lighter means more transparent."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/tile.rs"
+ours_where = "editors/photo/crates/paint/src/tile.rs"
 gap = ""
 priority = 1
 
@@ -287,7 +287,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Tip bitmap painted with its own colours, for image stamps."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/tile.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/io/src/gbr.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/tile.rs, editors/photo/crates/paint/src/render.rs, editors/photo/crates/io/src/gbr.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -299,7 +299,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Tip transparency kept, tip colours replaced by foreground colour but tip lightness preserved, giving impasto highlights and shadows; neutral point, brightness, contrast sliders."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/render.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -311,7 +311,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Tip lightness indexes the active gradient so one stamp paints many colours; same adjustment sliders."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/render.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -323,7 +323,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Multi-image tips can cycle in order, at random, or by pressure/tilt/angle selection ranks."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/io/src/gbr.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/io/src/gbr.rs"
 gap = ""
 priority = 3
 
@@ -335,7 +335,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Predefined tip scale is the base for sensor-driven size; tips can be large native bitmaps."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/dynamics.rs"
+ours_where = "editors/photo/crates/paint/src/dynamics.rs"
 gap = ""
 priority = 1
 
@@ -347,7 +347,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "A selection or layer can be saved as a new predefined tip or stamp; via the predefined tip chooser's stamp/clipboard buttons."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/brush_cmds.rs"
 gap = "brush.defineFromSelection and brush.presets.importImage"
 priority = 2
 
@@ -359,7 +359,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "With Sharpness on, the brush outline can snap to the pixel grid for pixel art."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/outline.rs, crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/outline.rs, editors/photo/crates/paint/src/brush.rs, editors/photo/crates/ui-egui/src/canvas.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -371,7 +371,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/locked_brush_settings.html"
 behaviour = "The tip (and any other option) can be locked so switching presets keeps it; unlock drops or keeps the locked value."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/engine/src/brush_extras_cmds.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/engine/src/brush_extras_cmds.rs"
 gap = ""
 priority = 2
 
@@ -383,7 +383,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Size option is the sensor curve applied to the tip diameter, not the diameter itself; concave pressure curves give fine lines; fuzzy or perspective sensors are common."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "ShapeDynamics size with Dynamic.curve"
 priority = 1
 
@@ -395,7 +395,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/opacity_and_flow.html"
 behaviour = "Stroke transparency; with sensors it multiplies with flow (since 4.2); old additive behaviour switchable."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "Transfer.opacity"
 priority = 1
 
@@ -407,7 +407,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/opacity_and_flow.html"
 behaviour = "Per-dab transparency, separate from stroke opacity; multiplies with opacity."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "Transfer.flow"
 priority = 1
 
@@ -419,7 +419,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/opacity_and_flow.html"
 behaviour = "Build-up treats opacity like flow and accumulates per dab; wash caps the whole stroke at the opacity (indirect painting)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/render.rs"
+ours_where = "editors/photo/crates/paint/src/render.rs"
 gap = "build-up toggle; stroke buffer composites once at stroke opacity"
 priority = 1
 
@@ -431,7 +431,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Aspect ratio of the tip, sensor-driven, also for predefined tips."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "ShapeDynamics roundness"
 priority = 1
 
@@ -443,7 +443,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Spacing between dabs driven by sensors; isotropic spacing uses the diameter only instead of the ratio."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 1
 
@@ -455,7 +455,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Mirror the tip mask horizontally and/or vertically, per dab by sensor."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "ShapeDynamics flip_x/flip_y jitter"
 priority = 2
 
@@ -467,7 +467,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Sensor-driven fade of the tip edge; noticeable on large soft tips."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/paint/src/render.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -479,7 +479,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Threshold over the tip mask for crisp pixel-art strokes; strength by sensor, soften edge slider."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/paint/src/render.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -491,7 +491,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Tip angle plus sensor contribution; pressure-like sensors rotate around a 50% neutral point; tilt direction and drawing angle map the tip axis to stylus or stroke direction; fuzzy, distance, fade."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "angle jitter with Direction/InitialDirection/Rotation/Tilt controls"
 priority = 1
 
@@ -503,7 +503,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Random dab placement along (X) and across (Y) the drawing direction, sensor-driven."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 1
 
@@ -515,7 +515,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Dabs use the foreground colour."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = ""
 priority = 1
 
@@ -527,7 +527,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Dabs take their colour from the active gradient, position chosen by the Mix sensor."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -539,7 +539,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Uniform random gives every dab one random colour; total random paints noise."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/paint/src/render.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -551,7 +551,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Dabs paint the active pattern, aligned per stroke or locked to the dab."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/render.rs, editors/photo/crates/engine/src/brush_mode_cmds.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -563,7 +563,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Sensor blends between foreground and background colour (or picks a gradient position)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -575,7 +575,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Sensor-driven darkening of the source colour towards black."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -587,7 +587,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Three sensor-driven HSV offsets on the source colour; all three on fuzzy gives rich colour texture."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -599,7 +599,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Keeps depositing paint while the stylus is held still; rate slider."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/dynamics.rs"
+ours_where = "editors/photo/crates/paint/src/dynamics.rs"
 gap = ""
 priority = 1
 
@@ -611,7 +611,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/options.html"
 behaviour = "Sensor-driven contrast of a lightness-map tip for variable impasto."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/paint/src/render.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -623,7 +623,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
 behaviour = "A pattern multiplies the stroke: scale, horizontal/vertical offset, random offset per stroke, cutoff, invert."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "Texture section"
 priority = 1
 
@@ -635,7 +635,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
 behaviour = "Strength option drives how much texture applies; soft texturing toggle (5.3) replicates Photoshop-style soft application for most modes."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "Texture depth dynamic"
 priority = 1
 
@@ -647,7 +647,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
 behaviour = "Alpha-based texturing modes: multiply (soft), subtract (harsh), darken (minimum alpha), overlay (soft, full coverage at high strength)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = ""
 priority = 1
 
@@ -659,7 +659,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
 behaviour = "Dodge modes make the tip more opaque where the texture is bright; burn modes make it more transparent where dark."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = ""
 priority = 2
 
@@ -671,7 +671,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
 behaviour = "Aliased or antialiased hard-threshold texturing giving full coverage at high strength."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = ""
 priority = 2
 
@@ -683,7 +683,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
 behaviour = "Height-style texturing with wider strength range; linear height adds multiply for softer transitions."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = ""
 priority = 1
 
@@ -695,7 +695,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/texture.html"
 behaviour = "Texture lightness painted into the colour (or mapped to the active gradient) instead of the alpha."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/render.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/render.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -707,7 +707,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/masked_brush.html"
 behaviour = "A second tip masks the first per dab: own tip, blend mode, size, opacity/flow, ratio, mirror, rotation, scatter; size relative to the main tip; wash mode only."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "DualBrush"
 priority = 1
 
@@ -719,7 +719,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/blending_modes.html"
 behaviour = "Any of the ~100 blend modes can be set on a preset, independent of the layer."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "our 34 modes only"
 priority = 1
 
@@ -731,7 +731,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Toggling erase mode (E) can remember a separate size and opacity for the same preset."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/engine/src/brush_mode_cmds.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -743,7 +743,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Changes made in the editor are kept while switching presets in the session without overwriting the file; a reload button reverts."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/brush_mode_cmds.rs, editors/photo/crates/engine/src/brush_cmds.rs"
 gap = ""
 priority = 2
 
@@ -755,7 +755,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/instant_preview.html"
 behaviour = "Large brushes paint a low-resolution preview first and refine; per-preset threshold and global toggle (Shift+L)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs, crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/engine/src/brush_cmds.rs, editors/photo/crates/engine/src/brush_mode_cmds.rs, editors/photo/crates/engine/src/prefs.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -767,7 +767,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Several sensors on one option combine by multiply, addition, maximum, minimum or difference; share curve across all settings."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 1
 
@@ -779,7 +779,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Each option has an editable response curve per sensor, with preset curve shapes."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/curve.rs"
+ours_where = "editors/photo/crates/paint/src/curve.rs"
 gap = "ResponseCurve per Dynamic"
 priority = 1
 
@@ -791,7 +791,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "A checkbox turns all sensors for an option off while keeping the curves."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/engine/src/brush_mode_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/engine/src/brush_mode_cmds.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -803,7 +803,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Stylus pressure in and out, 0-1, through the option curve."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "Control::PenPressure"
 priority = 1
 
@@ -815,7 +815,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Only rising pressure counts; easing off does not shrink the value within a stroke."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -827,7 +827,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Stylus tilt about the X axis as a separate input."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -839,7 +839,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Stylus tilt about the Y axis as a separate input."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -851,7 +851,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Compass direction the stylus leans in, -180 to 180 degrees; left-handed offset in tablet settings."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -863,7 +863,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "How upright the stylus is, 0 (flat) to 90 (vertical)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -875,7 +875,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Drawing speed, smoothed by tablet settings, drives any option."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -887,7 +887,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Stroke direction as input; lock to the start angle, fan corners with a threshold, angle offset."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 1
 
@@ -899,7 +899,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Barrel rotation of the stylus where supported."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "Control::Rotation"
 priority = 2
 
@@ -911,7 +911,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Value changes with stroke length in pixels (curve editable, repeatable)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -923,7 +923,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Value changes with elapsed stroke time in seconds."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -935,7 +935,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Random value per dab."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "jitter per Dynamic"
 priority = 1
 
@@ -947,7 +947,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "One random value per stroke, for speed-paint variation."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 2
 
@@ -959,7 +959,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Value changes over stroke length proportional to brush size."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "Control::Fade"
 priority = 1
 
@@ -971,7 +971,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Value from the perspective assistant: dabs farther away come out smaller."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 3
 
@@ -983,7 +983,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/tablet_sensors.html"
 behaviour = "Finger wheel on airbrush styli."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "Control::StylusWheel"
 priority = 2
 
@@ -995,7 +995,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/tablet_settings.html"
 behaviour = "One curve in preferences remaps pressure for all brushes before per-option curves."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/brush_cmds.rs"
 gap = "tools.pressureCurve"
 priority = 1
 
@@ -1007,7 +1007,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/tablet_settings.html"
 behaviour = "Speed can come from tablet driver timestamps; maximum speed and speed smoothing settings."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs"
 gap = ""
 priority = 3
 
@@ -1019,7 +1019,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/brush_preset_docker.html"
 behaviour = "Grid or list of presets filtered by tag and by name; click to switch; resize thumbnails; right-click tags."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/brushes_tab.rs"
+ours_where = "editors/photo/crates/ui-egui/src/brushes_tab.rs"
 gap = ""
 priority = 1
 
@@ -1031,7 +1031,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/tag_management.html"
 behaviour = "Add, assign, rename, delete tags on presets; tag filter in every chooser; default tags (Digital, Erasers, FX, Favorites, Ink, Paint, Pixel_Art, Sketch, Textures)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_preset_cmds.rs, crafts/photocraft/crates/engine/src/preset_store.rs, crafts/photocraft/crates/ui-egui/src/brushes_tab.rs"
+ours_where = "editors/photo/crates/engine/src/brush_preset_cmds.rs, editors/photo/crates/engine/src/preset_store.rs, editors/photo/crates/ui-egui/src/brushes_tab.rs"
 gap = ""
 priority = 1
 
@@ -1043,7 +1043,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/brush_preset_history.html"
 behaviour = "Recently used presets; forget one, clear, static position / move to top / bubble up, count."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_history_tab.rs, crafts/photocraft/crates/ui-egui/src/dock.rs"
+ours_where = "editors/photo/crates/engine/src/brush_extras_cmds.rs, editors/photo/crates/engine/src/brush_cmds.rs, editors/photo/crates/ui-egui/src/brush_history_tab.rs, editors/photo/crates/ui-egui/src/dock.rs"
 gap = ""
 priority = 2
 
@@ -1055,7 +1055,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Six-part editor: engine chooser and name, preset chooser, scratch pad, option list with lock icons, option widget with sensor curves, misc toggles."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/brush_panel.rs"
+ours_where = "editors/photo/crates/ui-egui/src/brush_panel.rs"
 gap = ""
 priority = 1
 
@@ -1067,7 +1067,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Live test area in the editor: fill with preset icon, current image, gradient, background colour, or reset to white."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/ui-egui/src/scratch_pad_ui.rs, crafts/photocraft/crates/ui-egui/src/brush_panel.rs"
+ours_where = "editors/photo/crates/engine/src/brush_extras_cmds.rs, editors/photo/crates/ui-egui/src/scratch_pad_ui.rs, editors/photo/crates/ui-egui/src/brush_panel.rs"
 gap = ""
 priority = 2
 
@@ -1079,7 +1079,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Save dialog with name, thumbnail from existing icon, scratch pad, image file or icon library; overwrite in place."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_preset_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/brush_preset_cmds.rs"
 gap = "brush.presets.save/update"
 priority = 1
 
@@ -1091,7 +1091,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Compose a preset thumbnail from stock icon backgrounds, tool emblems and optional text."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_preset_dialog.rs"
+ours_where = "editors/photo/crates/engine/src/brush_extras_cmds.rs, editors/photo/crates/ui-egui/src/brush_preset_dialog.rs"
 gap = ""
 priority = 3
 
@@ -1103,7 +1103,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Reload button discards session tweaks and reverts to the stored preset."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/ui-egui/src/scratch_pad_ui.rs"
+ours_where = "editors/photo/crates/engine/src/brush_extras_cmds.rs, editors/photo/crates/ui-egui/src/scratch_pad_ui.rs"
 gap = ""
 priority = 2
 
@@ -1115,7 +1115,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "The engine dropdown changes which engine a preset uses, resetting engine-specific options."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/engine/src/brush_engine_cmds.rs, crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/engine/src/brush_extras_cmds.rs, editors/photo/crates/engine/src/brush_engine_cmds.rs, editors/photo/crates/paint/src/brush.rs"
 gap = ""
 priority = 2
 
@@ -1127,7 +1127,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/oncanvas_brush_editor.html"
 behaviour = "Compact popup (now a docker) with size, opacity, flow and a few chosen sliders reachable from the pop-up palette."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/popup_palette.rs"
+ours_where = "editors/photo/crates/ui-egui/src/popup_palette.rs"
 gap = ""
 priority = 2
 
@@ -1139,7 +1139,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/popup-palette.html"
 behaviour = "Right-click ring: foreground/background, canvas rotation slider, tagged presets, hue ring and triangle, colour history, tag list, zoom slider, 100%, canvas-only, mirror."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/popup_palette.rs, crafts/photocraft/crates/ui-egui/src/paint_mouse.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+ours_where = "editors/photo/crates/ui-egui/src/popup_palette.rs, editors/photo/crates/ui-egui/src/paint_mouse.rs, editors/photo/crates/engine/src/prefs.rs"
 gap = ""
 priority = 1
 
@@ -1151,7 +1151,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/default_python_plugins.html"
 behaviour = "Assign ten presets to shortcut keys; next/previous preset actions."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_history_tab.rs"
+ours_where = "editors/photo/crates/engine/src/brush_extras_cmds.rs, editors/photo/crates/ui-egui/src/brush_history_tab.rs"
 gap = ""
 priority = 2
 
@@ -1163,7 +1163,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/paintoppresets.html"
 behaviour = "Thumbnail editable in the save dialog; preset file is a PNG with the settings embedded."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/engine/src/resource_cmds.rs, crafts/photocraft/crates/ui-egui/src/brush_preset_dialog.rs"
+ours_where = "editors/photo/crates/engine/src/brush_extras_cmds.rs, editors/photo/crates/engine/src/resource_cmds.rs, editors/photo/crates/ui-egui/src/brush_preset_dialog.rs"
 gap = ""
 priority = 3
 
@@ -1175,7 +1175,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/paintoppresets.html"
 behaviour = "A preset is a PNG whose metadata holds the engine XML, plus required tip and pattern names."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/resource_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/resource_cmds.rs"
 gap = ""
 priority = 2
 
@@ -1187,7 +1187,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_brushtips.html"
 behaviour = "Load an ABR brush library: tips appear in the predefined chooser; a tip is turned into a preset with Save to Presets; many ABR features honoured, some advanced ones not."
 ours = "full"
-ours_where = "crafts/photocraft/crates/io/src/abr_map.rs"
+ours_where = "editors/photo/crates/io/src/abr_map.rs"
 gap = "brush.presets.importAbr maps tips and full brush descriptors"
 priority = 1
 
@@ -1199,7 +1199,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Single bitmap tip, greyscale or colour."
 ours = "full"
-ours_where = "crafts/photocraft/crates/io/src/gbr.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs"
+ours_where = "editors/photo/crates/io/src/gbr.rs, editors/photo/crates/engine/src/preset_import_cmds.rs"
 gap = ""
 priority = 2
 
@@ -1211,7 +1211,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_settings/brush_tips.html"
 behaviour = "Multi-image tip with ordering rules; partially supported."
 ours = "full"
-ours_where = "crafts/photocraft/crates/io/src/gbr.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs"
+ours_where = "editors/photo/crates/io/src/gbr.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/engine/src/preset_import_cmds.rs"
 gap = ""
 priority = 3
 
@@ -1223,7 +1223,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/brushes/brush_engines/mypaint_engine.html"
 behaviour = "MyPaint brush files load as presets of the MyPaint engine; saved back only as native presets."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/mypaint_cmds.rs, crafts/photocraft/crates/paint/src/engines/mypaint.rs"
+ours_where = "editors/photo/crates/engine/src/mypaint_cmds.rs, editors/photo/crates/paint/src/engines/mypaint.rs"
 gap = ""
 priority = 2
 
@@ -1235,7 +1235,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/loading_saving_brushes.html"
 behaviour = "Single preset files import by drag or Import Resources; sharing needs the tip and pattern files too."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/resource_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/resource_cmds.rs"
 gap = ""
 priority = 2
 
@@ -1247,7 +1247,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management.html"
 behaviour = "Zip-based bundle of presets, tips, patterns, gradients, palettes, workspaces with metadata; import, create (choose resources and tags, details, location), deactivate, delete."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/resource_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/resource_cmds.rs"
 gap = ""
 priority = 2
 
@@ -1259,7 +1259,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management.html"
 behaviour = "Layer-style libraries load as a resource storage."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+ours_where = "editors/photo/crates/engine/src/layer_style.rs"
 gap = ""
 priority = 2
 
@@ -1271,7 +1271,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_patterns.html"
 behaviour = "Patterns from .pat and image files; temporary patterns generated from the canvas; patterns docker with tags and global pattern."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/pattern_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/pattern_cmds.rs"
 gap = "pattern.import, define from selection"
 priority = 1
 
@@ -1283,7 +1283,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_gradients.html"
 behaviour = "Stop and segmented gradients; editor with colour model per segment (RGB, HSV cw/ccw), foreground/background variables and transparency; .ggr and .svg files."
 ours = "full"
-ours_where = "crafts/photocraft/crates/io/src/ggr.rs, crafts/photocraft/crates/engine/src/presets/gradients.rs, crafts/photocraft/crates/engine/src/preset_import_cmds.rs, crafts/photocraft/crates/engine/src/resource_cmds.rs, crafts/photocraft/crates/ui-egui/src/gradient_ui.rs"
+ours_where = "editors/photo/crates/io/src/ggr.rs, editors/photo/crates/engine/src/presets/gradients.rs, editors/photo/crates/engine/src/preset_import_cmds.rs, editors/photo/crates/engine/src/resource_cmds.rs, editors/photo/crates/ui-egui/src/gradient_ui.rs"
 gap = ""
 priority = 1
 
@@ -1295,7 +1295,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
 behaviour = "Import .gpl, .riff, .act, .psp, .aco, .xml (Scribus), .sbz, .ase, .acb; native .kpl; stored in resource folder or in the document."
 ours = "full"
-ours_where = "crafts/photocraft/crates/io/src/palette_files.rs, crafts/photocraft/crates/engine/src/swatch_cmds.rs, crafts/photocraft/crates/engine/src/presets/swatches.rs, crafts/photocraft/crates/doc/src/lib.rs"
+ours_where = "editors/photo/crates/io/src/palette_files.rs, editors/photo/crates/engine/src/swatch_cmds.rs, editors/photo/crates/engine/src/presets/swatches.rs, editors/photo/crates/doc/src/lib.rs"
 gap = ""
 priority = 1
 
@@ -1307,7 +1307,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management.html"
 behaviour = "Resources come from the user folder, bundles, Adobe brush/style libraries, documents and memory; each can be activated/deactivated."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/resource_cmds.rs, crafts/photocraft/crates/engine/src/preset_store.rs"
+ours_where = "editors/photo/crates/engine/src/resource_cmds.rs, editors/photo/crates/engine/src/preset_store.rs"
 gap = ""
 priority = 2
 
@@ -1319,7 +1319,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management.html"
 behaviour = "Browse by type, filter, tag, import, delete, show deleted, return to a previous version, delete backups."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/preset_files_ui.rs, crafts/photocraft/crates/engine/src/resource_tags_cmds.rs, crafts/photocraft/crates/engine/src/resource_cmds.rs, crafts/photocraft/crates/engine/src/workflow_cmds.rs"
+ours_where = "editors/photo/crates/ui-egui/src/preset_files_ui.rs, editors/photo/crates/engine/src/resource_tags_cmds.rs, editors/photo/crates/engine/src/resource_cmds.rs, editors/photo/crates/engine/src/workflow_cmds.rs"
 gap = ""
 priority = 2
 
@@ -1331,7 +1331,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_workspace.html"
 behaviour = "Save and switch docker layouts as named workspaces; shareable in bundles."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/workspace_ui.rs"
+ours_where = "editors/photo/crates/ui-egui/src/workspace_ui.rs"
 gap = ""
 priority = 2
 
@@ -1343,7 +1343,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/resource_style_presets.html"
 behaviour = "Reusable character/paragraph style resources."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/type_styles_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/type_styles_cmds.rs"
 gap = ""
 priority = 3
 
@@ -1355,7 +1355,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/resource_management/seexpr_scripts.html"
 behaviour = "Saved generator scripts for the SeExpr fill layer."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/seexpr.rs"
+ours_where = "editors/photo/crates/engine/src/seexpr.rs"
 gap = ""
 priority = 3
 
@@ -1367,7 +1367,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/krita_4_preset_bundle.html"
 behaviour = "Ships a curated bundle of presets grouped by tag (ink, paint, sketch, pixel art, textures, erasers, fx, digital)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/presets.rs"
+ours_where = "editors/photo/crates/paint/src/presets.rs"
 gap = "built-in general/dry/wet/special presets"
 priority = 1
 
@@ -1379,7 +1379,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Main painting tool (B): paints with the current preset; Ctrl samples colour, Shift-drag resizes, V sticky straight line."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/stroke_ui.rs"
+ours_where = "editors/photo/crates/ui-egui/src/stroke_ui.rs"
 gap = ""
 priority = 1
 
@@ -1391,7 +1391,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Raw input, or light smoothing for old tablets."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs"
 gap = "Smoothing.enabled false"
 priority = 1
 
@@ -1403,7 +1403,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Distance, stroke ending, smooth pressure, scalable distance."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 1
 
@@ -1415,7 +1415,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Averages inputs with sample counts at min and max speed (5.3), delay dead zone, finish line, stabilize sensors, scalable distance."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/brush.rs, crafts/photocraft/crates/paint/src/dynamics.rs, crafts/photocraft/crates/ui-egui/src/brush_sections.rs"
+ours_where = "editors/photo/crates/paint/src/brush.rs, editors/photo/crates/paint/src/dynamics.rs, editors/photo/crates/ui-egui/src/brush_sections.rs"
 gap = ""
 priority = 1
 
@@ -1427,7 +1427,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Keeps one-pixel lines single width without L corners for pixel art (5.3)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/pixel_smoothing.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/brush_extras_ui.rs"
+ours_where = "editors/photo/crates/ui-egui/src/pixel_smoothing.rs, editors/photo/crates/ui-egui/src/canvas.rs, editors/photo/crates/ui-egui/src/brush_extras_ui.rs"
 gap = ""
 priority = 3
 
@@ -1439,7 +1439,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Toggle and magnetism slider; eraser snapping toggle; Ctrl+Shift+L."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs, crafts/photocraft/crates/ui-egui/src/brush_extras_ui.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs, editors/photo/crates/ui-egui/src/brush_extras_ui.rs, editors/photo/crates/ui-egui/src/state.rs"
 gap = ""
 priority = 2
 
@@ -1451,7 +1451,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
 behaviour = "N copies around a centre at even angles; count slider; centre draggable."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/symmetry.rs, crafts/photocraft/crates/engine/src/symmetry_cmds.rs, crafts/photocraft/crates/ui-egui/src/symmetry_ui.rs"
+ours_where = "editors/photo/crates/paint/src/symmetry.rs, editors/photo/crates/engine/src/symmetry_cmds.rs, editors/photo/crates/ui-egui/src/symmetry_ui.rs"
 gap = ""
 priority = 1
 
@@ -1463,7 +1463,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
 behaviour = "Reflect over X, Y or both axes around a movable centre."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/symmetry.rs"
+ours_where = "editors/photo/crates/paint/src/symmetry.rs"
 gap = "vertical/horizontal/dual/diagonal axes with rotation"
 priority = 1
 
@@ -1475,7 +1475,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
 behaviour = "Copies at a radius, at user-placed offsets, or on an orthogonal interval grid (5.3, up to 50)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/symmetry.rs, crafts/photocraft/crates/engine/src/symmetry_cmds.rs, crafts/photocraft/crates/ui-egui/src/multibrush_ui.rs"
+ours_where = "editors/photo/crates/paint/src/symmetry.rs, editors/photo/crates/engine/src/symmetry_cmds.rs, editors/photo/crates/ui-egui/src/multibrush_ui.rs"
 gap = ""
 priority = 3
 
@@ -1487,7 +1487,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/multibrush.html"
 behaviour = "Mirrored rotational symmetry."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/symmetry.rs, crafts/photocraft/crates/engine/src/symmetry_cmds.rs, crafts/photocraft/crates/ui-egui/src/multibrush_ui.rs"
+ours_where = "editors/photo/crates/paint/src/symmetry.rs, editors/photo/crates/engine/src/symmetry_cmds.rs, editors/photo/crates/ui-egui/src/multibrush_ui.rs"
 gap = ""
 priority = 2
 
@@ -1499,7 +1499,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/tools_menu.html"
 behaviour = "Our extra: reflect strokes across an arbitrary path."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/symmetry_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/symmetry_cmds.rs"
 gap = "paint.symmetryFromPath (not in the reference app)"
 priority = 3
 
@@ -1511,7 +1511,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/mirror_tools.html"
 behaviour = "Toolbar toggles mirror every tool's output across a draggable axis line; lock line, hide handle, rotate axis with Alt."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/mirror_tools_ui.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs, crafts/photocraft/crates/ui-egui/src/retouch_ui.rs, crafts/photocraft/crates/ui-egui/src/eraser_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+ours_where = "editors/photo/crates/ui-egui/src/mirror_tools_ui.rs, editors/photo/crates/ui-egui/src/fill_tool_ui.rs, editors/photo/crates/ui-egui/src/retouch_ui.rs, editors/photo/crates/ui-egui/src/eraser_ui.rs, editors/photo/crates/ui-egui/src/canvas.rs"
 gap = ""
 priority = 1
 
@@ -1523,7 +1523,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/line.html"
 behaviour = "Drag a line painted with the brush; Shift constrains 15 degrees, Alt moves; use sensors along the path; preview line."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/state.rs, crafts/photocraft/crates/ui-egui/src/stroke_constraint.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
+ours_where = "editors/photo/crates/ui-egui/src/canvas.rs, editors/photo/crates/ui-egui/src/state.rs, editors/photo/crates/ui-egui/src/stroke_constraint.rs, editors/photo/crates/ui-egui/src/panels.rs"
 gap = ""
 priority = 1
 
@@ -1535,7 +1535,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/dyna.html"
 behaviour = "Mass and drag physics smooth the stroke like a weight on a string."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/dyna_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
+ours_where = "editors/photo/crates/ui-egui/src/dyna_ui.rs, editors/photo/crates/ui-egui/src/canvas.rs, editors/photo/crates/ui-egui/src/state.rs"
 gap = ""
 priority = 3
 
@@ -1547,7 +1547,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Any preset erases when the erase toggle is on; separate eraser presets exist too."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/paint_mouse.rs, crafts/photocraft/crates/ui-egui/src/eraser_ui.rs"
+ours_where = "editors/photo/crates/ui-egui/src/panels.rs, editors/photo/crates/ui-egui/src/paint_mouse.rs, editors/photo/crates/ui-egui/src/eraser_ui.rs"
 gap = ""
 priority = 1
 
@@ -1559,7 +1559,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Fill current selection, a contiguous region, or all regions of similar colour."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/fill_regions.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs"
+ours_where = "editors/photo/crates/algo/src/fill_regions.rs, editors/photo/crates/engine/src/paint_cmds.rs, editors/photo/crates/ui-egui/src/fill_tool_ui.rs"
 gap = ""
 priority = 1
 
@@ -1571,7 +1571,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Foreground, background, or pattern with scale and rotation."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+ours_where = "editors/photo/crates/engine/src/paint_cmds.rs, editors/photo/crates/ui-egui/src/panels.rs, editors/photo/crates/ui-egui/src/canvas.rs"
 gap = ""
 priority = 1
 
@@ -1583,7 +1583,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Threshold, opaque spread, close-gap size (5.3), fill until a boundary colour, selection as boundary."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/fill_regions.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs"
+ours_where = "editors/photo/crates/algo/src/fill_regions.rs, editors/photo/crates/engine/src/paint_cmds.rs, editors/photo/crates/ui-egui/src/fill_tool_ui.rs"
 gap = ""
 priority = 1
 
@@ -1595,7 +1595,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Antialiasing, grow with stop at darkest/most opaque pixels, feather radius."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/fill_regions.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs"
+ours_where = "editors/photo/crates/algo/src/fill_regions.rs, editors/photo/crates/engine/src/paint_cmds.rs, editors/photo/crates/ui-egui/src/fill_tool_ui.rs"
 gap = ""
 priority = 2
 
@@ -1607,7 +1607,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Fill from current layer, all layers, or layers with chosen colour labels."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/fill_regions.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs"
+ours_where = "editors/photo/crates/algo/src/fill_regions.rs, editors/photo/crates/engine/src/paint_cmds.rs, editors/photo/crates/ui-egui/src/fill_tool_ui.rs"
 gap = ""
 priority = 2
 
@@ -1619,7 +1619,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/fill.html"
 behaviour = "Dragging fills every region passed over (any colour or similar colours)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/fill_regions.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs"
+ours_where = "editors/photo/crates/algo/src/fill_regions.rs, editors/photo/crates/engine/src/paint_cmds.rs, editors/photo/crates/ui-egui/src/fill_tool_ui.rs"
 gap = ""
 priority = 2
 
@@ -1631,7 +1631,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/enclose_and_fill.html"
 behaviour = "Draw an enclosing rectangle, ellipse, bezier, lasso or brush and fill the regions inside by rule (all, specific colour, transparent, surrounded by, exclusions)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/fill_regions.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/fill_tool_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
+ours_where = "editors/photo/crates/algo/src/fill_regions.rs, editors/photo/crates/engine/src/paint_cmds.rs, editors/photo/crates/ui-egui/src/fill_tool_ui.rs, editors/photo/crates/ui-egui/src/canvas.rs, editors/photo/crates/ui-egui/src/state.rs"
 gap = ""
 priority = 2
 
@@ -1643,7 +1643,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/gradient_draw.html"
 behaviour = "Linear, bilinear, radial, square, conical, conical-symmetric, spiral, reverse spiral, shaped (follows selection)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/gradient_ext.rs, crafts/photocraft/crates/algo/src/paint.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+ours_where = "editors/photo/crates/algo/src/gradient_ext.rs, editors/photo/crates/algo/src/paint.rs, editors/photo/crates/engine/src/paint_cmds.rs, editors/photo/crates/ui-egui/src/panels.rs, editors/photo/crates/ui-egui/src/canvas.rs"
 gap = ""
 priority = 1
 
@@ -1655,7 +1655,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/gradient_draw.html"
 behaviour = "None, forward, alternating repeat; antialias threshold; reverse; dither (5.0)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/gradient_ext.rs, crafts/photocraft/crates/algo/src/paint.rs, crafts/photocraft/crates/engine/src/paint_cmds.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+ours_where = "editors/photo/crates/algo/src/gradient_ext.rs, editors/photo/crates/algo/src/paint.rs, editors/photo/crates/engine/src/paint_cmds.rs, editors/photo/crates/ui-egui/src/panels.rs, editors/photo/crates/ui-egui/src/canvas.rs"
 gap = ""
 priority = 2
 
@@ -1667,7 +1667,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/gradient_draw.html"
 behaviour = "Handles stay editable after drawing until Enter."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/gradient_fill_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/gradient_fill_cmds.rs"
 gap = "gradient.fill.set"
 priority = 2
 
@@ -1679,7 +1679,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/color_sampler.html"
 behaviour = "Sample from all layers or current; radius, blend with current colour; add to palette; info box with channel values."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/eyedropper_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
+ours_where = "editors/photo/crates/ui-egui/src/eyedropper_ui.rs, editors/photo/crates/ui-egui/src/canvas.rs, editors/photo/crates/ui-egui/src/state.rs"
 gap = ""
 priority = 1
 
@@ -1691,7 +1691,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/smart_patch.html"
 behaviour = "Paint over an object to remove it with texture synthesis; accuracy and patch size."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/retouch_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/retouch_cmds.rs"
 gap = "spot healing / remove tool"
 priority = 1
 
@@ -1703,7 +1703,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/colorize_mask.html"
 behaviour = "Key strokes of colour inside a line-art layer are propagated into regions; edit key strokes, show output, limit to layer bounds, edge detection, gap close hint, clean up, transparent key."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/colorize.rs, crafts/photocraft/crates/engine/src/colorize_tool_cmds.rs, crafts/photocraft/crates/ui-egui/src/colorize_ui.rs"
+ours_where = "editors/photo/crates/algo/src/colorize.rs, editors/photo/crates/engine/src/colorize_tool_cmds.rs, editors/photo/crates/ui-egui/src/colorize_ui.rs"
 gap = ""
 priority = 2
 
@@ -1715,7 +1715,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/reference_images_tool.html"
 behaviour = "Place images on the canvas as floating references: add, paste, load/save set, keep aspect, opacity, saturation, embed or link."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/reference_ui.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
+ours_where = "editors/photo/crates/ui-egui/src/reference_ui.rs, editors/photo/crates/ui-egui/src/canvas.rs, editors/photo/crates/ui-egui/src/panels.rs"
 gap = ""
 priority = 2
 
@@ -1727,7 +1727,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/measure.html"
 behaviour = "Distance and angle between two points in chosen units."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/tool_shortcuts.rs"
+ours_where = "editors/photo/crates/ui-egui/src/tool_shortcuts.rs"
 gap = "Ruler tool"
 priority = 2
 
@@ -1739,7 +1739,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Drag with Shift to resize the brush on canvas; shortcuts to step size up/down."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/brush_resize.rs"
+ours_where = "editors/photo/crates/ui-egui/src/brush_resize.rs"
 gap = ""
 priority = 1
 
@@ -1751,7 +1751,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/general_settings.html"
 behaviour = "Cursor shapes (tool icon, arrow, crosshair, dot, none, triangles, pixel) and outline (none, circle, preview, tilt); show outline while painting, effective outline size."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/cursor_shapes.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+ours_where = "editors/photo/crates/ui-egui/src/cursor_shapes.rs, editors/photo/crates/ui-egui/src/canvas.rs, editors/photo/crates/engine/src/prefs.rs"
 gap = ""
 priority = 2
 
@@ -1763,7 +1763,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/getting_started/navigation.html"
 behaviour = "Rotate the view (Ctrl+[ / ], 4/6, Shift+Space drag) without transforming pixels; reset with 5."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/view_cmds.rs"
+ours_where = "editors/photo/crates/ui-egui/src/view_cmds.rs"
 gap = "view.rotateView"
 priority = 1
 
@@ -1775,7 +1775,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/view_menu.html"
 behaviour = "Flip the view horizontally (M), optionally around the cursor (Alt+M)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/view_cmds.rs"
+ours_where = "editors/photo/crates/ui-egui/src/view_cmds.rs"
 gap = "view.flipHorizontal"
 priority = 1
 
@@ -1787,7 +1787,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/view_menu.html"
 behaviour = "W tiles the canvas infinitely while painting so seamless textures can be painted across edges."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/symmetry_cmds.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+ours_where = "editors/photo/crates/engine/src/symmetry_cmds.rs, editors/photo/crates/ui-egui/src/canvas.rs, editors/photo/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 1
 
@@ -1799,7 +1799,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/canvas_only_mode.html"
 behaviour = "Tab hides all dockers, toolbars and menus; configurable what stays."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/view_cmds.rs"
+ours_where = "editors/photo/crates/ui-egui/src/view_cmds.rs"
 gap = "view.screenMode"
 priority = 2
 
@@ -1811,7 +1811,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/instant_preview.html"
 behaviour = "Low-resolution preview during heavy brush, geometry, move and filter operations, refined afterwards."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/instant_preview.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+ours_where = "editors/photo/crates/ui-egui/src/instant_preview.rs, editors/photo/crates/ui-egui/src/canvas.rs, editors/photo/crates/engine/src/prefs.rs"
 gap = ""
 priority = 2
 
@@ -1823,7 +1823,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/stroke_selection.html"
 behaviour = "Outline the current selection with the brush or a solid line of given width."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/edit_menu_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/edit_menu_cmds.rs"
 gap = "Edit > Stroke"
 priority = 2
 
@@ -1835,7 +1835,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/edit_menu.html"
 behaviour = "Edit menu fills the selection, with variants honouring the brush opacity."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/fill_opacity_cmds.rs, crafts/photocraft/crates/engine/src/fill_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/fill_opacity_cmds.rs, editors/photo/crates/engine/src/fill_cmds.rs"
 gap = ""
 priority = 2
 
@@ -1847,7 +1847,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/move.html"
 behaviour = "Move layer, selection or group; shortcuts nudge; show coordinates."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/transform_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/transform_cmds.rs"
 gap = ""
 priority = 1
 
@@ -1859,7 +1859,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/transform.html"
 behaviour = "Free, perspective, warp, cage, liquify and mesh modes in one tool, with recursive transform of groups."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/warp_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/warp_cmds.rs"
 gap = "free, perspective, warp, liquify, puppet-style mesh"
 priority = 1
 
@@ -1871,7 +1871,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/freehand_brush.html"
 behaviour = "Hold Ctrl to pick foreground; Ctrl+Alt picks background."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/alt_grab.rs"
+ours_where = "editors/photo/crates/ui-egui/src/alt_grab.rs"
 gap = ""
 priority = 1
 
@@ -1883,7 +1883,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/canvas_input_settings.html"
 behaviour = "Every canvas gesture (pan, zoom, rotate, pick, resize) is remappable to mouse/key/stylus combos in profiles."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/ui-egui/src/hold_keys.rs, crafts/photocraft/crates/ui-egui/src/canvas.rs"
+ours_where = "editors/photo/crates/engine/src/prefs.rs, editors/photo/crates/ui-egui/src/hold_keys.rs, editors/photo/crates/ui-egui/src/canvas.rs"
 gap = ""
 priority = 2
 
@@ -1895,7 +1895,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/tablet_settings.html"
 behaviour = "Pressure curve, tilt offset, speed source, input API (WinTab / Pointer), screen mapping, tablet tester."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/tablet_settings.rs, crafts/photocraft/crates/ui-egui/src/stylus.rs, crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/ui-egui/src/menus.rs"
+ours_where = "editors/photo/crates/ui-egui/src/tablet_settings.rs, editors/photo/crates/ui-egui/src/stylus.rs, editors/photo/crates/engine/src/prefs.rs, editors/photo/crates/ui-egui/src/menus.rs"
 gap = ""
 priority = 2
 
@@ -1907,7 +1907,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/touch_docker.html"
 behaviour = "Big-button panel for tablets: file, undo, opacity, size, rotation, zoom, preset switching."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/touch_docker_ui.rs, crafts/photocraft/crates/ui-egui/src/menus.rs, crafts/photocraft/crates/ui-egui/src/state.rs"
+ours_where = "editors/photo/crates/ui-egui/src/touch_docker_ui.rs, editors/photo/crates/ui-egui/src/menus.rs, editors/photo/crates/ui-egui/src/state.rs"
 gap = ""
 priority = 3
 
@@ -1919,7 +1919,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/snapping.html"
 behaviour = "Snap tools to grid, guides, orthogonal, node, extension, intersection, bounding box, image bounds, image centre, pixel."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/snap.rs, crafts/photocraft/crates/ui-egui/src/snap_ui.rs, crafts/photocraft/crates/ui-egui/src/view_cmds.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs"
+ours_where = "editors/photo/crates/engine/src/snap.rs, editors/photo/crates/ui-egui/src/snap_ui.rs, editors/photo/crates/ui-egui/src/view_cmds.rs, editors/photo/crates/ui-egui/src/menu_catalog.rs"
 gap = ""
 priority = 2
 
@@ -1931,7 +1931,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/grids_and_guides.html"
 behaviour = "Rectangle or isometric grid with spacing, subdivision, styles, offset; guides with lock and snap."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/iso_grid.rs, crafts/photocraft/crates/ui-egui/src/rulers.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+ours_where = "editors/photo/crates/ui-egui/src/iso_grid.rs, editors/photo/crates/ui-egui/src/rulers.rs, editors/photo/crates/engine/src/prefs.rs"
 gap = ""
 priority = 2
 
@@ -1943,7 +1943,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Straight line between two handles; strokes snap onto it."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 1
 
@@ -1955,7 +1955,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Line through two handles extended both ways."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 2
 
@@ -1967,7 +1967,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Strokes stay parallel to the handle direction anywhere on canvas."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 1
 
@@ -1979,7 +1979,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Notches with major and minor subdivisions on rulers."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 3
 
@@ -1991,7 +1991,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Three handles define an ellipse; third handle snaps to a circle; strokes follow the rim."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 2
 
@@ -2003,7 +2003,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Ellipse whose rim snapping works at any scale around the same centre."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 2
 
@@ -2015,7 +2015,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Ellipse fitted inside a four-handle quad as a circle in perspective."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 3
 
@@ -2027,7 +2027,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Four-handle bezier the stroke follows."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 2
 
@@ -2039,7 +2039,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Four-corner plane with a grid; perspective sensor reads it; strokes snap to its lines."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs, crafts/photocraft/crates/engine/src/brush_cmds.rs, crafts/photocraft/crates/paint/src/dynamics.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs, editors/photo/crates/engine/src/brush_cmds.rs, editors/photo/crates/paint/src/dynamics.rs"
 gap = ""
 priority = 1
 
@@ -2051,7 +2051,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "A point all strokes converge to; multiple points for 1/2/3-point setups; Alt keeps it on the horizon."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 1
 
@@ -2063,7 +2063,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Two vanishing points plus a horizon with density and optional vertical ruler (5.0)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 2
 
@@ -2075,7 +2075,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Curved perspective lines for wide-angle views."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 3
 
@@ -2087,7 +2087,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/painting_with_assistants.html"
 behaviour = "Five-point curvilinear grid."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 3
 
@@ -2099,7 +2099,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/assistant.html"
 behaviour = "Place and edit assistants; handles on canvas; delete all; save/load .paintingassistant sets."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 1
 
@@ -2111,7 +2111,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/assistant.html"
 behaviour = "Global or per-assistant colour and opacity; control widget visibility."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 3
 
@@ -2123,7 +2123,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/assistant.html"
 behaviour = "Two extra handles clip where the assistant draws and snaps (5.3), for comic panels."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs"
 gap = ""
 priority = 3
 
@@ -2135,7 +2135,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/view_menu.html"
 behaviour = "View menu toggles for assistants and their previews."
 ours = "full"
-ours_where = "crafts/photocraft/crates/paint/src/assistants.rs, crafts/photocraft/crates/engine/src/assistant_cmds.rs, crafts/photocraft/crates/ui-egui/src/assistant_ui.rs, crafts/photocraft/crates/ui-egui/src/menu_catalog.rs, crafts/photocraft/crates/ui-egui/src/menus.rs"
+ours_where = "editors/photo/crates/paint/src/assistants.rs, editors/photo/crates/engine/src/assistant_cmds.rs, editors/photo/crates/ui-egui/src/assistant_ui.rs, editors/photo/crates/ui-egui/src/menu_catalog.rs, editors/photo/crates/ui-egui/src/menus.rs"
 gap = ""
 priority = 2
 
@@ -2147,7 +2147,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/advanced_color_selector.html"
 behaviour = "Configurable main selector: wheel/triangle/square shapes, HSV/HSL/HSI/HSY models, luma coefficients, gamma, colour space, resize behaviour, zoom popup."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs, crafts/photocraft/crates/color/src/models.rs"
+ours_where = "editors/photo/crates/ui-egui/src/color_selectors.rs, editors/photo/crates/color/src/models.rs"
 gap = ""
 priority = 1
 
@@ -2159,7 +2159,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/advanced_color_selector.html"
 behaviour = "Strip of shades around the current colour (MyPaint-style or simple), with update rules."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
+ours_where = "editors/photo/crates/ui-egui/src/color_selectors.rs"
 gap = ""
 priority = 2
 
@@ -2171,7 +2171,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/advanced_color_selector.html"
 behaviour = "Recent colours and colours sampled from the image, size, count, direction, scrolling."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs, crafts/photocraft/crates/ui-egui/src/color_history.rs, crafts/photocraft/crates/engine/src/color_management_cmds.rs, crafts/photocraft/crates/ui-egui/src/popup_palette.rs"
+ours_where = "editors/photo/crates/ui-egui/src/color_selectors.rs, editors/photo/crates/ui-egui/src/color_history.rs, editors/photo/crates/engine/src/color_management_cmds.rs, editors/photo/crates/ui-egui/src/popup_palette.rs"
 gap = ""
 priority = 1
 
@@ -2183,7 +2183,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/artistic_color_selector.html"
 behaviour = "Stepped hue ring with value/saturation rings; continuous mode; gamut masks applied over it."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
+ours_where = "editors/photo/crates/ui-egui/src/color_selectors.rs"
 gap = ""
 priority = 2
 
@@ -2195,7 +2195,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/wide_gamut_color_selector.html"
 behaviour = "Selector in a chosen wide colour space with static/dynamic hue ring, pop-up size, patches layout, shade selector, proofing to the painting space."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs, crafts/photocraft/crates/color/src/models.rs"
+ours_where = "editors/photo/crates/ui-egui/src/color_selectors.rs, editors/photo/crates/color/src/models.rs"
 gap = ""
 priority = 2
 
@@ -2207,7 +2207,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/specific_color_selector.html"
 behaviour = "Sliders per channel of a chosen colour space and depth; hex field; HSV sliders (5.1); colour space chooser (5.3)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs, crafts/photocraft/crates/color/src/models.rs"
+ours_where = "editors/photo/crates/ui-egui/src/color_selectors.rs, editors/photo/crates/color/src/models.rs"
 gap = ""
 priority = 1
 
@@ -2219,7 +2219,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/small_color_selector.html"
 behaviour = "Hue bar plus value/saturation square; the only selector that shows HDR values."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_picker_ui.rs"
+ours_where = "editors/photo/crates/ui-egui/src/color_picker_ui.rs"
 gap = ""
 priority = 2
 
@@ -2231,7 +2231,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/color_sliders.html"
 behaviour = "Hue, saturation, lightness bars."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_picker_ui.rs"
+ours_where = "editors/photo/crates/ui-egui/src/color_picker_ui.rs"
 gap = ""
 priority = 2
 
@@ -2243,7 +2243,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/digital_color_mixer.html"
 behaviour = "Six columns mixing the current colour with a chosen colour by a slider; gradient slider at the bottom."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
+ours_where = "editors/photo/crates/ui-egui/src/color_selectors.rs"
 gap = ""
 priority = 3
 
@@ -2255,7 +2255,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
 behaviour = "Swatch grid with groups, column count, rename, spot colours, names and IDs, stored in resources or in the document."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/swatch_cmds.rs, crafts/photocraft/crates/engine/src/presets/swatches.rs, crafts/photocraft/crates/engine/src/presets/mod.rs, crafts/photocraft/crates/ui-egui/src/swatches_ui.rs"
+ours_where = "editors/photo/crates/engine/src/swatch_cmds.rs, editors/photo/crates/engine/src/presets/swatches.rs, editors/photo/crates/engine/src/presets/mod.rs, editors/photo/crates/ui-egui/src/swatches_ui.rs"
 gap = ""
 priority = 1
 
@@ -2267,7 +2267,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/palette_docker.html"
 behaviour = "Colour, name, ID, spot colour per swatch."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/swatch_cmds.rs, crafts/photocraft/crates/engine/src/presets/swatches.rs"
+ours_where = "editors/photo/crates/engine/src/swatch_cmds.rs, editors/photo/crates/engine/src/presets/swatches.rs"
 gap = ""
 priority = 2
 
@@ -2279,7 +2279,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/gamut_masks.html"
 behaviour = "Shape masks over the artistic/advanced wheel limit the pickable hues; create, edit, duplicate, delete; rotate the mask."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
+ours_where = "editors/photo/crates/ui-egui/src/color_selectors.rs"
 gap = ""
 priority = 2
 
@@ -2291,7 +2291,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/popup-palette.html"
 behaviour = "Two active colours, swap (X), reset to black/white (D); background used by mix and gradients."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/color_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/color_cmds.rs"
 gap = ""
 priority = 1
 
@@ -2303,7 +2303,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/lut_management.html"
 behaviour = "OpenColorIO display transform with configuration file, input space, display, view, look, components, exposure (Y key drag) and gamma, locked colour."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/ocio.rs, crafts/photocraft/crates/engine/src/proof_sim.rs, crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
+ours_where = "editors/photo/crates/engine/src/ocio.rs, editors/photo/crates/engine/src/proof_sim.rs, editors/photo/crates/ui-egui/src/color_selectors.rs"
 gap = ""
 priority = 2
 
@@ -2315,7 +2315,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/general_concepts/colors/color_models.html"
 behaviour = "RGB, Gray, CMYK, XYZ, Lab, YCbCr in 8/16-bit integer, 16/32-bit float; per-document space with ICC profile."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/models.rs, crafts/photocraft/crates/color/src/lib.rs, crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
+ours_where = "editors/photo/crates/color/src/models.rs, editors/photo/crates/color/src/lib.rs, editors/photo/crates/ui-egui/src/color_selectors.rs"
 gap = "XYZ, YCbCr and 16-bit float are colour models and depths of the selectors and the conversion library (models.rs); documents still store the eight ColorMode models and float as 32-bit"
 priority = 2
 
@@ -2327,7 +2327,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/color_management_settings.html"
 behaviour = "Snap every picked colour to the nearest palette entry."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/color_management_cmds.rs, crafts/photocraft/crates/engine/src/commands.rs"
+ours_where = "editors/photo/crates/engine/src/color_management_cmds.rs, editors/photo/crates/engine/src/commands.rs"
 gap = ""
 priority = 3
 
@@ -2339,7 +2339,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/popup-palette.html"
 behaviour = "Last used colours around the ring."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/popup_palette.rs, crafts/photocraft/crates/ui-egui/src/color_history.rs"
+ours_where = "editors/photo/crates/ui-egui/src/popup_palette.rs, editors/photo/crates/ui-egui/src/color_history.rs"
 gap = ""
 priority = 2
 
@@ -2351,7 +2351,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/paint_layers.html"
 behaviour = "Raster layer in the document's colour space; Ins adds one."
 ours = "full"
-ours_where = "crafts/photocraft/crates/doc/src/lib.rs"
+ours_where = "editors/photo/crates/doc/src/lib.rs"
 gap = ""
 priority = 1
 
@@ -2363,7 +2363,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/group_layers.html"
 behaviour = "Folder of layers; pass-through or isolated compositing; quick group / ungroup; quick clipping group."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/clip_group.rs"
+ours_where = "editors/photo/crates/engine/src/clip_group.rs"
 gap = ""
 priority = 1
 
@@ -2375,7 +2375,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/clone_layers.html"
 behaviour = "Live copy of another layer that updates when the source changes; own masks, filters and position; change source."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/live_layers.rs"
+ours_where = "editors/photo/crates/engine/src/live_layers.rs"
 gap = ""
 priority = 1
 
@@ -2387,7 +2387,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/file_layers.html"
 behaviour = "Layer that shows an external image file and reloads when it changes; no scaling, scale to image, adapt to resolution; scaling filter (5.2)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_kind_cmds.rs, crafts/photocraft/crates/engine/src/link_watch.rs"
+ours_where = "editors/photo/crates/engine/src/layer_kind_cmds.rs, editors/photo/crates/engine/src/link_watch.rs"
 gap = ""
 priority = 2
 
@@ -2399,7 +2399,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
 behaviour = "Generated layer of a solid colour, editable later."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/solid_fill_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/solid_fill_cmds.rs"
 gap = ""
 priority = 1
 
@@ -2411,7 +2411,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
 behaviour = "Generated gradient with shape, repeat, dither, editable later."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/gradient_fill_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/gradient_fill_cmds.rs"
 gap = ""
 priority = 1
 
@@ -2423,7 +2423,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
 behaviour = "Generated pattern with scale, rotation, offset, editable later."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/pattern_fill_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/pattern_fill_cmds.rs"
 gap = ""
 priority = 1
 
@@ -2435,7 +2435,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
 behaviour = "Generated quasi-periodic tiling (de Bruijn multigrid) with colours and line widths."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/gen_fill_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/gen_fill_cmds.rs"
 gap = ""
 priority = 3
 
@@ -2447,7 +2447,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
 behaviour = "Generated halftone dots/lines with pattern, shape, size, rotation, interpolation, brightness/contrast."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/gen_fill_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/gen_fill_cmds.rs"
 gap = ""
 priority = 2
 
@@ -2459,7 +2459,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
 behaviour = "Procedural texture written in the SeExpr language with live preview and saved scripts."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/gen_fill_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/gen_fill_cmds.rs"
 gap = "own expression language with the common SeExpr functions (noise, fbm, voronoi, fit, mix, hsi…), preview and saved scripts; not the full SeExpr grammar (no string ops, no custom function definitions)"
 priority = 3
 
@@ -2471,7 +2471,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
 behaviour = "Generated seamless noise with frequency and ratio."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/gen_fill_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/gen_fill_cmds.rs"
 gap = ""
 priority = 3
 
@@ -2483,7 +2483,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/fill_layers.html"
 behaviour = "Painting on a generated layer edits its transparency mask."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/fill_layer_mode_tests.rs"
+ours_where = "editors/photo/crates/engine/src/fill_layer_mode_tests.rs"
 gap = "fill layers carry a mask"
 priority = 2
 
@@ -2495,7 +2495,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/filter_layers.html"
 behaviour = "Any filter applied non-destructively to everything below; editable; own mask."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/live_layers.rs"
+ours_where = "editors/photo/crates/engine/src/live_layers.rs"
 gap = ""
 priority = 1
 
@@ -2507,7 +2507,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/filter_masks.html"
 behaviour = "A filter attached to one layer, limited by a paintable mask; stackable."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/live_layers.rs"
+ours_where = "editors/photo/crates/engine/src/live_layers.rs"
 gap = ""
 priority = 1
 
@@ -2519,7 +2519,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/filter_masks.html"
 behaviour = "Quick colour tint mask for silhouettes."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+ours_where = "editors/photo/crates/engine/src/layer_style.rs"
 gap = "Color Overlay style"
 priority = 2
 
@@ -2531,7 +2531,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/transparency_masks.html"
 behaviour = "Greyscale mask hiding parts of a layer; paintable; several per layer; convert selection to mask."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_mask_props_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/layer_mask_props_cmds.rs"
 gap = ""
 priority = 1
 
@@ -2543,7 +2543,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/transformation_masks.html"
 behaviour = "Non-destructive transform (free, perspective, warp, cage, liquify) kept as a mask; editable and animatable."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/live_layers.rs"
+ours_where = "editors/photo/crates/engine/src/live_layers.rs"
 gap = ""
 priority = 1
 
@@ -2555,7 +2555,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/selection_masks.html"
 behaviour = "Stored selections attached to a layer; one active; show as overlay; global selection mask shown in the stack."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_kind_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/layer_kind_cmds.rs"
 gap = ""
 priority = 2
 
@@ -2567,7 +2567,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/tools/colorize_mask.html"
 behaviour = "Mask that fills line-art regions from colour key strokes; lock, update, show output."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/colorize_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/colorize_cmds.rs"
 gap = ""
 priority = 2
 
@@ -2579,7 +2579,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/vector_layers.html"
 behaviour = "Shape layer with SVG objects (covered by the vector inventory)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/vector_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/vector_cmds.rs"
 gap = "see vector inventory"
 priority = 2
 
@@ -2591,7 +2591,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
 behaviour = "PSD-compatible shadows with blend, opacity, angle, global light, distance, spread, size, contour, noise."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+ours_where = "editors/photo/crates/engine/src/layer_style.rs"
 gap = ""
 priority = 1
 
@@ -2603,7 +2603,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
 behaviour = "Glows with colour or gradient, technique, spread/choke, size, contour, range, jitter."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+ours_where = "editors/photo/crates/engine/src/layer_style.rs"
 gap = ""
 priority = 1
 
@@ -2615,7 +2615,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
 behaviour = "Styles, technique, depth, direction, size, soften, shading, contour and texture sub-effects."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+ours_where = "editors/photo/crates/engine/src/layer_style.rs"
 gap = ""
 priority = 2
 
@@ -2627,7 +2627,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
 behaviour = "Interior satin sheen with contour."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+ours_where = "editors/photo/crates/engine/src/layer_style.rs"
 gap = ""
 priority = 3
 
@@ -2639,7 +2639,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
 behaviour = "Fills over the layer content with blend and opacity."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+ours_where = "editors/photo/crates/engine/src/layer_style.rs"
 gap = ""
 priority = 1
 
@@ -2651,7 +2651,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
 behaviour = "Outline inside/outside/centre with colour, gradient or pattern."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+ours_where = "editors/photo/crates/engine/src/layer_style.rs"
 gap = ""
 priority = 1
 
@@ -2663,7 +2663,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
 behaviour = "Fill opacity, channel knockout, blend interior/clipped layers, blend-if ranges."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+ours_where = "editors/photo/crates/engine/src/layer_style.rs"
 gap = "blendingOptions"
 priority = 2
 
@@ -2675,7 +2675,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/layer_styles.html"
 behaviour = "Save, load and apply named style combinations; import Adobe style libraries (5.0)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+ours_where = "editors/photo/crates/engine/src/layer_style.rs"
 gap = ""
 priority = 2
 
@@ -2687,7 +2687,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
 behaviour = "Click the fx badge to enable/disable the style quickly."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/fx_visibility_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/fx_visibility_cmds.rs"
 gap = ""
 priority = 2
 
@@ -2699,7 +2699,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
 behaviour = "Layer is clipped to the combined alpha of the layers below it in the group."
 ours = "full"
-ours_where = "crafts/photocraft/crates/compose/src/lib.rs"
+ours_where = "editors/photo/crates/compose/src/lib.rs"
 gap = "clipping mask"
 priority = 1
 
@@ -2711,7 +2711,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
 behaviour = "Painting cannot change transparency, only colour."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/extra_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/extra_cmds.rs"
 gap = "lock transparent pixels"
 priority = 1
 
@@ -2723,7 +2723,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
 behaviour = "Prevent edits to a layer."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_menu_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/layer_menu_cmds.rs"
 gap = ""
 priority = 1
 
@@ -2735,7 +2735,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
 behaviour = "Colour tag per layer; filter the stack by label; used by fill and select tools."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_label_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/layer_label_cmds.rs"
 gap = "filtering only in panel"
 priority = 2
 
@@ -2747,7 +2747,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
 behaviour = "Filter by name or colour label; display settings for thumbnail size and blend info detail."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/layer_filter_ui.rs, crafts/photocraft/crates/ui-egui/src/panels.rs"
+ours_where = "editors/photo/crates/ui-egui/src/layer_filter_ui.rs, editors/photo/crates/ui-egui/src/panels.rs"
 gap = ""
 priority = 2
 
@@ -2759,7 +2759,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/layers.html"
 behaviour = "Show only the active layer or group while painting."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/hidden_target.rs"
+ours_where = "editors/photo/crates/engine/src/hidden_target.rs"
 gap = ""
 priority = 2
 
@@ -2771,7 +2771,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/blending_modes.html"
 behaviour = "About 100 modes grouped (arithmetic, binary, darken, HSX, lighten, misc, mix, modulo, negative, quadratic) with favourites and letter shortcuts."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/blend_menu_ui.rs, crafts/photocraft/crates/ui-egui/src/panels.rs, crafts/photocraft/crates/color/src/blend.rs"
+ours_where = "editors/photo/crates/ui-egui/src/blend_menu_ui.rs, editors/photo/crates/ui-egui/src/panels.rs, editors/photo/crates/color/src/blend.rs"
 gap = ""
 priority = 1
 
@@ -2783,7 +2783,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/blending_modes.html"
 behaviour = "Alt+Shift+letter sets a blend mode; + and - cycle."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/blend_keys.rs"
+ours_where = "editors/photo/crates/ui-egui/src/blend_keys.rs"
 gap = ""
 priority = 2
 
@@ -2795,7 +2795,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/layers_and_masks/split_alpha.html"
 behaviour = "Alpha into a mask, write mask back as alpha, save merged with colour under transparency."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_kind_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/layer_kind_cmds.rs"
 gap = ""
 priority = 3
 
@@ -2807,7 +2807,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
 behaviour = "Convert between paint layer, masks, file layer, vector; convert group to animated layer; convert layer colour space."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/layer_kind_cmds.rs, crafts/photocraft/crates/engine/src/anim_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/layer_kind_cmds.rs, editors/photo/crates/engine/src/anim_cmds.rs"
 gap = "no conversion of a paint layer to a vector (shape) layer; paint, file, transparency / filter / selection mask, colour space and group-to-animated convert"
 priority = 2
 
@@ -2819,7 +2819,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
 behaviour = "Import a file as paint layer, transparency, filter or selection mask."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_kind_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/layer_kind_cmds.rs"
 gap = ""
 priority = 2
 
@@ -2831,7 +2831,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
 behaviour = "Flatten visible into a new layer."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_copy_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/layer_copy_cmds.rs"
 gap = ""
 priority = 1
 
@@ -2843,7 +2843,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
 behaviour = "Select all, visible, invisible, locked, unlocked layers."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_kind_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/layer_kind_cmds.rs"
 gap = ""
 priority = 3
 
@@ -2855,7 +2855,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/clones_array.html"
 behaviour = "Generate a grid of clone layers with offsets, distance, angle."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/live_layers.rs"
+ours_where = "editors/photo/crates/engine/src/live_layers.rs"
 gap = ""
 priority = 3
 
@@ -2867,7 +2867,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/image_split.html"
 behaviour = "Cut the image into N by M files."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/slice_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/slice_cmds.rs"
 gap = "slices export"
 priority = 3
 
@@ -2879,7 +2879,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/separate_image.html"
 behaviour = "Channels to layers or files, with alpha options."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/channel_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/channel_cmds.rs"
 gap = "split channels"
 priority = 2
 
@@ -2891,7 +2891,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/undo_history.html"
 behaviour = "List of steps; cumulative undo merges strokes by interval and duration."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/edit_history.rs, crafts/photocraft/crates/engine/src/lib.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+ours_where = "editors/photo/crates/ui-egui/src/edit_history.rs, editors/photo/crates/engine/src/lib.rs, editors/photo/crates/engine/src/prefs.rs"
 gap = ""
 priority = 1
 
@@ -2903,7 +2903,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Lighten shadows, midtones or highlights by an exposure amount, as a filter or filter layer."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 2
 
@@ -2915,7 +2915,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Darken shadows/midtones/highlights by exposure."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 2
 
@@ -2927,7 +2927,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Input/output black, white and gamma per channel with histogram; auto levels; 5.0 adds per-channel editing."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/adjust_cmds.rs"
 gap = ""
 priority = 1
 
@@ -2939,7 +2939,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Per-channel curves incl. alpha, lightness and hue/saturation curves; pick colour on canvas."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/adjust_cmds.rs"
 gap = ""
 priority = 1
 
@@ -2951,7 +2951,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Drive one channel (e.g. saturation) by a curve over another (e.g. hue)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -2963,7 +2963,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Lightness curve with brightness and contrast handles."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/adjust_cmds.rs"
 gap = ""
 priority = 1
 
@@ -2975,7 +2975,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Shadows/midtones/highlights cyan-red, magenta-green, yellow-blue; preserve luminosity."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/adjust_cmds.rs"
 gap = ""
 priority = 1
 
@@ -2987,7 +2987,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Lightness, luminosity (sRGB/linear), average, min, max methods."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/adjust_cmds.rs"
 gap = ""
 priority = 1
 
@@ -2999,7 +2999,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Invert colour channels."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/adjust_cmds.rs"
 gap = ""
 priority = 1
 
@@ -3011,7 +3011,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Stretch channels to full range automatically."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/adjust_cmds.rs"
 gap = "auto tone/contrast"
 priority = 2
 
@@ -3023,7 +3023,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Hue, saturation, lightness/value with HSV, HSL, HSI, HSY models; colourize."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/adjust_cmds.rs"
 gap = ""
 priority = 1
 
@@ -3035,7 +3035,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Binary split at a level with histogram."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/adjust_cmds.rs"
 gap = ""
 priority = 2
 
@@ -3047,7 +3047,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/adjust.html"
 behaviour = "Per-channel slope/offset/power and saturation like film grading."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3059,7 +3059,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
 behaviour = "Dot screen with pattern, angle, size, colour per channel or intensity."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/filters.rs"
 gap = "Color Halftone"
 priority = 2
 
@@ -3071,7 +3071,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
 behaviour = "Reduce to a ramp-based palette with dithering, for pixel art."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 2
 
@@ -3083,7 +3083,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
 behaviour = "Mosaic with separate width/height."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/filters.rs"
 gap = "Mosaic"
 priority = 2
 
@@ -3095,7 +3095,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
 behaviour = "Random lens droplets with drop size, number, fish-eye."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3107,7 +3107,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
 behaviour = "Brush size and smoothness painterly look."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/filters.rs"
 gap = "Oil Paint"
 priority = 2
 
@@ -3119,7 +3119,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/artistic.html"
 behaviour = "Reduce levels per channel."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/adjust_cmds.rs"
 gap = ""
 priority = 2
 
@@ -3131,7 +3131,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/blur.html"
 behaviour = "Separate horizontal/vertical radius, lock aspect."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/filters.rs"
 gap = ""
 priority = 1
 
@@ -3143,7 +3143,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/blur.html"
 behaviour = "Angle and length."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/filters.rs"
 gap = ""
 priority = 1
 
@@ -3155,7 +3155,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/blur.html"
 behaviour = "Width, height, strength, angle and shape (circle, triangle, quadrilateral, pentagon, hexagon, octagon)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 2
 
@@ -3167,7 +3167,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/blur.html"
 behaviour = "Iris shape, radius, rotation, brightness, threshold."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/filters.rs"
 gap = ""
 priority = 2
 
@@ -3179,7 +3179,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
 behaviour = "Turn a chosen colour and threshold into transparency."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/color_to_alpha_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/color_to_alpha_cmds.rs"
 gap = ""
 priority = 1
 
@@ -3191,7 +3191,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
 behaviour = "Blend a colour over the layer with mode and opacity, as a mask-friendly filter."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/layer_style.rs"
+ours_where = "editors/photo/crates/engine/src/layer_style.rs"
 gap = "Color Overlay style / fill layer"
 priority = 2
 
@@ -3203,7 +3203,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
 behaviour = "Match colours to a reference image."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/adjust_cmds.rs"
 gap = "Match Color"
 priority = 2
 
@@ -3215,7 +3215,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
 behaviour = "Push the strongest channel of each pixel to full."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3227,7 +3227,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
 behaviour = "Push the weakest channel to zero."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3239,7 +3239,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/colors.html"
 behaviour = "Spread colour from opaque pixels into transparent ones (for texture edges)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3251,7 +3251,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/edge_detection.html"
 behaviour = "Prewitt, Sobel, Simple methods; horizontal/vertical radius; output as alpha or colour."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 2
 
@@ -3263,7 +3263,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/edge_detection.html"
 behaviour = "Keep detail above a radius for frequency separation."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/filters.rs"
 gap = "High Pass"
 priority = 1
 
@@ -3275,7 +3275,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/edge_detection.html"
 behaviour = "Convert greyscale height to a tangent normal map with channel swizzle and radius."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3287,7 +3287,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/emboss.html"
 behaviour = "Horizontal, vertical, both, all directions, Laplacian, variable depth emboss."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 2
 
@@ -3299,7 +3299,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/enhance.html"
 behaviour = "Simple 3x3 sharpen."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/filters.rs"
 gap = ""
 priority = 1
 
@@ -3311,7 +3311,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/enhance.html"
 behaviour = "Sharpen by subtracting the mean."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3323,7 +3323,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/enhance.html"
 behaviour = "Radius, amount, threshold; lightness only option."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/filters.rs"
 gap = ""
 priority = 1
 
@@ -3335,7 +3335,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/enhance.html"
 behaviour = "Threshold and window size."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/filters.rs"
 gap = "Reduce Noise"
 priority = 2
 
@@ -3347,7 +3347,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/enhance.html"
 behaviour = "Noise removal by wavelet threshold."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3359,7 +3359,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
 behaviour = "Tile the layer N times."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/distort3.rs, crafts/photocraft/crates/engine/src/filters_gen.rs"
+ours_where = "editors/photo/crates/algo/src/distort3.rs, editors/photo/crates/engine/src/filters_gen.rs"
 gap = ""
 priority = 3
 
@@ -3371,7 +3371,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
 behaviour = "Light a height or normal map with up to four lights, ambient/diffuse/specular, shininess."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3383,7 +3383,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
 behaviour = "Round the layer's corners by a radius."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters_more.rs"
+ours_where = "editors/photo/crates/engine/src/filters_more.rs"
 gap = ""
 priority = 3
 
@@ -3395,7 +3395,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
 behaviour = "Normalize normal-map vectors."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3407,7 +3407,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
 behaviour = "Map lightness to a gradient; blend, nearest or dither colour modes."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/adjust_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/adjust_cmds.rs"
 gap = ""
 priority = 1
 
@@ -3419,7 +3419,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/map.html"
 behaviour = "Quantize to a palette with colour space, dithering threshold/colour/alpha modes."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 2
 
@@ -3431,7 +3431,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/other.html"
 behaviour = "Horizontal/vertical sine or triangle wave with wavelength, shift, amplitude."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/filters.rs"
 gap = ""
 priority = 2
 
@@ -3443,7 +3443,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/other.html"
 behaviour = "Noise level and opacity."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/filters.rs"
 gap = "Add Noise"
 priority = 1
 
@@ -3455,7 +3455,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/other.html"
 behaviour = "Zero colour under fully transparent pixels."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3467,7 +3467,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/other.html"
 behaviour = "Swap pixels with random neighbours."
 ours = "full"
-ours_where = "crafts/photocraft/crates/algo/src/paint_fx.rs, crafts/photocraft/crates/engine/src/filters_paint.rs"
+ours_where = "editors/photo/crates/algo/src/paint_fx.rs, editors/photo/crates/engine/src/filters_paint.rs"
 gap = ""
 priority = 3
 
@@ -3479,7 +3479,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters/wavelet_decompose.html"
 behaviour = "Split a layer into N frequency scales as layers for retouching."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/extra_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/extra_cmds.rs"
 gap = ""
 priority = 2
 
@@ -3491,7 +3491,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/g_mic_settings.html"
 behaviour = "Hundreds of external filters via the G'MIC-Qt plugin with update files."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/filters_paint.rs, crafts/photocraft/crates/engine/src/prefs.rs"
+ours_where = "editors/photo/crates/engine/src/filters_paint.rs, editors/photo/crates/engine/src/prefs.rs"
 gap = "the G'MIC command line runs through an installed gmic executable; the G'MIC-Qt dialog with its filter browser is not embedded"
 priority = 2
 
@@ -3503,7 +3503,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/filters.html"
 behaviour = "Every filter dialog previews on canvas and can save/load named settings; reapply last filter (Ctrl+F)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/filter_dialog.rs"
+ours_where = "editors/photo/crates/ui-egui/src/filter_dialog.rs"
 gap = "lastFilter"
 priority = 1
 
@@ -3515,7 +3515,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/animation_timeline.html"
 behaviour = "Frame table per layer with keyframes, hold frames, clone frames, playback range, frame rate, zoom, audio."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/engine/src/timeline_cmds.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs, crafts/photocraft/crates/ui-egui/src/timeline_ui.rs"
+ours_where = "editors/photo/crates/engine/src/anim_cmds.rs, editors/photo/crates/engine/src/timeline_cmds.rs, editors/photo/crates/ui-egui/src/animation_ui.rs, editors/photo/crates/ui-egui/src/timeline_ui.rs"
 gap = ""
 priority = 3
 
@@ -3527,7 +3527,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/animation_timeline.html"
 behaviour = "Add blank or duplicated keyframes, move, copy, clone with drag; cached frames shown."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs"
+ours_where = "editors/photo/crates/engine/src/anim_cmds.rs, editors/photo/crates/ui-egui/src/animation_ui.rs"
 gap = ""
 priority = 3
 
@@ -3539,7 +3539,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/onion_skin.html"
 behaviour = "Tinted previous/next frames with per-offset opacity and colours."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/engine/src/live_layers.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs"
+ours_where = "editors/photo/crates/engine/src/anim_cmds.rs, editors/photo/crates/engine/src/live_layers.rs, editors/photo/crates/ui-egui/src/animation_ui.rs"
 gap = ""
 priority = 3
 
@@ -3551,7 +3551,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/animation_curves.html"
 behaviour = "Scalar channels (opacity, transform mask) keyed and interpolated with bezier handles."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs"
+ours_where = "editors/photo/crates/engine/src/anim_cmds.rs, editors/photo/crates/ui-egui/src/animation_ui.rs"
 gap = ""
 priority = 3
 
@@ -3563,7 +3563,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/render_animation.html"
 behaviour = "Export image sequence or video through ffmpeg with codec, size, fps, audio, HDR metadata."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/anim_cmds.rs"
 gap = ""
 priority = 3
 
@@ -3575,7 +3575,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/import_animation.html"
 behaviour = "Import image sequences with ordering and timing, or a video via ffmpeg with scale and range."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/anim_cmds.rs"
 gap = ""
 priority = 3
 
@@ -3587,7 +3587,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/audio_for_animation.html"
 behaviour = "Attach an audio track, scrub and mute."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs"
+ours_where = "editors/photo/crates/engine/src/anim_cmds.rs, editors/photo/crates/ui-egui/src/animation_ui.rs"
 gap = ""
 priority = 3
 
@@ -3599,7 +3599,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/storyboard_docker.html"
 behaviour = "Scenes with thumbnails, durations and comments, exported to PDF/SVG layouts."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs"
+ours_where = "editors/photo/crates/engine/src/anim_cmds.rs, editors/photo/crates/ui-egui/src/animation_ui.rs"
 gap = ""
 priority = 3
 
@@ -3611,7 +3611,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/animation.html"
 behaviour = "Key the transform of a mask for tweened motion (5.0)."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/live_layers.rs, crafts/photocraft/crates/engine/src/anim_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/live_layers.rs, editors/photo/crates/engine/src/anim_cmds.rs"
 gap = ""
 priority = 3
 
@@ -3623,7 +3623,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/layers_menu.html"
 behaviour = "Each child becomes one frame."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/anim_cmds.rs"
 gap = ""
 priority = 3
 
@@ -3635,7 +3635,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/recorder_docker.html"
 behaviour = "Capture snapshots while painting and export a timelapse video with ffmpeg."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/anim_cmds.rs, crafts/photocraft/crates/ui-egui/src/animation_ui.rs"
+ours_where = "editors/photo/crates/engine/src/anim_cmds.rs, editors/photo/crates/ui-egui/src/animation_ui.rs"
 gap = ""
 priority = 3
 
@@ -3647,7 +3647,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/snapshot_docker.html"
 behaviour = "Save and restore full document states during the session."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/history_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/history_cmds.rs"
 gap = "history snapshots"
 priority = 2
 
@@ -3659,7 +3659,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/general_concepts/colors/color_managed_workflow.html"
 behaviour = "Working space per document with ICC, monitor profile, rendering intents, black point compensation; convert vs assign."
 ours = "full"
-ours_where = "crafts/photocraft/crates/cms/src/lib.rs"
+ours_where = "editors/photo/crates/cms/src/lib.rs"
 gap = ""
 priority = 1
 
@@ -3671,7 +3671,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/color_management_settings.html"
 behaviour = "System monitor profile or chosen profile per screen, intent, canvas surface space and bit depth (Rec 709 / Rec 2020 PQ), unmanaged mode."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/color_management_cmds.rs, crafts/photocraft/crates/engine/src/color_cmds.rs, crafts/photocraft/crates/engine/src/display_color.rs, crafts/photocraft/crates/engine/src/proof_sim.rs"
+ours_where = "editors/photo/crates/engine/src/color_management_cmds.rs, editors/photo/crates/engine/src/color_cmds.rs, editors/photo/crates/engine/src/display_color.rs, editors/photo/crates/engine/src/proof_sim.rs"
 gap = ""
 priority = 2
 
@@ -3683,7 +3683,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/color_management_settings.html"
 behaviour = "Assume sRGB, monitor profile, or ask per paste."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/color_management_cmds.rs, crafts/photocraft/crates/engine/src/edit_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/color_management_cmds.rs, editors/photo/crates/engine/src/edit_cmds.rs"
 gap = ""
 priority = 3
 
@@ -3695,7 +3695,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/soft_proofing.html"
 behaviour = "Preview in a target profile with intent, BPC, adaptation; Ctrl+Y."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/proof_sim.rs"
+ours_where = "editors/photo/crates/engine/src/proof_sim.rs"
 gap = ""
 priority = 2
 
@@ -3707,7 +3707,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/soft_proofing.html"
 behaviour = "Colour the pixels the proof profile cannot show; Ctrl+Shift+Y."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/proof_sim.rs"
+ours_where = "editors/photo/crates/engine/src/proof_sim.rs"
 gap = "view.gamutWarning"
 priority = 2
 
@@ -3719,7 +3719,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/lut_management.html"
 behaviour = "Scene-linear display transforms from an OCIO config with exposure and gamma."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/ocio.rs, crafts/photocraft/crates/engine/src/proof_sim.rs"
+ours_where = "editors/photo/crates/engine/src/ocio.rs, editors/photo/crates/engine/src/proof_sim.rs"
 gap = ""
 priority = 2
 
@@ -3731,7 +3731,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/lut_management.html"
 behaviour = "Drag with Y to change view exposure; gamma slider; lock colour."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/ocio.rs, crafts/photocraft/crates/engine/src/proof_sim.rs, crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
+ours_where = "editors/photo/crates/engine/src/ocio.rs, editors/photo/crates/engine/src/proof_sim.rs, editors/photo/crates/ui-egui/src/color_selectors.rs"
 gap = ""
 priority = 3
 
@@ -3743,7 +3743,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/hdr_display.html"
 behaviour = "Paint on HDR monitors in Rec 2020 PQ with float documents; HDR video export."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/engine/src/color_management_cmds.rs, crafts/photocraft/crates/engine/src/proof_sim.rs, crafts/photocraft/crates/color/src/models.rs"
+ours_where = "editors/photo/crates/engine/src/color_management_cmds.rs, editors/photo/crates/engine/src/proof_sim.rs, editors/photo/crates/color/src/models.rs"
 gap = "Rec. 2020 PQ / HLG / scRGB surface encodings end the display LUT (edit.colorManagement); the window surface is the 8-bit sRGB one the shell gets from the platform, and there is no HDR video export"
 priority = 3
 
@@ -3755,7 +3755,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/general_concepts/colors/scene_linear_painting.html"
 behaviour = "32-bit float linear documents with blending in linear light."
 ours = "full"
-ours_where = "crafts/photocraft/crates/color/src/lib.rs"
+ours_where = "editors/photo/crates/color/src/lib.rs"
 gap = "F32 sample type"
 priority = 2
 
@@ -3767,7 +3767,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/general_concepts/colors/bit_depth.html"
 behaviour = "8/16-bit integer, 16/32-bit float per document."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/color/src/models.rs, crafts/photocraft/crates/ui-egui/src/color_selectors.rs"
+ours_where = "editors/photo/crates/color/src/models.rs, editors/photo/crates/ui-egui/src/color_selectors.rs"
 gap = "16-bit float is a channel depth of the colour selectors (IEEE half encoding in models.rs); documents store float pixels as 32-bit (no SampleType::F16)"
 priority = 2
 
@@ -3779,7 +3779,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/python_scripting/introduction_to_python_scripting.html"
 behaviour = "Embedded Python with document, node, view, filter and action API; scripter console; plugins with dockers and actions."
 ours = "partial"
-ours_where = "crafts/photocraft/crates/automation/src/lib.rs, crafts/photocraft/crates/engine/src/scheme.rs, crafts/photocraft/crates/engine/src/seexpr.rs, crafts/photocraft/crates/engine/src/actions_cmds.rs, crafts/photocraft/crates/engine/src/workflow_cmds.rs"
+ours_where = "editors/photo/crates/automation/src/lib.rs, editors/photo/crates/engine/src/scheme.rs, editors/photo/crates/engine/src/seexpr.rs, editors/photo/crates/engine/src/actions_cmds.rs, editors/photo/crates/engine/src/workflow_cmds.rs"
 gap = "no embedded Python interpreter: automation is the JSON command API (MCP), recorded actions, the Scheme console and generator scripts"
 priority = 1
 
@@ -3791,7 +3791,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/python_plugin_manager.html"
 behaviour = "Enable/disable installed plugins; import plugin zips."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/plugin_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/plugin_cmds.rs"
 gap = ""
 priority = 3
 
@@ -3803,7 +3803,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/default_python_plugins.html"
 behaviour = "Ten brushes, ten scripts, quick settings, batch exporter, comics manager, channels to layers, export layers, last documents, high pass, filter manager, script starter."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/workflow_cmds.rs, crafts/photocraft/crates/engine/src/brush_extras_cmds.rs, crafts/photocraft/crates/engine/src/automate_cmds.rs, crafts/photocraft/crates/engine/src/file_cmds.rs, crafts/photocraft/crates/engine/src/filters.rs"
+ours_where = "editors/photo/crates/engine/src/workflow_cmds.rs, editors/photo/crates/engine/src/brush_extras_cmds.rs, editors/photo/crates/engine/src/automate_cmds.rs, editors/photo/crates/engine/src/file_cmds.rs, editors/photo/crates/engine/src/filters.rs"
 gap = ""
 priority = 2
 
@@ -3815,7 +3815,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/main_menu/tools_menu.html"
 behaviour = "Record actions to a macro, edit and play back."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/actions_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/actions_cmds.rs"
 gap = "actions record/play"
 priority = 2
 
@@ -3827,7 +3827,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/task_sets.html"
 behaviour = "Save a sequence of actions as a one-click set."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/actions_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/actions_cmds.rs"
 gap = ""
 priority = 3
 
@@ -3839,7 +3839,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/compositions.html"
 behaviour = "Named layer visibility states; export all."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/comps_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/comps_cmds.rs"
 gap = "layer comps"
 priority = 2
 
@@ -3851,7 +3851,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/overview.html"
 behaviour = "Thumbnail navigation with zoom slider, mirror and rotation controls."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/dock.rs"
+ours_where = "editors/photo/crates/ui-egui/src/dock.rs"
 gap = "navigator"
 priority = 2
 
@@ -3863,7 +3863,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/histogram_docker.html"
 behaviour = "Live histogram per channel."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/analysis_ui.rs"
+ours_where = "editors/photo/crates/ui-egui/src/analysis_ui.rs"
 gap = ""
 priority = 2
 
@@ -3875,7 +3875,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/channels_docker.html"
 behaviour = "View and toggle channels; thumbnails."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/channels_panel.rs"
+ours_where = "editors/photo/crates/ui-egui/src/channels_panel.rs"
 gap = ""
 priority = 2
 
@@ -3887,7 +3887,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/dockers/reference_images_docker.html"
 behaviour = "Browse folders and show one image beside the canvas with zoom."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/workflow_cmds.rs, crafts/photocraft/crates/ui-egui/src/reference_tab.rs, crafts/photocraft/crates/ui-egui/src/dock.rs"
+ours_where = "editors/photo/crates/engine/src/workflow_cmds.rs, editors/photo/crates/ui-egui/src/reference_tab.rs, editors/photo/crates/ui-egui/src/dock.rs"
 gap = ""
 priority = 3
 
@@ -3899,7 +3899,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/getting_started/navigation.html"
 behaviour = "Type to find and run any action."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/workflow_cmds.rs, crafts/photocraft/crates/ui-egui/src/action_search.rs, crafts/photocraft/crates/ui-egui/src/menus.rs"
+ours_where = "editors/photo/crates/engine/src/workflow_cmds.rs, editors/photo/crates/ui-egui/src/action_search.rs, editors/photo/crates/ui-egui/src/menus.rs"
 gap = ""
 priority = 2
 
@@ -3911,7 +3911,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/shortcut_settings.html"
 behaviour = "Every action rebindable; schemes incl. Photoshop-like; export/import."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/shortcut_sets.rs"
+ours_where = "editors/photo/crates/engine/src/shortcut_sets.rs"
 gap = ""
 priority = 1
 
@@ -3923,7 +3923,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/getting_started/navigation.html"
 behaviour = "Dockers float, dock, tab; save as workspace."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/dock.rs"
+ours_where = "editors/photo/crates/ui-egui/src/dock.rs"
 gap = ""
 priority = 2
 
@@ -3935,7 +3935,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/templates.html"
 behaviour = "New-from-template categories (comic, design, DSLR, texture, animation) and custom templates."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/document_preset_cmds.rs"
+ours_where = "editors/photo/crates/engine/src/document_preset_cmds.rs"
 gap = ""
 priority = 2
 
@@ -3947,7 +3947,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/autosave.html"
 behaviour = "Periodic autosave, numbered backups, recovery on crash."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/workflow_cmds.rs, crafts/photocraft/crates/engine/src/file_cmds.rs, crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/format/src/autosave.rs, crafts/photocraft/crates/ui-egui/src/jobs_ui.rs"
+ours_where = "editors/photo/crates/engine/src/workflow_cmds.rs, editors/photo/crates/engine/src/file_cmds.rs, editors/photo/crates/engine/src/prefs.rs, editors/photo/crates/format/src/autosave.rs, editors/photo/crates/ui-egui/src/jobs_ui.rs"
 gap = ""
 priority = 2
 
@@ -3959,7 +3959,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/performance_settings.html"
 behaviour = "Memory limits, swap, undo limit, threads, canvas acceleration (OpenGL/ANGLE), scaling filters, pixel grid threshold."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/prefs.rs, crafts/photocraft/crates/engine/src/workflow_cmds.rs, crafts/photocraft/crates/ui-egui/src/prefs_ui.rs"
+ours_where = "editors/photo/crates/engine/src/prefs.rs, editors/photo/crates/engine/src/workflow_cmds.rs, editors/photo/crates/ui-egui/src/prefs_ui.rs"
 gap = ""
 priority = 3
 
@@ -3971,7 +3971,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/display_settings.html"
 behaviour = "Canvas border colour, transparency checkers, pixel grid colour and zoom threshold, selection outline, cursor colour."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/prefs_ui.rs"
+ours_where = "editors/photo/crates/ui-egui/src/prefs_ui.rs"
 gap = ""
 priority = 2
 
@@ -3983,7 +3983,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/preferences/general_settings.html"
 behaviour = "Cursor shape, outline, window behaviour, tool options location, kinetic scrolling, undo stack size, file dialog."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/prefs_ui.rs"
+ours_where = "editors/photo/crates/ui-egui/src/prefs_ui.rs"
 gap = ""
 priority = 2
 
@@ -3995,7 +3995,7 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/user_manual/introduction_from_other_software/introduction_from_photoshop.html"
 behaviour = "Guide mapping PS concepts to the app; Photoshop-compatible shortcut scheme."
 ours = "full"
-ours_where = "crafts/photocraft/crates/engine/src/shortcut_sets.rs"
+ours_where = "editors/photo/crates/engine/src/shortcut_sets.rs"
 gap = "our shell follows the PS model natively"
 priority = 3
 
@@ -4007,6 +4007,6 @@ reference = "Krita 5.3"
 manual = "https://docs.krita.org/en/reference_manual/welcome_screen.html"
 behaviour = "Recent files, news, links on start."
 ours = "full"
-ours_where = "crafts/photocraft/crates/ui-egui/src/empty_workspace_tests.rs"
+ours_where = "editors/photo/crates/ui-egui/src/empty_workspace_tests.rs"
 gap = ""
 priority = 3

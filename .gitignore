@@ -14,7 +14,7 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 
-# The pinned upstream reference trees, fetched by scripts/fetch-upstream.sh.
+# Old Krita and GIMP reference trees some checkouts still hold (the script that fetched them is gone).
 #
 # ~753 MB of Krita and GIMP source. Before this rule they were untracked but NOT ignored, so a
 # `git add -A` would have committed three quarters of a gigabyte of another project's source.

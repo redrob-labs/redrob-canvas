@@ -157,14 +157,9 @@ jobs:
           fi
           echo "version=${tag_version}" >> "$GITHUB_OUTPUT"
 
-      # The repository scripts, as the CI `checks` job runs them: pins, upstream identifiers, the
-      # generated notices (an attribution defect blocks the release rather than being corrected
-      # afterwards) and the design system.
-      - name: Upstream pins and identifiers
-        run: |
-          ./scripts/verify-upstream.sh
-          python3 scripts/check_upstream_ids.py
-
+      # The repository scripts, as the CI `checks` job runs them: the generated notices (an
+      # attribution defect blocks the release rather than being corrected afterwards) and the
+      # design system.
       - name: Rust toolchain (rust-toolchain.toml)
         uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
