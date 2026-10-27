@@ -8,7 +8,7 @@
 //! redrob-canvas layout describe ID          # one command: label, menu, shortcut, parameters
 //! redrob-canvas layout script [FILE|-] [--in FILE | --sample] [--connect PORT] [--save OUT] [--export OUT] [--keep-going]
 //!                                      # run a command script (crates/engine/src/script.rs): `$N.path` references
-//! redrob-canvas layout app [--port PORT] COMMAND [JSON]   # run a command in the running app (layout --control PORT)
+//! redrob-canvas layout app [--port PORT] COMMAND [JSON]   # run a command in the running app (not available yet: the Redrob Canvas window opens no control port)
 //! redrob-canvas layout app [--port PORT] --method METHOD [JSON]   # any control-channel method (ui.screenshot, ui.render, …)
 //! redrob-canvas layout mcp [--connect PORT] [--sample] [--automation-read-root DIR] [--automation-write-root DIR]
 //!                                      # MCP server over stdio (docs/mcp.md); the roots confine the files it reads and writes
@@ -45,7 +45,7 @@ const USAGE: &str = "usage: redrob-canvas layout run [--in FILE | --sample] [--c
 const SCRIPT_HELP: &str = r#"usage: redrob-canvas layout script [FILE|-] [--in FILE | --sample] [--connect PORT] [--save OUT] [--export OUT] [--keep-going]
 
 Runs a command script from FILE (stdin when FILE is `-` or missing), headless or, with
---connect PORT, in the running app (layout --control PORT).
+--connect PORT, in the running app (not available yet: the Redrob Canvas window opens no control port).
 
 Script text, one step per line:
   command.id {"param": 1}     also `command.id={json}`, or `command.id` alone
@@ -163,7 +163,7 @@ fn validate_pdf(path: Option<&str>) -> Result<(), String> {
 }
 
 /// `mcp` (headless, in-process engine) or `mcp --connect PORT|HOST:PORT` (drive a running app
-/// started with `layout --control PORT`). JSON-RPC on stdin/stdout; logs on stderr.
+/// serving a control port, which the Redrob Canvas window does not open yet). JSON-RPC on stdin/stdout; logs on stderr.
 fn mcp(args: &[String]) -> Result<(), String> {
     use redrob_layout_engine::file_access::{self, AutomationRoots};
     use redrob_layout_mcp::{Backend, Headless, Remote, Server, control_addr};
@@ -196,7 +196,7 @@ so drop --connect (or use --connect without the roots)"
             let addr = control_addr(&c);
             Box::new(
                 Remote::connect(&addr)
-                    .map_err(|e| format!("cannot connect to the Layout app at {addr}: {e} (start it with `layout --control PORT`)"))?,
+                    .map_err(|e| format!("cannot connect to the Layout app at {addr}: {e} (connect to a control port, which the Redrob Canvas window does not open yet)"))?,
             )
         }
         None => {
@@ -428,7 +428,7 @@ fn script(args: &[String]) -> Result<(), String> {
             let addr = control_addr(c);
             Box::new(
                 Remote::connect(&addr)
-                    .map_err(|e| format!("cannot connect to the Layout app at {addr}: {e} (start it with `layout --control PORT`)"))?,
+                    .map_err(|e| format!("cannot connect to the Layout app at {addr}: {e} (connect to a control port, which the Redrob Canvas window does not open yet)"))?,
             )
         }
         None => Box::new(Headless::with_document()),
@@ -493,7 +493,7 @@ fn app(args: &[String]) -> Result<(), String> {
     }
     let addr = control_addr(&port);
     let mut r = Remote::connect(&addr)
-        .map_err(|e| format!("cannot connect to the Layout app at {addr}: {e} (start it with `layout --control {port}`)"))?;
+        .map_err(|e| format!("cannot connect to the Layout app at {addr}: {e} (connect to a control port, which the Redrob Canvas window does not open yet)"))?;
     let json_arg =
         |s: Option<&String>| -> Result<Value, String> { s.map_or(Ok(json!({})), |t| serde_json::from_str(t).map_err(|e| format!("bad JSON: {e}"))) };
     let out = match method {

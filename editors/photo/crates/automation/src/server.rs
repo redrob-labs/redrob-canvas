@@ -451,7 +451,7 @@ fn to_result(r: Result<Value, AutomationError>) -> Result<CallToolResult, McpErr
 fn bridge_only(name: &str) -> Result<CallToolResult, McpError> {
     Ok(fail(format!(
         "`{name}` drives the live GUI and needs bridge mode: start the app with \
-         `photo --control <port> --control-token-file <path>`, then run \
+         a control port, which the Redrob Canvas window does not open yet, then run \
          `redrob-canvas photo mcp --bridge 127.0.0.1:<port> --control-token-file <path>`"
     )))
 }

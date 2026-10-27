@@ -479,7 +479,7 @@ fn need_ui(b: &dyn Backend, tool: &str) -> Result<(), String> {
         Ok(())
     } else {
         Err(format!(
-            "`{tool}` needs the desktop app: run `vector --control 7979` and start the server with `redrob-canvas vector mcp --connect 127.0.0.1:7979`"
+            "`{tool}` needs the desktop app: use a control port, which the Redrob Canvas window does not open yet and start the server with `redrob-canvas vector mcp --connect 127.0.0.1:7979`"
         ))
     }
 }

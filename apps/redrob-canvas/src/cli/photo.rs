@@ -42,7 +42,7 @@ USAGE:
       List the engine command registry.
   redrob-canvas photo mcp [--bridge <127.0.0.1:port>] [--control-token <64-hex> | --control-token-file <path>]
       [--automation-read-root <dir>] [--automation-write-root <dir>]
-      Run the MCP server on stdio (headless engine, or bridge to a running `photo --control <port>`).
+      Run the MCP server on stdio (headless engine, or bridge to a control port, which the Redrob Canvas window does not open yet).
   redrob-canvas photo serve [--port <port>] [--control-token <64-hex> | --control-token-file <path>]
       [--automation-read-root <dir>] [--automation-write-root <dir>]
       Keep one headless session open and answer JSON lines ({\"id\",\"method\",\"params\"}) on stdio,

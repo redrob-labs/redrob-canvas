@@ -131,7 +131,7 @@ impl BridgeClient {
                 .map_err(|_| Failure::NotSent(format!("timed out connecting to {}", self.addr)))?
                 .map_err(|e| {
                     Failure::NotSent(format!(
-                        "cannot connect to {} ({e}); start the app with `photo --control <port>` and matching control credentials",
+                        "cannot connect to {} ({e}); connect to a control port, which the Redrob Canvas window does not open yet and matching control credentials",
                         self.addr
                     ))
                 })?;

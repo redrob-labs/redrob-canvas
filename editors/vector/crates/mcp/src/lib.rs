@@ -5,7 +5,7 @@
 //! tools and resources and forwards everything to a [`Backend`]:
 //!
 //! - [`Remote`] talks to a running desktop app through its loopback JSON-lines control channel
-//!   (`vector --control 7979`): one `{"id","method","params"}` line in, one
+//!   (a control port, which the Redrob Canvas window does not open yet): one `{"id","method","params"}` line in, one
 //!   `{"id","ok","result"|"error"}` line out.
 //! - [`Headless`] hosts an in-process [`redrob_vector_engine::Session`] and implements the same
 //!   control-channel method names itself (rendering screenshots with `redrob-vector-render`), so agents
