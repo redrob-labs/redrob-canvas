@@ -4,6 +4,17 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.14.0 - 2026-10-28
+
+### Changed
+
+- **The editors are Redrob Canvas's own code now.** Photo, Vector and Layout live under `editors/`
+  and are no longer synced from the projects they started from (`SOURCE_ORIGINS.md`). Their names
+  are gone from the app, the docs and the environment variables (`REDROB_PHOTO_*`,
+  `REDROB_VECTOR_*`, `REDROB_LAYOUT_*`). Files saved before still open.
+- **One command line.** `redrob-canvas photo|vector|layout ...` converts, inspects, runs command
+  batches and serves MCP without opening the window; it replaces the three separate CLIs.
+
 ## 0.13.2 — 2026-10-21
 
 ### Fixed
