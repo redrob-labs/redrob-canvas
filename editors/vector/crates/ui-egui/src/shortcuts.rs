@@ -901,8 +901,7 @@ mod tests {
         let a = app.session.execute("shape.rectangle", &json!({"x": 0, "y": 0, "width": 50, "height": 50})).unwrap()["id"].clone();
         let b = app.session.execute("shape.ellipse", &json!({"x": 20, "y": 20, "width": 50, "height": 50})).unwrap()["id"].clone();
         app.session.execute("select.set", &json!({"ids": [a]})).unwrap();
-        let order =
-            |app: &VectorApp| -> Vec<u64> { app.session.doc().unwrap().doc.layers[0].children().unwrap().iter().map(|n| n.id.0).collect() };
+        let order = |app: &VectorApp| -> Vec<u64> { app.session.doc().unwrap().doc.layers[0].children().unwrap().iter().map(|n| n.id.0).collect() };
         let (a, b) = (a.as_u64().unwrap(), b.as_u64().unwrap());
         assert_eq!(order(&app), [a, b]);
         let press = |key, modifiers| egui::Event::Key { key, physical_key: None, pressed: true, repeat: false, modifiers };

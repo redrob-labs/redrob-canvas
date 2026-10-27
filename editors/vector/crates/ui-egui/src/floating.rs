@@ -1216,9 +1216,7 @@ mod tests {
                 return root
                     .panels()
                     .into_iter()
-                    .filter_map(|panel| {
-                        self.ctx.read_response(Id::new("vector-panel-docking").with(("tab", panel))).map(|response| response.rect)
-                    })
+                    .filter_map(|panel| self.ctx.read_response(Id::new("vector-panel-docking").with(("tab", panel))).map(|response| response.rect))
                     .collect();
             }
             let dock = self.temp_rect(dock_rect_id());

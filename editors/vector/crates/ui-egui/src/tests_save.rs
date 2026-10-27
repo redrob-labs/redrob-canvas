@@ -97,9 +97,8 @@ fn recent_files_show_as_many_as_the_preference_keeps() {
     for i in 0..35 {
         io::note_recent(&mut app, &format!("/art/{i}.svg"));
     }
-    let listed = |app: &VectorApp| {
-        menus::menu_entries(app).iter().filter(|e| e.command.as_deref().is_some_and(|c| c.starts_with("file.openRecent"))).count()
-    };
+    let listed =
+        |app: &VectorApp| menus::menu_entries(app).iter().filter(|e| e.command.as_deref().is_some_and(|c| c.starts_with("file.openRecent"))).count();
     assert_eq!((io::recent_files(&app).len(), listed(&app)), (20, 20), "the default");
     assert_eq!(menus::dynamic_label(&app, "file.openRecent1", ""), "34.svg");
     app.session.prefs.recent_files_count = 30;

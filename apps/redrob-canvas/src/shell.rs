@@ -1357,12 +1357,10 @@ impl ShellApp {
         // File › Open Location fetches through the shell's HTTP client.
         app.session.fetch_url = Some(Box::new(services::fetch_url));
         // Long commands and file opens run as background jobs with progress and Cancel.
-        app.background_jobs = std::env::var_os("REDROB_PHOTO_INLINE_JOBS")
-            .is_none();
+        app.background_jobs = std::env::var_os("REDROB_PHOTO_INLINE_JOBS").is_none();
         if let Some(rs) = wgpu
             && rs.adapter.get_info().device_type != eframe::wgpu::DeviceType::Cpu
-            && std::env::var_os("REDROB_PHOTO_CPU_CANVAS")
-                .is_none()
+            && std::env::var_os("REDROB_PHOTO_CPU_CANVAS").is_none()
         {
             app.set_wgpu(rs);
         }

@@ -30,12 +30,20 @@ pub fn dispatch() -> Option<ExitCode> {
                 match a.into_string() {
                     Ok(s) => strings.push(s),
                     Err(raw) => {
-                        eprintln!("redrob-canvas {editor}: argument {} is not valid Unicode: `{}`", i + 1, raw.to_string_lossy());
+                        eprintln!(
+                            "redrob-canvas {editor}: argument {} is not valid Unicode: `{}`",
+                            i + 1,
+                            raw.to_string_lossy()
+                        );
                         return Some(ExitCode::from(2));
                     }
                 }
             }
-            if editor == "vector" { vector::main(strings) } else { layout::main(strings) }
+            if editor == "vector" {
+                vector::main(strings)
+            } else {
+                layout::main(strings)
+            }
         }
     })
 }

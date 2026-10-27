@@ -245,8 +245,7 @@ pub fn configure_stream(stream: &std::net::TcpStream) -> std::io::Result<()> {
 /// Environment-aware token inputs shared by the desktop app and CLI.
 pub fn token_inputs(supplied: Option<String>, token_file: Option<PathBuf>) -> (Option<String>, Option<PathBuf>) {
     let supplied = supplied.or_else(|| std::env::var("REDROB_PHOTO_CONTROL_TOKEN").ok());
-    let token_file = token_file
-        .or_else(|| std::env::var_os("REDROB_PHOTO_CONTROL_TOKEN_FILE").map(PathBuf::from));
+    let token_file = token_file.or_else(|| std::env::var_os("REDROB_PHOTO_CONTROL_TOKEN_FILE").map(PathBuf::from));
     (supplied, token_file)
 }
 

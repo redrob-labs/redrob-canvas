@@ -45,10 +45,7 @@ impl<S: PartialEq + Send + 'static, K: Send + 'static> ThumbWorker<S, K> {
     /// tests (they look at the panel right after the frame that asks), with
     /// `REDROB_VECTOR_SYNC_RENDER` set, or if the thread can't start.
     pub fn spawn(ctx: &egui::Context, name: &str) -> Option<Self> {
-        if cfg!(target_arch = "wasm32")
-            || cfg!(test)
-            || std::env::var_os("REDROB_VECTOR_SYNC_RENDER").is_some()
-        {
+        if cfg!(target_arch = "wasm32") || cfg!(test) || std::env::var_os("REDROB_VECTOR_SYNC_RENDER").is_some() {
             return None;
         }
         Self::start(ctx, name)

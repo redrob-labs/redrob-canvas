@@ -1,4 +1,5 @@
 //! Process-level tests of the `redrob-canvas photo` binary.
+#![allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 
 use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
@@ -20,15 +21,31 @@ fn tmp(name: &str) -> PathBuf {
 }
 
 fn write_png(path: &Path, w: u32, h: u32, seed: u8) {
-    let data: Vec<u8> = (0..w * h * 4).map(|i| (i as u8).wrapping_mul(seed).wrapping_add(seed)).collect();
-    let img = redrob_photo_codecs::Image::from_u8(w, h, redrob_photo_codecs::ChannelLayout::Rgba, data).unwrap();
-    std::fs::write(path, redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &Default::default()).unwrap()).unwrap();
+    let data: Vec<u8> = (0..w * h * 4)
+        .map(|i| (i as u8).wrapping_mul(seed).wrapping_add(seed))
+        .collect();
+    let img =
+        redrob_photo_codecs::Image::from_u8(w, h, redrob_photo_codecs::ChannelLayout::Rgba, data)
+            .unwrap();
+    std::fs::write(
+        path,
+        redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Png, &Default::default())
+            .unwrap(),
+    )
+    .unwrap();
 }
 
 fn ok(cmd: &mut Command) -> (String, String) {
     let o = cmd.output().unwrap();
-    let (out, err) = (String::from_utf8_lossy(&o.stdout).into_owned(), String::from_utf8_lossy(&o.stderr).into_owned());
-    assert!(o.status.success(), "exit {:?}\nstdout: {out}\nstderr: {err}", o.status);
+    let (out, err) = (
+        String::from_utf8_lossy(&o.stdout).into_owned(),
+        String::from_utf8_lossy(&o.stderr).into_owned(),
+    );
+    assert!(
+        o.status.success(),
+        "exit {:?}\nstdout: {out}\nstderr: {err}",
+        o.status
+    );
     (out, err)
 }
 
@@ -50,15 +67,37 @@ fn usage_and_unknown_command() {
 #[test]
 fn every_subcommand_answers_help() {
     let d = tmp("help");
-    for sub in ["convert", "info", "run", "batch", "droplet", "commands", "mcp", "serve"] {
+    for sub in [
+        "convert", "info", "run", "batch", "droplet", "commands", "mcp", "serve",
+    ] {
         for help in ["--help", "-h"] {
-            let o = bin().current_dir(&d).arg(sub).arg(help).arg("--out").arg("x.png").stdin(Stdio::null()).output().unwrap();
+            let o = bin()
+                .current_dir(&d)
+                .arg(sub)
+                .arg(help)
+                .arg("--out")
+                .arg("x.png")
+                .stdin(Stdio::null())
+                .output()
+                .unwrap();
             let out = String::from_utf8_lossy(&o.stdout);
-            assert_eq!(o.status.code(), Some(0), "{sub} {help}: {}", String::from_utf8_lossy(&o.stderr));
-            assert!(out.contains("USAGE") && out.contains("redrob-canvas photo batch"), "{sub} {help}: {out}");
+            assert_eq!(
+                o.status.code(),
+                Some(0),
+                "{sub} {help}: {}",
+                String::from_utf8_lossy(&o.stderr)
+            );
+            assert!(
+                out.contains("USAGE") && out.contains("redrob-canvas photo batch"),
+                "{sub} {help}: {out}"
+            );
         }
     }
-    assert_eq!(std::fs::read_dir(&d).unwrap().count(), 0, "help wrote nothing");
+    assert_eq!(
+        std::fs::read_dir(&d).unwrap().count(),
+        0,
+        "help wrote nothing"
+    );
 }
 
 /// #423: a flag the subcommand doesn't take is a usage error naming it, before any work.
@@ -78,14 +117,40 @@ fn unknown_flags_are_usage_errors() {
         assert!(err.contains(&format!("unknown flag {flag}")), "{err}");
     };
     for typo in [&["--fromat", "jpg"][..], &["--fromat=jpg"][..]] {
-        fails(bin().args(["batch", "--actions"]).arg(&actions).arg("--in").arg(&input).arg("--out").arg(&out_dir).args(typo), "--fromat");
+        fails(
+            bin()
+                .args(["batch", "--actions"])
+                .arg(&actions)
+                .arg("--in")
+                .arg(&input)
+                .arg("--out")
+                .arg(&out_dir)
+                .args(typo),
+            "--fromat",
+        );
         assert!(!out_dir.exists(), "nothing written");
     }
     let x = d.join("x.png");
-    fails(bin().arg("run").arg(input.join("a.png")).args(["--cmd", "image.adjustments.invert", "--param", "{}", "--out"]).arg(&x), "--param");
+    fails(
+        bin()
+            .arg("run")
+            .arg(input.join("a.png"))
+            .args([
+                "--cmd",
+                "image.adjustments.invert",
+                "--param",
+                "{}",
+                "--out",
+            ])
+            .arg(&x),
+        "--param",
+    );
     assert!(!x.exists());
     // A flag one subcommand takes is still unknown to another; a bare flag takes no value.
-    fails(bin().args(["info", "--json"]).arg(input.join("a.png")), "--json");
+    fails(
+        bin().args(["info", "--json"]).arg(input.join("a.png")),
+        "--json",
+    );
     let o = bin().args(["commands", "--json=yes"]).output().unwrap();
     assert_eq!(o.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&o.stderr).contains("--json takes no value"));
@@ -97,11 +162,13 @@ fn unknown_flags_are_usage_errors() {
         let (out, _) = ok(bin().args(["commands", "--filter", needle]));
         assert!(out.contains("select.rect"), "{needle}: {out}");
     }
-    ok(bin().args(["batch", "--actions"]).arg(&actions).arg(format!("--in={}", input.display())).arg("--out").arg(&out_dir).args([
-        "--format=jpg",
-        "--quality",
-        "80",
-    ]));
+    ok(bin()
+        .args(["batch", "--actions"])
+        .arg(&actions)
+        .arg(format!("--in={}", input.display()))
+        .arg("--out")
+        .arg(&out_dir)
+        .args(["--format=jpg", "--quality", "80"]));
     assert!(out_dir.join("a.jpg").exists());
     let (out, _) = ok(bin().arg("info").arg(input.join("a.png")).arg("--compact"));
     assert!(!out.trim().contains('\n'), "compact JSON is one line");
@@ -119,15 +186,26 @@ fn convert_png_pcraft_png_is_lossless() {
     let y = redrob_photo_codecs::decode(&std::fs::read(&c).unwrap()).unwrap();
     assert_eq!(x.to_rgba8(), y.to_rgba8());
     // Format override and lossy warning path.
-    ok(bin().args(["convert"]).arg(&a).arg(d.join("out.bin")).args(["--format", "jpg", "--quality", "60"]));
-    assert!(redrob_photo_codecs::detect(&std::fs::read(d.join("out.bin")).unwrap()) == Some(redrob_photo_codecs::Format::Jpeg));
+    ok(bin()
+        .args(["convert"])
+        .arg(&a)
+        .arg(d.join("out.bin"))
+        .args(["--format", "jpg", "--quality", "60"]));
+    assert!(
+        redrob_photo_codecs::detect(&std::fs::read(d.join("out.bin")).unwrap())
+            == Some(redrob_photo_codecs::Format::Jpeg)
+    );
     std::fs::remove_dir_all(d).unwrap();
 }
 
 #[test]
 fn convert_errors() {
     let d = tmp("converr");
-    let o = bin().args(["convert", "/missing/in.png"]).arg(d.join("x.png")).output().unwrap();
+    let o = bin()
+        .args(["convert", "/missing/in.png"])
+        .arg(d.join("x.png"))
+        .output()
+        .unwrap();
     assert_eq!(o.status.code(), Some(1));
     let o = bin().args(["convert", "only-one"]).output().unwrap();
     assert_eq!(o.status.code(), Some(1));
@@ -156,9 +234,15 @@ fn info_prints_layer_tree_json() {
 #[test]
 fn info_and_convert_report_decode_warnings() {
     let d = tmp("decode-warnings");
-    let noise: Vec<u8> = (0..64 * 48 * 3).map(|i: u32| (i.wrapping_mul(7919) % 251) as u8).collect();
-    let img = redrob_photo_codecs::Image::from_u8(64, 48, redrob_photo_codecs::ChannelLayout::Rgb, noise).unwrap();
-    let jpeg = redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Jpeg, &Default::default()).unwrap();
+    let noise: Vec<u8> = (0..64 * 48 * 3)
+        .map(|i: u32| (i.wrapping_mul(7919) % 251) as u8)
+        .collect();
+    let img =
+        redrob_photo_codecs::Image::from_u8(64, 48, redrob_photo_codecs::ChannelLayout::Rgb, noise)
+            .unwrap();
+    let jpeg =
+        redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Jpeg, &Default::default())
+            .unwrap();
     // Three 1x1 frames.
     let mut gif = b"GIF89a\x01\0\x01\0\x80\0\0\0\0\0\xFF\xFF\xFF".to_vec();
     for _ in 0..3 {
@@ -167,17 +251,38 @@ fn info_and_convert_report_decode_warnings() {
     gif.push(0x3B);
     let cases = [
         ("whole.jpg", &jpeg[..], None),
-        ("half.jpg", &jpeg[..jpeg.len() / 2], Some("JPEG data ends early (the file is truncated or damaged); part of the image is missing")),
-        ("anim.gif", &gif[..], Some("only the first of 3 frames was imported")),
+        (
+            "half.jpg",
+            &jpeg[..jpeg.len() / 2],
+            Some(
+                "JPEG data ends early (the file is truncated or damaged); part of the image is missing",
+            ),
+        ),
+        (
+            "anim.gif",
+            &gif[..],
+            Some("only the first of 3 frames was imported"),
+        ),
     ];
     for (name, bytes, warning) in cases {
         let file = d.join(name);
         std::fs::write(&file, bytes).unwrap();
         let (out, _) = ok(bin().arg("info").arg(&file).arg("--compact"));
         let v: Value = serde_json::from_str(&out).unwrap();
-        assert_eq!(v["warnings"], json!(warning.into_iter().collect::<Vec<_>>()), "{name}");
-        let (_, err) = ok(bin().arg("convert").arg(&file).arg(d.join(format!("{name}.png"))));
-        assert_eq!(err.trim(), warning.map(|w| format!("warning: {w}")).unwrap_or_default(), "{name}");
+        assert_eq!(
+            v["warnings"],
+            json!(warning.into_iter().collect::<Vec<_>>()),
+            "{name}"
+        );
+        let (_, err) = ok(bin()
+            .arg("convert")
+            .arg(&file)
+            .arg(d.join(format!("{name}.png"))));
+        assert_eq!(
+            err.trim(),
+            warning.map(|w| format!("warning: {w}")).unwrap_or_default(),
+            "{name}"
+        );
     }
     std::fs::remove_dir_all(d).unwrap();
 }
@@ -189,11 +294,19 @@ fn run_commands_and_save() {
     let (out, _) = ok(bin()
         .args(["run", "--new", r#"{"width":40,"height":30,"name":"Run"}"#])
         .args(["--cmd", "layer.new.layer", "--params", r#"{"name":"Ink"}"#])
-        .args(["--cmd", "paint.stroke", "--params", r##"{"points":[[2,2,1],[30,20,1]],"size":5,"color":"#00ff00"}"##])
+        .args([
+            "--cmd",
+            "paint.stroke",
+            "--params",
+            r##"{"points":[[2,2,1],[30,20,1]],"size":5,"color":"#00ff00"}"##,
+        ])
         .args(["--cmd", "document.inspect"])
         .arg("--out")
         .arg(&out_pc));
-    let lines: Vec<Value> = out.lines().map(|l| serde_json::from_str(l).unwrap()).collect();
+    let lines: Vec<Value> = out
+        .lines()
+        .map(|l| serde_json::from_str(l).unwrap())
+        .collect();
     assert_eq!(lines.len(), 3);
     assert_eq!(lines[2]["command"], "document.inspect");
     assert_eq!(lines[2]["result"]["name"], "Run");
@@ -201,12 +314,27 @@ fn run_commands_and_save() {
     let v: Value = serde_json::from_str(&info).unwrap();
     // Saving a native document gives the reopened bundle its output filename.
     assert_eq!(v["name"], "r.rphoto");
-    let names: Vec<&str> = v["layers"].as_array().unwrap().iter().filter_map(|l| l["name"].as_str()).collect();
+    let names: Vec<&str> = v["layers"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|l| l["name"].as_str())
+        .collect();
     assert_eq!(names, ["Ink", "Background"]);
     // Continue from the saved file and export PNG.
     let png = d.join("r.png");
-    ok(bin().arg("run").arg(&out_pc).args(["--cmd", "layer.new.layer"]).arg("--out").arg(&png));
-    assert_eq!(redrob_photo_codecs::decode(&std::fs::read(&png).unwrap()).unwrap().dimensions(), (40, 30));
+    ok(bin()
+        .arg("run")
+        .arg(&out_pc)
+        .args(["--cmd", "layer.new.layer"])
+        .arg("--out")
+        .arg(&png));
+    assert_eq!(
+        redrob_photo_codecs::decode(&std::fs::read(&png).unwrap())
+            .unwrap()
+            .dimensions(),
+        (40, 30)
+    );
     std::fs::remove_dir_all(d).unwrap();
 }
 
@@ -217,20 +345,47 @@ fn run_stops_after_failed_action_without_exporting() {
     let result = bin()
         .args(["run", "--new", r#"{"width":8,"height":8}"#])
         .args(["--cmd", "layer.new.layer"])
-        .args(["--cmd", "actions.record", "--params", r#"{"name":"Delete"}"#])
+        .args([
+            "--cmd",
+            "actions.record",
+            "--params",
+            r#"{"name":"Delete"}"#,
+        ])
         .args(["--cmd", "layer.delete", "--cmd", "actions.stop"])
         // The recorded deletion succeeded with two layers; replay cannot delete the last one.
-        .args(["--cmd", "actions.play", "--params", r#"{"action":"Delete"}"#])
+        .args([
+            "--cmd",
+            "actions.play",
+            "--params",
+            r#"{"action":"Delete"}"#,
+        ])
         .args(["--cmd", "document.inspect", "--out"])
         .arg(&out)
         .output()
         .unwrap();
     let error = String::from_utf8_lossy(&result.stderr);
-    assert_eq!(result.status.code(), Some(1), "stdout: {}\nstderr: {error}", String::from_utf8_lossy(&result.stdout));
-    assert!(error.contains("actions.play") && error.contains("Delete") && error.contains("step 1"), "{error}");
-    let rows: Vec<Value> = String::from_utf8_lossy(&result.stdout).lines().map(|line| serde_json::from_str(line).unwrap()).collect();
-    assert!(rows.iter().all(|row| row["command"] != "document.inspect"), "later commands must not run");
-    assert!(!out.exists(), "a failed action must not export a partial result");
+    assert_eq!(
+        result.status.code(),
+        Some(1),
+        "stdout: {}\nstderr: {error}",
+        String::from_utf8_lossy(&result.stdout)
+    );
+    assert!(
+        error.contains("actions.play") && error.contains("Delete") && error.contains("step 1"),
+        "{error}"
+    );
+    let rows: Vec<Value> = String::from_utf8_lossy(&result.stdout)
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    assert!(
+        rows.iter().all(|row| row["command"] != "document.inspect"),
+        "later commands must not run"
+    );
+    assert!(
+        !out.exists(),
+        "a failed action must not export a partial result"
+    );
     std::fs::remove_dir_all(d).unwrap();
 }
 
@@ -245,8 +400,14 @@ fn run_continues_after_successful_action_and_exports() {
         .args(["--cmd", "actions.play", "--params", r#"{"action":"Add"}"#])
         .args(["--cmd", "document.inspect", "--out"])
         .arg(&out));
-    let rows: Vec<Value> = stdout.lines().map(|line| serde_json::from_str(line).unwrap()).collect();
-    let playback = rows.iter().find(|row| row["command"] == "actions.play").unwrap();
+    let rows: Vec<Value> = stdout
+        .lines()
+        .map(|line| serde_json::from_str(line).unwrap())
+        .collect();
+    let playback = rows
+        .iter()
+        .find(|row| row["command"] == "actions.play")
+        .unwrap();
     assert_eq!(playback["result"]["ran"], 1);
     assert!(playback["result"].get("failed").is_none());
     assert!(rows.iter().any(|row| row["command"] == "document.inspect"));
@@ -256,37 +417,83 @@ fn run_continues_after_successful_action_and_exports() {
 
 #[test]
 fn run_errors() {
-    let o = bin().args(["run", "--new", "{}", "--cmd", "no.such"]).output().unwrap();
+    let o = bin()
+        .args(["run", "--new", "{}", "--cmd", "no.such"])
+        .output()
+        .unwrap();
     assert_eq!(o.status.code(), Some(1));
     assert!(String::from_utf8_lossy(&o.stderr).contains("unknown command"));
-    let o = bin().args(["run", "--new", "{}", "--params", "{}"]).output().unwrap();
+    let o = bin()
+        .args(["run", "--new", "{}", "--params", "{}"])
+        .output()
+        .unwrap();
     assert_eq!(o.status.code(), Some(1));
-    let o = bin().args(["run", "--new", "{", "--cmd", "x"]).output().unwrap();
+    let o = bin()
+        .args(["run", "--new", "{", "--cmd", "x"])
+        .output()
+        .unwrap();
     assert_eq!(o.status.code(), Some(1));
     // Params must be a JSON object, for `--new` and for each `--params`.
-    let o = bin().args(["run", "--new", "[3]", "--cmd", "layer.new.layer"]).output().unwrap();
+    let o = bin()
+        .args(["run", "--new", "[3]", "--cmd", "layer.new.layer"])
+        .output()
+        .unwrap();
     assert_eq!(o.status.code(), Some(1));
     let e = String::from_utf8_lossy(&o.stderr);
-    assert!(e.contains("--new") && e.contains("must be a JSON object"), "{e}");
-    let o = bin().args(["run", "--new", "{}", "--cmd", "layer.new.layer", "--params", "\"x\""]).output().unwrap();
+    assert!(
+        e.contains("--new") && e.contains("must be a JSON object"),
+        "{e}"
+    );
+    let o = bin()
+        .args([
+            "run",
+            "--new",
+            "{}",
+            "--cmd",
+            "layer.new.layer",
+            "--params",
+            "\"x\"",
+        ])
+        .output()
+        .unwrap();
     assert_eq!(o.status.code(), Some(1));
     let e = String::from_utf8_lossy(&o.stderr);
-    assert!(e.contains("layer.new.layer") && e.contains("must be a JSON object"), "{e}");
+    assert!(
+        e.contains("layer.new.layer") && e.contains("must be a JSON object"),
+        "{e}"
+    );
 }
 
 #[test]
 fn run_rejects_invalid_filter_parameters_without_exporting() {
     let d = tmp("invalid-filter-params");
     let out = d.join("result.png");
-    for (params, key) in [(r#"{"radius":"big"}"#, "radius"), (r#"{"radus":3}"#, "radus"), (r#"{"radius":5000}"#, "radius"), (r#"{"radius":-4}"#, "radius")] {
+    for (params, key) in [
+        (r#"{"radius":"big"}"#, "radius"),
+        (r#"{"radus":3}"#, "radus"),
+        (r#"{"radius":5000}"#, "radius"),
+        (r#"{"radius":-4}"#, "radius"),
+    ] {
         let result = bin()
-            .args(["run", "--new", r#"{"width":8,"height":8}"#, "--cmd", "filter.blur.gaussianBlur", "--params", params, "--out"])
+            .args([
+                "run",
+                "--new",
+                r#"{"width":8,"height":8}"#,
+                "--cmd",
+                "filter.blur.gaussianBlur",
+                "--params",
+                params,
+                "--out",
+            ])
             .arg(&out)
             .output()
             .unwrap();
         assert_eq!(result.status.code(), Some(1));
         let error = String::from_utf8_lossy(&result.stderr);
-        assert!(error.contains("filter.blur.gaussianBlur") && error.contains(key), "{error}");
+        assert!(
+            error.contains("filter.blur.gaussianBlur") && error.contains(key),
+            "{error}"
+        );
         assert!(!out.exists());
     }
     std::fs::remove_dir_all(d).unwrap();
@@ -301,8 +508,19 @@ fn batch_applies_actions_to_directory() {
     write_png(&inp.join("two.png"), 9, 9, 2);
     std::fs::write(inp.join("notes.txt"), "ignored").unwrap();
     let actions = d.join("actions.json");
-    std::fs::write(&actions, json!([{"command": "layer.new.layer", "params": {"name": "Batch"}}]).to_string()).unwrap();
-    let (out, _) = ok(bin().args(["batch", "--actions"]).arg(&actions).arg("--in").arg(&inp).arg("--out").arg(&outp).args(["--format", "rphoto"]));
+    std::fs::write(
+        &actions,
+        json!([{"command": "layer.new.layer", "params": {"name": "Batch"}}]).to_string(),
+    )
+    .unwrap();
+    let (out, _) = ok(bin()
+        .args(["batch", "--actions"])
+        .arg(&actions)
+        .arg("--in")
+        .arg(&inp)
+        .arg("--out")
+        .arg(&outp)
+        .args(["--format", "rphoto"]));
     assert!(out.contains("2 succeeded, 0 failed"), "{out}");
     for n in ["one", "two"] {
         let (info, _) = ok(bin().arg("info").arg(outp.join(format!("{n}.rphoto"))));
@@ -311,7 +529,15 @@ fn batch_applies_actions_to_directory() {
     }
     // A failing action reports and exits 1.
     std::fs::write(&actions, r#"{"actions":[{"id":"no.such.command"}]}"#).unwrap();
-    let o = bin().args(["batch", "--actions"]).arg(&actions).arg("--in").arg(&inp).arg("--out").arg(&outp).output().unwrap();
+    let o = bin()
+        .args(["batch", "--actions"])
+        .arg(&actions)
+        .arg("--in")
+        .arg(&inp)
+        .arg("--out")
+        .arg(&outp)
+        .output()
+        .unwrap();
     assert_eq!(o.status.code(), Some(1));
     assert!(String::from_utf8_lossy(&o.stderr).contains("FAIL"));
     std::fs::remove_dir_all(d).unwrap();
@@ -327,32 +553,72 @@ fn batch_skips_recorded_view_and_save_steps() {
     let original = std::fs::read(&source).unwrap();
     let recorded_save = d.join("recorded-save.psd");
     let mut cases = Vec::new();
-    for (name, id) in [("zoom-in", "view.zoomIn"), ("zoom-out", "view.zoomOut"), ("fit", "view.fitOnScreen"), ("actual-pixels", "view.actualPixels")] {
-        cases.push((name, json!([[id, {}], ["image.imageRotation.90cw", {}]]).to_string()));
+    for (name, id) in [
+        ("zoom-in", "view.zoomIn"),
+        ("zoom-out", "view.zoomOut"),
+        ("fit", "view.fitOnScreen"),
+        ("actual-pixels", "view.actualPixels"),
+    ] {
+        cases.push((
+            name,
+            json!([[id, {}], ["image.imageRotation.90cw", {}]]).to_string(),
+        ));
     }
-    cases.push(("save", json!([["file.save", {}], ["image.imageRotation.90cw", {}]]).to_string()));
+    cases.push((
+        "save",
+        json!([["file.save", {}], ["image.imageRotation.90cw", {}]]).to_string(),
+    ));
     cases.push(("save-as", json!([["file.saveAs", {"path": recorded_save.to_string_lossy()}], ["image.imageRotation.90cw", {}]]).to_string()));
 
     for (name, actions) in cases {
         let o = batch_with(&d, &input, name, &actions, &[]);
-        let (stdout, stderr) = (String::from_utf8_lossy(&o.stdout), String::from_utf8_lossy(&o.stderr));
+        let (stdout, stderr) = (
+            String::from_utf8_lossy(&o.stdout),
+            String::from_utf8_lossy(&o.stderr),
+        );
         assert!(o.status.success(), "{name}: {stdout}\n{stderr}");
         assert!(stdout.contains("1 succeeded, 0 failed"), "{name}: {stdout}");
         let output = d.join(name).join("a.png");
         let (info, _) = ok(bin().arg("info").arg(&output));
         let info: Value = serde_json::from_str(&info).unwrap();
-        assert_eq!((info["width"].as_u64(), info["height"].as_u64()), (Some(8), Some(12)), "{name}: {info}");
-        assert_eq!(std::fs::read(&source).unwrap(), original, "{name} changed its input");
-        assert!(!recorded_save.exists(), "{name} wrote the recorded Save As path");
+        assert_eq!(
+            (info["width"].as_u64(), info["height"].as_u64()),
+            (Some(8), Some(12)),
+            "{name}: {info}"
+        );
+        assert_eq!(
+            std::fs::read(&source).unwrap(),
+            original,
+            "{name} changed its input"
+        );
+        assert!(
+            !recorded_save.exists(),
+            "{name} wrote the recorded Save As path"
+        );
     }
     std::fs::remove_dir_all(d).unwrap();
 }
 
 /// Runs `batch` on `input` with `actions` (saved as `<name>.json`), writing to the folder `<d>/<name>`.
-fn batch_with(d: &Path, input: &Path, name: &str, actions: &str, extra: &[&str]) -> std::process::Output {
+fn batch_with(
+    d: &Path,
+    input: &Path,
+    name: &str,
+    actions: &str,
+    extra: &[&str],
+) -> std::process::Output {
     let file = d.join(format!("{name}.json"));
     std::fs::write(&file, actions).unwrap();
-    bin().args(["batch", "--actions"]).arg(&file).arg("--in").arg(input).arg("--out").arg(d.join(name)).args(extra).output().unwrap()
+    bin()
+        .args(["batch", "--actions"])
+        .arg(&file)
+        .arg("--in")
+        .arg(input)
+        .arg("--out")
+        .arg(d.join(name))
+        .args(extra)
+        .output()
+        .unwrap()
 }
 
 /// #489: `batch --actions` takes `[id, params]` steps and a droplet's steps, with the same results
@@ -368,14 +634,28 @@ fn batch_accepts_recorded_action_steps() {
         ("objects", r#"[{"command":"image.adjustments.invert"}]"#),
         ("pairs", r#"[["image.adjustments.invert",{}]]"#),
         ("ids", r#"["image.adjustments.invert"]"#),
-        ("droplet", r#"{"photocraftDroplet":1,"action":{"steps":[["image.adjustments.invert",{}]]}}"#),
+        (
+            "droplet",
+            r#"{"photocraftDroplet":1,"action":{"steps":[["image.adjustments.invert",{}]]}}"#,
+        ),
     ];
     for (name, actions) in shapes {
         let o = batch_with(&d, &input, name, actions, &[]);
-        assert!(o.status.success(), "{name}: {}", String::from_utf8_lossy(&o.stderr));
-        assert!(String::from_utf8_lossy(&o.stdout).contains("2 succeeded, 0 failed"), "{name}");
+        assert!(
+            o.status.success(),
+            "{name}: {}",
+            String::from_utf8_lossy(&o.stderr)
+        );
+        assert!(
+            String::from_utf8_lossy(&o.stdout).contains("2 succeeded, 0 failed"),
+            "{name}"
+        );
         for f in ["a.png", "b.png"] {
-            assert_eq!(std::fs::read(d.join(name).join(f)).unwrap(), std::fs::read(d.join("objects").join(f)).unwrap(), "{name}/{f}");
+            assert_eq!(
+                std::fs::read(d.join(name).join(f)).unwrap(),
+                std::fs::read(d.join("objects").join(f)).unwrap(),
+                "{name}/{f}"
+            );
         }
     }
     let o = batch_with(&d, &input, "bad", "[42]", &[]);
@@ -394,11 +674,21 @@ fn batch_format_with_leading_dot() {
     let invert = r#"[{"command":"image.adjustments.invert"}]"#;
     for (name, format) in [("dot", ".jpg"), ("plain", "jpg")] {
         let o = batch_with(&d, &input, name, invert, &["--format", format]);
-        assert!(o.status.success(), "{format}: {}", String::from_utf8_lossy(&o.stderr));
-        let mut names: Vec<String> = std::fs::read_dir(d.join(name)).unwrap().map(|e| e.unwrap().file_name().to_string_lossy().into_owned()).collect();
+        assert!(
+            o.status.success(),
+            "{format}: {}",
+            String::from_utf8_lossy(&o.stderr)
+        );
+        let mut names: Vec<String> = std::fs::read_dir(d.join(name))
+            .unwrap()
+            .map(|e| e.unwrap().file_name().to_string_lossy().into_owned())
+            .collect();
         names.sort();
         assert_eq!(names, ["a.jpg", "b.jpg"], "{format}");
-        assert_eq!(redrob_photo_codecs::detect(&std::fs::read(d.join(name).join("a.jpg")).unwrap()), Some(redrob_photo_codecs::Format::Jpeg));
+        assert_eq!(
+            redrob_photo_codecs::detect(&std::fs::read(d.join(name).join("a.jpg")).unwrap()),
+            Some(redrob_photo_codecs::Format::Jpeg)
+        );
     }
 }
 
@@ -415,15 +705,34 @@ fn quality_outside_1_to_100_is_refused() {
     for q in ["0", "101", "255", "256", "1000", "-1", "abc", "50.5", ""] {
         let out = d.join("q.jpg");
         let (mut convert, mut run) = (bin(), bin());
-        convert.arg("convert").arg(&a).arg(&out).args(["--quality", q]);
-        run.arg("run").arg(&a).args(["--cmd", "image.adjustments.invert", "--out"]).arg(&out).args(["--quality", q]);
+        convert
+            .arg("convert")
+            .arg(&a)
+            .arg(&out)
+            .args(["--quality", q]);
+        run.arg("run")
+            .arg(&a)
+            .args(["--cmd", "image.adjustments.invert", "--out"])
+            .arg(&out)
+            .args(["--quality", q]);
         for cmd in [&mut convert, &mut run] {
             let o = cmd.output().unwrap();
             assert_eq!(o.status.code(), Some(1), "--quality {q}");
-            assert!(String::from_utf8_lossy(&o.stderr).contains(&format!("bad --quality `{q}`: expected a whole number from 1 to 100")), "--quality {q}");
+            assert!(
+                String::from_utf8_lossy(&o.stderr).contains(&format!(
+                    "bad --quality `{q}`: expected a whole number from 1 to 100"
+                )),
+                "--quality {q}"
+            );
             assert!(!out.exists(), "--quality {q} wrote a file");
         }
-        let o = batch_with(&d, &input, "qb", invert, &["--format", "jpg", "--quality", q]);
+        let o = batch_with(
+            &d,
+            &input,
+            "qb",
+            invert,
+            &["--format", "jpg", "--quality", q],
+        );
         assert_eq!(o.status.code(), Some(1), "batch --quality {q}");
         assert!(!d.join("qb").exists(), "batch --quality {q} wrote a folder");
     }
@@ -432,7 +741,11 @@ fn quality_outside_1_to_100_is_refused() {
         .iter()
         .map(|q| {
             let out = d.join(format!("q{q}.jpg"));
-            ok(bin().arg("convert").arg(&a).arg(&out).args(["--quality", q]));
+            ok(bin()
+                .arg("convert")
+                .arg(&a)
+                .arg(&out)
+                .args(["--quality", q]));
             std::fs::read(out).unwrap().len()
         })
         .collect();
@@ -446,7 +759,12 @@ fn dpx_converts_both_ways_with_the_bits_asked_for() {
     let d = tmp("dpx");
     let a = d.join("a.png");
     write_png(&a, 8, 4, 3);
-    for (bits, want) in [(None, 8), (Some("10"), 10), (Some("12"), 12), (Some("16"), 16)] {
+    for (bits, want) in [
+        (None, 8),
+        (Some("10"), 10),
+        (Some("12"), 12),
+        (Some("16"), 16),
+    ] {
         let out = d.join("a.dpx");
         let mut convert = bin();
         convert.arg("convert").arg(&a).arg(&out);
@@ -455,20 +773,41 @@ fn dpx_converts_both_ways_with_the_bits_asked_for() {
         }
         ok(&mut convert);
         let bytes = std::fs::read(&out).unwrap();
-        assert_eq!((&bytes[..4], bytes[803]), (&b"SDPX"[..], want), "--dpx-bits {bits:?}");
+        assert_eq!(
+            (&bytes[..4], bytes[803]),
+            (&b"SDPX"[..], want),
+            "--dpx-bits {bits:?}"
+        );
     }
     let (info, _) = ok(bin().arg("info").arg(d.join("a.dpx")).arg("--compact"));
     let v: Value = serde_json::from_str(&info).unwrap();
-    assert_eq!((v["width"].as_u64(), v["height"].as_u64()), (Some(8), Some(4)), "{v}");
-    assert!(info.contains("16") && info.to_lowercase().contains("rgb"), "{info}");
+    assert_eq!(
+        (v["width"].as_u64(), v["height"].as_u64()),
+        (Some(8), Some(4)),
+        "{v}"
+    );
+    assert!(
+        info.contains("16") && info.to_lowercase().contains("rgb"),
+        "{info}"
+    );
     let back = d.join("back.png");
     ok(bin().arg("convert").arg(d.join("a.dpx")).arg(&back));
     assert!(back.exists());
     for bad in ["24", "0", "abc"] {
         let out = d.join("bad.dpx");
-        let o = bin().arg("convert").arg(&a).arg(&out).args(["--dpx-bits", bad]).output().unwrap();
+        let o = bin()
+            .arg("convert")
+            .arg(&a)
+            .arg(&out)
+            .args(["--dpx-bits", bad])
+            .output()
+            .unwrap();
         assert_eq!(o.status.code(), Some(1), "--dpx-bits {bad}");
-        assert!(String::from_utf8_lossy(&o.stderr).contains(&format!("bad --dpx-bits `{bad}`: expected 8, 10, 12 or 16")), "--dpx-bits {bad}");
+        assert!(
+            String::from_utf8_lossy(&o.stderr)
+                .contains(&format!("bad --dpx-bits `{bad}`: expected 8, 10, 12 or 16")),
+            "--dpx-bits {bad}"
+        );
         assert!(!out.exists(), "--dpx-bits {bad} wrote a file");
     }
 }
@@ -488,13 +827,27 @@ fn tga_bits_choose_the_targa_depth() {
             convert.args(["--tga-bits", b]);
         }
         ok(&mut convert);
-        assert_eq!(std::fs::read(&out).unwrap()[16], want, "--tga-bits {bits:?}");
+        assert_eq!(
+            std::fs::read(&out).unwrap()[16],
+            want,
+            "--tga-bits {bits:?}"
+        );
     }
     for bad in ["16", "0", "abc", ""] {
         let out = d.join("bad.tga");
-        let o = bin().arg("convert").arg(&a).arg(&out).args(["--tga-bits", bad]).output().unwrap();
+        let o = bin()
+            .arg("convert")
+            .arg(&a)
+            .arg(&out)
+            .args(["--tga-bits", bad])
+            .output()
+            .unwrap();
         assert_eq!(o.status.code(), Some(1), "--tga-bits {bad}");
-        assert!(String::from_utf8_lossy(&o.stderr).contains(&format!("bad --tga-bits `{bad}`: expected 24 or 32")), "--tga-bits {bad}");
+        assert!(
+            String::from_utf8_lossy(&o.stderr)
+                .contains(&format!("bad --tga-bits `{bad}`: expected 24 or 32")),
+            "--tga-bits {bad}"
+        );
         assert!(!out.exists(), "--tga-bits {bad} wrote a file");
     }
 }
@@ -507,34 +860,81 @@ fn batch_refuses_to_write_over_its_inputs() {
     let input = d.join("in");
     std::fs::create_dir_all(&input).unwrap();
     write_png(&input.join("a.png"), 8, 4, 3);
-    let img = redrob_photo_codecs::Image::from_u8(8, 4, redrob_photo_codecs::ChannelLayout::Rgb, vec![90; 96]).unwrap();
-    std::fs::write(input.join("a.tif"), redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Tiff, &Default::default()).unwrap()).unwrap();
+    let img = redrob_photo_codecs::Image::from_u8(
+        8,
+        4,
+        redrob_photo_codecs::ChannelLayout::Rgb,
+        vec![90; 96],
+    )
+    .unwrap();
+    std::fs::write(
+        input.join("a.tif"),
+        redrob_photo_codecs::encode(&img, redrob_photo_codecs::Format::Tiff, &Default::default())
+            .unwrap(),
+    )
+    .unwrap();
     let actions = d.join("actions.json");
     std::fs::write(&actions, r#"[{"command":"image.adjustments.invert"}]"#).unwrap();
     let snapshot = || {
-        let mut files: Vec<(PathBuf, Vec<u8>)> =
-            std::fs::read_dir(&input).unwrap().map(|e| e.unwrap().path()).map(|p| (p.clone(), std::fs::read(p).unwrap())).collect();
+        let mut files: Vec<(PathBuf, Vec<u8>)> = std::fs::read_dir(&input)
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .map(|p| (p.clone(), std::fs::read(p).unwrap()))
+            .collect();
         files.sort();
         files
     };
     let before = snapshot();
     let batch = |out: &Path, extra: &[&str]| {
-        bin().current_dir(&d).args(["batch", "--actions"]).arg(&actions).args(["--in", "in", "--out"]).arg(out).args(extra).output().unwrap()
+        bin()
+            .current_dir(&d)
+            .args(["batch", "--actions"])
+            .arg(&actions)
+            .args(["--in", "in", "--out"])
+            .arg(out)
+            .args(extra)
+            .output()
+            .unwrap()
     };
     #[cfg(unix)]
     std::os::unix::fs::symlink(&input, d.join("link")).unwrap();
     let link = cfg!(unix).then(|| PathBuf::from("link"));
-    for out in [PathBuf::from("in"), PathBuf::from("./in/"), input.clone(), input.join(".")].iter().chain(&link) {
+    for out in [
+        PathBuf::from("in"),
+        PathBuf::from("./in/"),
+        input.clone(),
+        input.join("."),
+    ]
+    .iter()
+    .chain(&link)
+    {
         for extra in [&[][..], &["--format", "tif"][..]] {
             let o = batch(out, extra);
             let err = String::from_utf8_lossy(&o.stderr);
-            assert_eq!(o.status.code(), Some(1), "--out {} {extra:?}: {err}", out.display());
-            assert!(err.contains("is the --in folder") && err.contains("--in-place"), "{err}");
-            assert_eq!(snapshot(), before, "--out {} {extra:?} changed the originals", out.display());
+            assert_eq!(
+                o.status.code(),
+                Some(1),
+                "--out {} {extra:?}: {err}",
+                out.display()
+            );
+            assert!(
+                err.contains("is the --in folder") && err.contains("--in-place"),
+                "{err}"
+            );
+            assert_eq!(
+                snapshot(),
+                before,
+                "--out {} {extra:?} changed the originals",
+                out.display()
+            );
         }
     }
     // A separate folder runs as before, leaving the originals alone.
-    let (out, _) = ok(bin().current_dir(&d).args(["batch", "--actions"]).arg(&actions).args(["--in", "in", "--out", "out"]));
+    let (out, _) = ok(bin()
+        .current_dir(&d)
+        .args(["batch", "--actions"])
+        .arg(&actions)
+        .args(["--in", "in", "--out", "out"]));
     assert!(out.contains("2 succeeded, 0 failed"), "{out}");
     assert_eq!(snapshot(), before);
     // `--in-place` opts in: each result replaces its original.
@@ -542,7 +942,13 @@ fn batch_refuses_to_write_over_its_inputs() {
     assert!(o.status.success(), "{}", String::from_utf8_lossy(&o.stderr));
     let after = snapshot();
     assert_eq!(after.len(), 2);
-    assert!(after.iter().zip(&before).all(|(a, b)| a.0 == b.0 && a.1 != b.1), "both inputs replaced");
+    assert!(
+        after
+            .iter()
+            .zip(&before)
+            .all(|(a, b)| a.0 == b.0 && a.1 != b.1),
+        "both inputs replaced"
+    );
 }
 
 #[test]
@@ -551,17 +957,25 @@ fn commands_listing() {
     assert!(out.contains("file.new"));
     let (out, _) = ok(bin().args(["commands", "--json", "--filter", "layer.new"]));
     let v: Value = serde_json::from_str(&out).unwrap();
-    assert!(
-        v.as_array()
-            .unwrap()
-            .iter()
-            .all(|c| { c["id"].as_str().unwrap().contains("layer.new") || c["label"].as_str().unwrap().to_lowercase().contains("layer.new") })
-    );
+    assert!(v.as_array().unwrap().iter().all(|c| {
+        c["id"].as_str().unwrap().contains("layer.new")
+            || c["label"]
+                .as_str()
+                .unwrap()
+                .to_lowercase()
+                .contains("layer.new")
+    }));
 }
 
 #[test]
 fn mcp_stdio_handshake_and_tool_call() {
-    let mut child = bin().arg("mcp").stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::null()).spawn().unwrap();
+    let mut child = bin()
+        .arg("mcp")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::null())
+        .spawn()
+        .unwrap();
     let mut stdin = child.stdin.take().unwrap();
     let mut stdout = BufReader::new(child.stdout.take().unwrap());
     let mut send = |v: Value| {
@@ -578,19 +992,33 @@ fn mcp_stdio_handshake_and_tool_call() {
             }
         }
     };
-    send(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{
-        "protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"0"}}}));
+    send(
+        json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{
+        "protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"0"}}}),
+    );
     let init = recv(1);
     assert_eq!(init["result"]["serverInfo"]["name"], "photo", "{init}");
     send(json!({"jsonrpc":"2.0","method":"notifications/initialized"}));
     send(json!({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}));
     let tools = recv(2);
-    let names: Vec<&str> = tools["result"]["tools"].as_array().unwrap().iter().filter_map(|t| t["name"].as_str()).collect();
-    assert!(names.contains(&"command_run") && names.contains(&"doc_render_preview"), "{names:?}");
-    send(json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"doc_new","arguments":{"width":8,"height":8}}}));
+    let names: Vec<&str> = tools["result"]["tools"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter_map(|t| t["name"].as_str())
+        .collect();
+    assert!(
+        names.contains(&"command_run") && names.contains(&"doc_render_preview"),
+        "{names:?}"
+    );
+    send(
+        json!({"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"doc_new","arguments":{"width":8,"height":8}}}),
+    );
     let r = recv(3);
     assert_ne!(r["result"]["isError"], true, "{r}");
-    send(json!({"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"doc_render_preview","arguments":{}}}));
+    send(
+        json!({"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"doc_render_preview","arguments":{}}}),
+    );
     let r = recv(4);
     assert_eq!(r["result"]["content"][0]["type"], "image", "{r}");
     let _ = child.kill();
@@ -605,15 +1033,40 @@ fn batch_fails_inputs_that_share_an_output_name() {
     std::fs::create_dir_all(&input).unwrap();
     write_png(&input.join("a.png"), 8, 4, 3);
     // Same stem in other formats; `A.tif` differs only in case.
-    let img = redrob_photo_codecs::Image::from_u8(8, 4, redrob_photo_codecs::ChannelLayout::Rgb, vec![90; 96]).unwrap();
-    for (name, format) in [("a.bmp", redrob_photo_codecs::Format::Bmp), ("A.tif", redrob_photo_codecs::Format::Tiff)] {
-        std::fs::write(input.join(name), redrob_photo_codecs::encode(&img, format, &Default::default()).unwrap()).unwrap();
+    let img = redrob_photo_codecs::Image::from_u8(
+        8,
+        4,
+        redrob_photo_codecs::ChannelLayout::Rgb,
+        vec![90; 96],
+    )
+    .unwrap();
+    for (name, format) in [
+        ("a.bmp", redrob_photo_codecs::Format::Bmp),
+        ("A.tif", redrob_photo_codecs::Format::Tiff),
+    ] {
+        std::fs::write(
+            input.join(name),
+            redrob_photo_codecs::encode(&img, format, &Default::default()).unwrap(),
+        )
+        .unwrap();
     }
     let actions = d.join("actions.json");
     std::fs::write(&actions, r#"[{"command":"image.adjustments.invert"}]"#).unwrap();
     let out_dir = d.join("out");
-    let o = bin().args(["batch", "--actions"]).arg(&actions).arg("--in").arg(&input).arg("--out").arg(&out_dir).args(["--format", "png"]).output().unwrap();
-    let (out, err) = (String::from_utf8_lossy(&o.stdout), String::from_utf8_lossy(&o.stderr));
+    let o = bin()
+        .args(["batch", "--actions"])
+        .arg(&actions)
+        .arg("--in")
+        .arg(&input)
+        .arg("--out")
+        .arg(&out_dir)
+        .args(["--format", "png"])
+        .output()
+        .unwrap();
+    let (out, err) = (
+        String::from_utf8_lossy(&o.stdout),
+        String::from_utf8_lossy(&o.stderr),
+    );
     assert!(
         !o.status.success(),
         "a lost result must fail the run
@@ -625,7 +1078,13 @@ fn batch_fails_inputs_that_share_an_output_name() {
     assert_eq!(std::fs::read_dir(&out_dir).unwrap().count(), 1);
     // Keeping each file's format, every input gets its own output.
     let out_dir = d.join("same");
-    let (out, _) = ok(bin().args(["batch", "--actions"]).arg(&actions).arg("--in").arg(&input).arg("--out").arg(&out_dir));
+    let (out, _) = ok(bin()
+        .args(["batch", "--actions"])
+        .arg(&actions)
+        .arg("--in")
+        .arg(&input)
+        .arg("--out")
+        .arg(&out_dir));
     assert!(out.contains("3 succeeded, 0 failed"), "{out}");
 }
 
@@ -641,11 +1100,26 @@ fn droplet_runs_an_action_on_files() {
     )
     .unwrap();
     let out_dir = d.join("out");
-    let (out, _) = ok(bin().arg("droplet").arg(&droplet).arg(d.join("a.png")).arg(d.join("b.png")).arg("--out").arg(&out_dir));
-    assert_eq!(out.lines().filter(|l| l.starts_with("ok")).count(), 2, "{out}");
+    let (out, _) = ok(bin()
+        .arg("droplet")
+        .arg(&droplet)
+        .arg(d.join("a.png"))
+        .arg(d.join("b.png"))
+        .arg("--out")
+        .arg(&out_dir));
+    assert_eq!(
+        out.lines().filter(|l| l.starts_with("ok")).count(),
+        2,
+        "{out}"
+    );
     let img = redrob_photo_codecs::decode(&std::fs::read(out_dir.join("a.png")).unwrap()).unwrap();
     assert_eq!(img.dimensions(), (4, 8));
-    let o = bin().arg("droplet").arg(d.join("a.png")).arg(d.join("b.png")).output().unwrap();
+    let o = bin()
+        .arg("droplet")
+        .arg(d.join("a.png"))
+        .arg(d.join("b.png"))
+        .output()
+        .unwrap();
     assert!(!o.status.success(), "not a droplet");
 }
 
@@ -657,10 +1131,14 @@ fn tiff_output_is_flat_unless_tiff_layers_is_given() {
         let v: Value = serde_json::from_str(&info).unwrap();
         v["layers"].as_array().unwrap().len()
     };
-    for (name, flag, layers) in [("flat.tif", None, 1), ("layered.tif", Some("--tiff-layers"), 2)] {
+    for (name, flag, layers) in [
+        ("flat.tif", None, 1),
+        ("layered.tif", Some("--tiff-layers"), 2),
+    ] {
         let out = d.join(name);
         let mut cmd = bin();
-        cmd.args(["run", "--new", r#"{"width":16,"height":16}"#]).args(["--cmd", "layer.new.layer", "--params", r#"{"name":"Ink"}"#]);
+        cmd.args(["run", "--new", r#"{"width":16,"height":16}"#])
+            .args(["--cmd", "layer.new.layer", "--params", r#"{"name":"Ink"}"#]);
         if let Some(flag) = flag {
             cmd.arg(flag);
         }
@@ -673,7 +1151,11 @@ fn tiff_output_is_flat_unless_tiff_layers_is_given() {
     ok(bin().arg("convert").arg(&src).arg(&flat));
     assert_eq!(layer_count(&flat), 1);
     let kept = d.join("kept.tif");
-    ok(bin().arg("convert").arg(&src).arg(&kept).arg("--tiff-layers"));
+    ok(bin()
+        .arg("convert")
+        .arg(&src)
+        .arg(&kept)
+        .arg("--tiff-layers"));
     assert_eq!(layer_count(&kept), 2);
     std::fs::remove_dir_all(d).unwrap();
 }
@@ -685,11 +1167,21 @@ fn tiff_output_is_flat_unless_tiff_layers_is_given() {
 fn a_non_unicode_argument_is_a_usage_error_not_a_panic() {
     use std::os::unix::ffi::OsStrExt;
     let name = std::ffi::OsStr::from_bytes(b"caf\xe9.png");
-    for args in [vec![std::ffi::OsStr::new("info"), name], vec![std::ffi::OsStr::new("convert"), name, std::ffi::OsStr::new("out.png")]] {
+    for args in [
+        vec![std::ffi::OsStr::new("info"), name],
+        vec![
+            std::ffi::OsStr::new("convert"),
+            name,
+            std::ffi::OsStr::new("out.png"),
+        ],
+    ] {
         let o = bin().args(&args).output().unwrap();
         let err = String::from_utf8_lossy(&o.stderr);
         assert_eq!(o.status.code(), Some(2), "{err}");
-        assert!(err.contains("argument 2 is not valid Unicode") && err.contains("caf\u{fffd}.png"), "{err}");
+        assert!(
+            err.contains("argument 2 is not valid Unicode") && err.contains("caf\u{fffd}.png"),
+            "{err}"
+        );
         assert!(!err.contains("panicked"), "{err}");
     }
 }
@@ -703,22 +1195,61 @@ fn batch_plays_a_photoshop_actions_file() {
     let input = d.join("in");
     std::fs::create_dir_all(&input).unwrap();
     write_png(&input.join("a.png"), 8, 4, 3);
-    let invert = Action::new("Negative", vec![("image.adjustments.invert".into(), json!({})), ("select.all".into(), json!({}))]);
-    let odd = Action::new("Odd", vec![(redrob_photo_engine::atn_cmds::PHOTOSHOP_STEP.into(), json!({"event": "syntheticFill", "name": "Generative Fill"}))]);
-    let (bytes, skipped) = redrob_photo_engine::atn_cmds::export("Set", &[&invert, &odd], &[], false).unwrap();
+    let invert = Action::new(
+        "Negative",
+        vec![
+            ("image.adjustments.invert".into(), json!({})),
+            ("select.all".into(), json!({})),
+        ],
+    );
+    let odd = Action::new(
+        "Odd",
+        vec![(
+            redrob_photo_engine::atn_cmds::PHOTOSHOP_STEP.into(),
+            json!({"event": "syntheticFill", "name": "Generative Fill"}),
+        )],
+    );
+    let (bytes, skipped) =
+        redrob_photo_engine::atn_cmds::export("Set", &[&invert, &odd], &[], false).unwrap();
     assert!(skipped.is_empty());
     let atn = d.join("Set.atn");
     std::fs::write(&atn, bytes).unwrap();
     let out_dir = d.join("out");
     // Two actions: the set needs --action.
-    let o = bin().args(["batch", "--actions"]).arg(&atn).arg("--in").arg(&input).arg("--out").arg(&out_dir).output().unwrap();
+    let o = bin()
+        .args(["batch", "--actions"])
+        .arg(&atn)
+        .arg("--in")
+        .arg(&input)
+        .arg("--out")
+        .arg(&out_dir)
+        .output()
+        .unwrap();
     assert!(!o.status.success());
-    assert!(String::from_utf8_lossy(&o.stderr).contains("--action"), "{}", String::from_utf8_lossy(&o.stderr));
-    let (_, err) = ok(bin().args(["batch", "--actions"]).arg(&atn).args(["--action", "Negative", "--in"]).arg(&input).arg("--out").arg(&out_dir));
+    assert!(
+        String::from_utf8_lossy(&o.stderr).contains("--action"),
+        "{}",
+        String::from_utf8_lossy(&o.stderr)
+    );
+    let (_, err) = ok(bin()
+        .args(["batch", "--actions"])
+        .arg(&atn)
+        .args(["--action", "Negative", "--in"])
+        .arg(&input)
+        .arg("--out")
+        .arg(&out_dir));
     assert!(out_dir.join("a.png").exists());
     assert!(!err.contains("warning"), "{err}");
     // The unsupported step is warned about, and fails the file as Photoshop would stop on it.
-    let o = bin().args(["batch", "--actions"]).arg(&atn).args(["--action", "Odd", "--in"]).arg(&input).arg("--out").arg(d.join("out2")).output().unwrap();
+    let o = bin()
+        .args(["batch", "--actions"])
+        .arg(&atn)
+        .args(["--action", "Odd", "--in"])
+        .arg(&input)
+        .arg("--out")
+        .arg(d.join("out2"))
+        .output()
+        .unwrap();
     let err = String::from_utf8_lossy(&o.stderr);
     assert!(err.contains("Generative Fill"), "{err}");
     assert!(!o.status.success());

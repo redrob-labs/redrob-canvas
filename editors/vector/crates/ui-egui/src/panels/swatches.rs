@@ -1194,14 +1194,7 @@ mod tests {
     }
 
     /// [`frame`] with `modifiers` held.
-    fn frame_with(
-        app: &mut VectorApp,
-        ctx: &egui::Context,
-        events: Vec<Event>,
-        modifiers: Modifiers,
-        time: f64,
-        draw: fn(&mut VectorApp, &mut Ui),
-    ) {
+    fn frame_with(app: &mut VectorApp, ctx: &egui::Context, events: Vec<Event>, modifiers: Modifiers, time: f64, draw: fn(&mut VectorApp, &mut Ui)) {
         let screen_rect = Some(Rect::from_min_size(Pos2::ZERO, vec2(280.0, 700.0)));
         let events = std::iter::once(Event::ModifiersChanged(modifiers)).chain(events).collect();
         let input = egui::RawInput { events, time: Some(time), screen_rect, ..Default::default() };

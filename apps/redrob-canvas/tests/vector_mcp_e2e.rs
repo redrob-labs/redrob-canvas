@@ -32,7 +32,12 @@ impl Mcp {
             .expect("spawn redrob-canvas vector");
         let stdin = child.stdin.take();
         let stdout = BufReader::new(child.stdout.take().unwrap());
-        Self { child, stdin, stdout, next: 1 }
+        Self {
+            child,
+            stdin,
+            stdout,
+            next: 1,
+        }
     }
     fn send(&mut self, v: &Value) {
         let w = self.stdin.as_mut().unwrap();
@@ -67,19 +72,28 @@ impl Mcp {
     }
     fn tool_json(&mut self, name: &str, args: Value) -> Value {
         let r = self.tool(name, args);
-        let text: String =
-            r["content"].as_array().unwrap().iter().filter(|c| c["type"] == "text").map(|c| c["text"].as_str().unwrap().to_string()).collect();
+        let text: String = r["content"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|c| c["type"] == "text")
+            .map(|c| c["text"].as_str().unwrap().to_string())
+            .collect();
         serde_json::from_str(&text).unwrap_or(Value::String(text))
     }
     fn run(&mut self, command: &str, params: Value) -> Value {
         self.tool_json("run_command", json!({"command": command, "params": params}))
     }
     fn document(&mut self) -> Value {
-        let v = self.request("resources/read", json!({"uri": "redrob-vector://document/json"}));
+        let v = self.request(
+            "resources/read",
+            json!({"uri": "redrob-vector://document/json"}),
+        );
         serde_json::from_str(v["result"]["contents"][0]["text"].as_str().unwrap()).unwrap()
     }
     fn art_count(&mut self) -> usize {
-        let d: redrob_vector_testkit::doc::Document = serde_json::from_value(self.document()).unwrap();
+        let d: redrob_vector_testkit::doc::Document =
+            serde_json::from_value(self.document()).unwrap();
         d.node_count() - d.layers.len()
     }
     fn initialize(&mut self) {
@@ -105,7 +119,10 @@ impl Drop for Mcp {
 }
 
 fn tmp(name: &str) -> String {
-    redrob_vector_testkit::temp_dir("cli-mcp-e2e").join(name).to_string_lossy().to_string()
+    redrob_vector_testkit::temp_dir("cli-mcp-e2e")
+        .join(name)
+        .to_string_lossy()
+        .to_string()
 }
 
 #[test]
@@ -117,17 +134,43 @@ fn initialize_and_list_tools_with_valid_schemas() {
     assert!(tools.len() >= 15);
     for t in &tools {
         let name = t["name"].as_str().unwrap();
-        assert!(!name.is_empty() && t["description"].as_str().is_some_and(|d| !d.is_empty()), "{t}");
+        assert!(
+            !name.is_empty() && t["description"].as_str().is_some_and(|d| !d.is_empty()),
+            "{t}"
+        );
         let s = &t["inputSchema"];
         assert_eq!(s["type"], "object", "{name}");
-        let props = s["properties"].as_object().unwrap_or_else(|| panic!("{name}: no properties"));
-        for r in s.get("required").and_then(Value::as_array).into_iter().flatten() {
-            assert!(props.contains_key(r.as_str().unwrap()), "{name}: required {r} missing");
+        let props = s["properties"]
+            .as_object()
+            .unwrap_or_else(|| panic!("{name}: no properties"));
+        for r in s
+            .get("required")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+        {
+            assert!(
+                props.contains_key(r.as_str().unwrap()),
+                "{name}: required {r} missing"
+            );
         }
     }
-    for want in ["run_command", "draw_shape", "draw_path", "pointer_gesture", "screenshot", "export", "open_file", "undo", "redo", "inspect_document"]
-    {
-        assert!(tools.iter().any(|t| t["name"] == want), "missing tool {want}");
+    for want in [
+        "run_command",
+        "draw_shape",
+        "draw_path",
+        "pointer_gesture",
+        "screenshot",
+        "export",
+        "open_file",
+        "undo",
+        "redo",
+        "inspect_document",
+    ] {
+        assert!(
+            tools.iter().any(|t| t["name"] == want),
+            "missing tool {want}"
+        );
     }
     // ping and an unknown method.
     assert_eq!(m.request("ping", json!({}))["result"], json!({}));
@@ -143,15 +186,24 @@ fn draw_inspect_batch_undo_redo() {
     let r =
         m.tool_json("draw_shape", json!({"shape": "rectangle", "x": 20, "y": 20, "width": 100, "height": 80, "fill": "#ff0000", "stroke": "none"}));
     assert!(r["id"].is_u64(), "{r}");
-    m.tool_json("draw_path", json!({"points": [[200, 50], [300, 50], [250, 150]], "closed": true, "fill": [0, 0, 1]}));
-    m.tool_json("draw_path", json!({"d": "M 50 300 C 100 250 150 350 200 300", "stroke": "#00aa00", "strokeWidth": 3}));
+    m.tool_json(
+        "draw_path",
+        json!({"points": [[200, 50], [300, 50], [250, 150]], "closed": true, "fill": [0, 0, 1]}),
+    );
+    m.tool_json(
+        "draw_path",
+        json!({"d": "M 50 300 C 100 250 150 350 200 300", "stroke": "#00aa00", "strokeWidth": 3}),
+    );
     m.tool("pointer_gesture", json!({"tool": "ellipse", "events": [
         {"kind": "down", "x": 300, "y": 300}, {"kind": "drag", "x": 350, "y": 340}, {"kind": "drag", "x": 400, "y": 380}, {"kind": "up", "x": 400, "y": 380}
     ]}));
     assert_eq!(m.art_count(), base + 4);
     let inspect = m.tool_json("inspect_document", json!({}));
     let text = inspect.to_string();
-    assert!(text.contains("Rectangle") || text.contains("rectangle"), "{text}");
+    assert!(
+        text.contains("Rectangle") || text.contains("rectangle"),
+        "{text}"
+    );
 
     // A batch is one undo step.
     let before = m.document();
@@ -167,14 +219,28 @@ fn draw_inspect_batch_undo_redo() {
     let after = m.document();
     assert_ne!(before, after);
     m.tool("undo", json!({}));
-    assert!(redrob_vector_testkit::invariants::json_approx_eq(&m.document(), &before, 1e-12));
+    assert!(redrob_vector_testkit::invariants::json_approx_eq(
+        &m.document(),
+        &before,
+        1e-12
+    ));
     m.tool("redo", json!({}));
-    assert!(redrob_vector_testkit::invariants::json_approx_eq(&m.document(), &after, 1e-12));
+    assert!(redrob_vector_testkit::invariants::json_approx_eq(
+        &m.document(),
+        &after,
+        1e-12
+    ));
 
     // Tool errors are reported in-band, and the server keeps working.
-    let v = m.request("tools/call", json!({"name": "run_command", "arguments": {"command": "no.such.command"}}));
+    let v = m.request(
+        "tools/call",
+        json!({"name": "run_command", "arguments": {"command": "no.such.command"}}),
+    );
     assert_eq!(v["result"]["isError"], json!(true), "{v}");
-    let v = m.request("tools/call", json!({"name": "draw_shape", "arguments": {"shape": "hexagram"}}));
+    let v = m.request(
+        "tools/call",
+        json!({"name": "draw_shape", "arguments": {"shape": "hexagram"}}),
+    );
     assert_eq!(v["result"]["isError"], json!(true));
     m.tool("inspect_document", json!({}));
     m.close();
@@ -187,9 +253,16 @@ fn screenshot_is_a_decodable_png() {
     m.tool("draw_shape", json!({"shape": "rectangle", "x": 0, "y": 0, "width": 100, "height": 100, "fill": "#ff0000", "stroke": "none"}));
     let path = tmp("shot.png");
     let r = m.tool("screenshot", json!({"scale": 0.5, "path": path}));
-    let img = r["content"].as_array().unwrap().iter().find(|c| c["type"] == "image").expect("image content").clone();
+    let img = r["content"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|c| c["type"] == "image")
+        .expect("image content")
+        .clone();
     assert_eq!(img["mimeType"], "image/png");
-    let png = redrob_vector_testkit::format::base64_decode(img["data"].as_str().unwrap()).expect("base64");
+    let png = redrob_vector_testkit::format::base64_decode(img["data"].as_str().unwrap())
+        .expect("base64");
     let decoded = Image::from_png(&png).expect("decodable PNG");
     let doc: redrob_vector_testkit::doc::Document = serde_json::from_value(m.document()).unwrap();
     let ab = doc.artboards[0].rect;
@@ -201,7 +274,10 @@ fn screenshot_is_a_decodable_png() {
     let q = decoded.over_white(decoded.width - 5, decoded.height - 5);
     assert_eq!(q, [255, 255, 255]);
     // The saved file is the same PNG.
-    assert_eq!(Image::from_png(&std::fs::read(&path).unwrap()).unwrap(), decoded);
+    assert_eq!(
+        Image::from_png(&std::fs::read(&path).unwrap()).unwrap(),
+        decoded
+    );
     m.close();
 }
 
@@ -228,7 +304,11 @@ fn export_formats_and_reopen() {
 
     // Re-open each: .rvector reproduces the document; SVG and PDF bring the art back.
     m.tool("open_file", json!({"path": dc}));
-    assert!(redrob_vector_testkit::invariants::json_approx_eq(&m.document(), &original, 1e-12));
+    assert!(redrob_vector_testkit::invariants::json_approx_eq(
+        &m.document(),
+        &original,
+        1e-12
+    ));
     m.tool("open_file", json!({"path": svg}));
     assert!(m.art_count() >= n, "svg re-open lost art");
     m.run("document.open", json!({"path": pdf}));

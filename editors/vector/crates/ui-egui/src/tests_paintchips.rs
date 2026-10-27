@@ -20,13 +20,7 @@ fn context() -> egui::Context {
 }
 
 /// One headless frame of `draw` with `events` (and `modifiers` held); returns the painted shapes.
-fn frame(
-    app: &mut VectorApp,
-    ctx: &egui::Context,
-    events: Vec<Event>,
-    modifiers: Modifiers,
-    draw: fn(&mut VectorApp, &mut egui::Ui),
-) -> Vec<Shape> {
+fn frame(app: &mut VectorApp, ctx: &egui::Context, events: Vec<Event>, modifiers: Modifiers, draw: fn(&mut VectorApp, &mut egui::Ui)) -> Vec<Shape> {
     let events = std::iter::once(Event::ModifiersChanged(modifiers)).chain(events).collect();
     let screen_rect = Some(Rect::from_min_size(Pos2::ZERO, vec2(1400.0, 1000.0)));
     let mut out = ctx.run_ui(egui::RawInput { events, screen_rect, ..Default::default() }, |ui| draw(app, ui));

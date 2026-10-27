@@ -182,9 +182,8 @@ fn the_control_bar_converts_connects_and_cuts_selected_anchors() {
     app.run("select.anchors", json!({"id": id.0, "anchors": [[0, 1]]})).unwrap();
     let ctx = egui::Context::default();
     crate::theme::install_fonts(&ctx);
-    let anchor = |app: &VectorApp, id: NodeId, ai: usize| {
-        app.session.active().unwrap().doc.node(id).unwrap().path_data().unwrap().subpaths[0].anchors[ai]
-    };
+    let anchor =
+        |app: &VectorApp, id: NodeId, ai: usize| app.session.active().unwrap().doc.node(id).unwrap().path_data().unwrap().subpaths[0].anchors[ai];
     let last_undo = |app: &VectorApp| app.session.active().unwrap().history.undo.last().unwrap().label.clone();
     // Convert: smooth, then corner again.
     click_button(&mut app, &ctx, "Convert:", 1);

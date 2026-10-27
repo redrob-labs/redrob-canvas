@@ -157,11 +157,7 @@ impl GpuCanvas {
         let mut res = Resources::new(&rs.device, &rs.queue, rs.target_format, high != HighPolicy::Off);
         res.health = health.clone();
         let info = rs.adapter.get_info();
-        res.separate_mip_targets = separate_mip_targets(
-            info.backend,
-            info.vendor,
-            std::env::var("REDROB_PHOTO_SEPARATE_MIPS").ok().as_deref(),
-        );
+        res.separate_mip_targets = separate_mip_targets(info.backend, info.vendor, std::env::var("REDROB_PHOTO_SEPARATE_MIPS").ok().as_deref());
         rs.renderer.write().callback_resources.insert(res);
         log::info!("gpu canvas: target {:?}, max texture {max}, tile {tile}, 16F canvas {high:?}", rs.target_format);
         Self { rs: rs.clone(), tile, high, health }
@@ -304,10 +300,7 @@ impl GpuCanvas {
     /// Whether [`GpuCanvas::composite`] would draw `doc` with the wgpu compositor (rather than
     /// fall back to the CPU compositor).
     pub fn supports(&self, doc: &redrob_photo_doc::Document) -> bool {
-        if std::env::var_os("REDROB_PHOTO_CPU_COMPOSE").is_some()
-            || doc.size.width == 0
-            || doc.size.height == 0
-        {
+        if std::env::var_os("REDROB_PHOTO_CPU_COMPOSE").is_some() || doc.size.width == 0 || doc.size.height == 0 {
             return false;
         }
         let r = self.rs.renderer.read();

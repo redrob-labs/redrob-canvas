@@ -38,13 +38,22 @@ pub fn synthetic(n: usize) -> Result<Document, String> {
                 shapes::ellipse(Rect::from_center_size(Point::new(x, y), (2.0 * s, 2.0 * s))),
                 Appearance::basic(Paint::solid(c), Paint::solid(Color::BLACK), 0.5),
             ),
-            1 => Node::path(id, shapes::rectangle(Rect::new(x, y, x + 2.0 * s, y + s)), Appearance::basic(Paint::solid(c), Paint::None, 0.0)),
-            _ => Node::path(id, shapes::star(Point::new(x, y), s, s / 2.0, 5, 0.0), Appearance::basic(Paint::None, Paint::solid(c), 2.0)),
+            1 => Node::path(
+                id,
+                shapes::rectangle(Rect::new(x, y, x + 2.0 * s, y + s)),
+                Appearance::basic(Paint::solid(c), Paint::None, 0.0),
+            ),
+            _ => Node::path(
+                id,
+                shapes::star(Point::new(x, y), s, s / 2.0, 5, 0.0),
+                Appearance::basic(Paint::None, Paint::solid(c), 2.0),
+            ),
         };
         if i % 3 == 1 {
             node.opacity = 0.8;
         }
-        d.insert(l, usize::MAX, node).map_err(|e| format!("building the synthetic document: {e}"))?;
+        d.insert(l, usize::MAX, node)
+            .map_err(|e| format!("building the synthetic document: {e}"))?;
     }
     Ok(d)
 }
@@ -64,12 +73,18 @@ fn median_ms(runs: usize, mut f: impl FnMut()) -> f64 {
 /// 1-minute load average (macOS / Linux), if available.
 #[cfg(not(windows))]
 fn load_average() -> Option<f64> {
-    let out = std::process::Command::new("sysctl").args(["-n", "vm.loadavg"]).output().ok().filter(|o| o.status.success());
+    let out = std::process::Command::new("sysctl")
+        .args(["-n", "vm.loadavg"])
+        .output()
+        .ok()
+        .filter(|o| o.status.success());
     let text = match out {
         Some(o) => String::from_utf8_lossy(&o.stdout).to_string(),
         None => std::fs::read_to_string("/proc/loadavg").ok()?,
     };
-    text.split_whitespace().map(|t| t.trim_matches(|c| c == '{' || c == '}')).find_map(|t| t.parse().ok())
+    text.split_whitespace()
+        .map(|t| t.trim_matches(|c| c == '{' || c == '}'))
+        .find_map(|t| t.parse().ok())
 }
 
 /// The cores busy on average over one second (Windows), if available: the share of the
@@ -77,7 +92,11 @@ fn load_average() -> Option<f64> {
 /// times `cores`. A load average also counts the threads waiting for a core.
 #[cfg(windows)]
 fn busy_cores(cores: usize) -> Option<f64> {
-    let times = || winsafe::GetSystemTimes().ok().map(|(idle, kernel, user)| [idle, kernel, user].map(u64::from));
+    let times = || {
+        winsafe::GetSystemTimes()
+            .ok()
+            .map(|(idle, kernel, user)| [idle, kernel, user].map(u64::from))
+    };
     let before = times()?;
     std::thread::sleep(std::time::Duration::from_secs(1));
     busy_share(before, times()?).map(|share| share * cores as f64)
@@ -88,7 +107,9 @@ fn busy_cores(cores: usize) -> Option<f64> {
 /// passed, a time went back, or the idle time exceeds the kernel and user time.
 #[cfg(any(windows, test))]
 fn busy_share([idle0, kernel0, user0]: [u64; 3], [idle1, kernel1, user1]: [u64; 3]) -> Option<f64> {
-    let total = kernel1.checked_sub(kernel0)?.checked_add(user1.checked_sub(user0)?)?;
+    let total = kernel1
+        .checked_sub(kernel0)?
+        .checked_add(user1.checked_sub(user0)?)?;
     let busy = total.checked_sub(idle1.checked_sub(idle0)?)?;
     (total > 0).then(|| busy as f64 / total as f64)
 }
@@ -103,18 +124,38 @@ fn edit_drags(n: usize) -> Result<(f64, f64), String> {
     let id = doc.alloc_id();
     // Anchors 2 pt apart, up and down by 20 pt, their handles 0.6 pt long.
     let anchor = |i: usize| {
-        let p = Point::new(i as f64 * 2.0, if i.is_multiple_of(2) { 500.0 } else { 520.0 });
+        let p = Point::new(
+            i as f64 * 2.0,
+            if i.is_multiple_of(2) { 500.0 } else { 520.0 },
+        );
         Anchor::smooth(p, p + Vec2::new(0.6, 0.0))
     };
     let path = PathData::single(SubPath::new((0..5000).map(anchor).collect(), false));
-    doc.insert(l, usize::MAX, Node::path(id, path, Appearance::default_art())).map_err(|e| e.to_string())?;
+    doc.insert(
+        l,
+        usize::MAX,
+        Node::path(id, path, Appearance::default_art()),
+    )
+    .map_err(|e| e.to_string())?;
     let mut s = redrob_vector_engine::Session::new();
     s.add_document(doc, None);
-    let view = redrob_vector_engine::ViewInfo { zoom: 8.0, ..Default::default() };
+    let view = redrob_vector_engine::ViewInfo {
+        zoom: 8.0,
+        ..Default::default()
+    };
     let err = |e: redrob_vector_engine::EngineError| e.to_string();
     let mut drag = |down: Point| -> Result<f64, String> {
-        let ev = |kind, y: f64| PointerEvent { kind, pos: down + Vec2::new(0.0, y), mods: Mods::default(), pressure: 1.0 };
-        s.execute("select.anchors", &json!({"id": id.0, "anchors": [[0, 400]]})).map_err(err)?;
+        let ev = |kind, y: f64| PointerEvent {
+            kind,
+            pos: down + Vec2::new(0.0, y),
+            mods: Mods::default(),
+            pressure: 1.0,
+        };
+        s.execute(
+            "select.anchors",
+            &json!({"id": id.0, "anchors": [[0, 400]]}),
+        )
+        .map_err(err)?;
         s.select_tool("directSelection", view).map_err(err)?;
         let undo = s.doc().map_err(err)?.history.undo.len();
         s.pointer(&ev(PointerKind::Down, 0.0), view).map_err(err)?;
@@ -140,15 +181,25 @@ fn edit_drags(n: usize) -> Result<(f64, f64), String> {
 #[cfg(not(windows))]
 fn rss_mb() -> Option<f64> {
     let pid = std::process::id().to_string();
-    let out = std::process::Command::new("ps").args(["-o", "rss=", "-p", &pid]).output().ok().filter(|o| o.status.success())?;
-    String::from_utf8_lossy(&out.stdout).trim().parse::<f64>().ok().map(|kb| kb / 1024.0)
+    let out = std::process::Command::new("ps")
+        .args(["-o", "rss=", "-p", &pid])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())?;
+    String::from_utf8_lossy(&out.stdout)
+        .trim()
+        .parse::<f64>()
+        .ok()
+        .map(|kb| kb / 1024.0)
 }
 
 /// The working set of this process in MB (`GetProcessMemoryInfo`), if available: its pages that
 /// are in physical memory, the figure `ps` reports as resident memory elsewhere.
 #[cfg(windows)]
 fn rss_mb() -> Option<f64> {
-    let counters = winsafe::HPROCESS::GetCurrentProcess().GetProcessMemoryInfo().ok()?;
+    let counters = winsafe::HPROCESS::GetCurrentProcess()
+        .GetProcessMemoryInfo()
+        .ok()?;
     Some(counters.WorkingSetSize as f64 / (1024.0 * 1024.0))
 }
 
@@ -168,19 +219,43 @@ fn deep(n: usize) -> Result<(), String> {
     let mut s = redrob_vector_engine::Session::new();
     s.add_document(synthetic(n)?, None);
     note("document built");
-    rows.push((format!("select all, {n} paths"), median_ms(3, || drop(s.execute("select.all", &json!({}))))));
-    rows.push((format!("nudge the selection ({n} paths)"), median_ms(5, || drop(s.execute("object.move", &json!({"dx": 1, "dy": 0}))))));
-    rows.push((format!("undo a nudge ({n} paths)"), median_ms(5, || drop(s.execute("edit.undo", &json!({}))))));
-    rows.push((format!("redo a nudge ({n} paths)"), median_ms(5, || drop(s.execute("edit.redo", &json!({}))))));
+    rows.push((
+        format!("select all, {n} paths"),
+        median_ms(3, || drop(s.execute("select.all", &json!({})))),
+    ));
+    rows.push((
+        format!("nudge the selection ({n} paths)"),
+        median_ms(5, || {
+            drop(s.execute("object.move", &json!({"dx": 1, "dy": 0})))
+        }),
+    ));
+    rows.push((
+        format!("undo a nudge ({n} paths)"),
+        median_ms(5, || drop(s.execute("edit.undo", &json!({})))),
+    ));
+    rows.push((
+        format!("redo a nudge ({n} paths)"),
+        median_ms(5, || drop(s.execute("edit.redo", &json!({})))),
+    ));
     // Dragging the whole selection with the Selection tool: one pointer move (the preview).
     {
         use redrob_vector_engine::tools::{Mods, PointerEvent, PointerKind};
         use redrob_vector_geom::Vec2;
-        let view = redrob_vector_engine::ViewInfo { zoom: 1.0, ..Default::default() };
+        let view = redrob_vector_engine::ViewInfo {
+            zoom: 1.0,
+            ..Default::default()
+        };
         let first = s.doc().map_err(err)?.selection.objects.first().copied();
-        let at = first.and_then(|id| s.doc().ok()?.doc.node(id)?.geometric_bounds()).map(|b| b.center());
+        let at = first
+            .and_then(|id| s.doc().ok()?.doc.node(id)?.geometric_bounds())
+            .map(|b| b.center());
         if let Some(down) = at {
-            let ev = |kind, dx: f64| PointerEvent { kind, pos: down + Vec2::new(dx, 0.0), mods: Mods::default(), pressure: 1.0 };
+            let ev = |kind, dx: f64| PointerEvent {
+                kind,
+                pos: down + Vec2::new(dx, 0.0),
+                mods: Mods::default(),
+                pressure: 1.0,
+            };
             s.select_tool("selection", view).map_err(err)?;
             s.pointer(&ev(PointerKind::Down, 0.0), view).map_err(err)?;
             let mut dx = 0.0;
@@ -195,30 +270,53 @@ fn deep(n: usize) -> Result<(), String> {
         }
     }
     for _ in 0..40 {
-        s.execute("object.move", &json!({"dx": 1, "dy": 0})).map_err(err)?;
+        s.execute("object.move", &json!({"dx": 1, "dy": 0}))
+            .map_err(err)?;
     }
     note("after 45 whole-selection edits");
     drop(s);
     // Live effects on 2,000 paths: render a page whose every object has the effect.
     let opts = RenderOptions::default();
-    for (fx, params) in [("path.offsetPath", json!({"offset": 3})), ("distort.roughen", json!({"size": 5, "relative": true}))] {
+    for (fx, params) in [
+        ("path.offsetPath", json!({"offset": 3})),
+        ("distort.roughen", json!({"size": 5, "relative": true})),
+    ] {
         let mut s = redrob_vector_engine::Session::new();
         s.add_document(synthetic(2000)?, None);
         s.execute("select.all", &json!({})).map_err(err)?;
-        s.execute("effect.apply", &json!({"effect": fx, "params": params})).map_err(err)?;
+        s.execute("effect.apply", &json!({"effect": fx, "params": params}))
+            .map_err(err)?;
         let doc = s.doc().map_err(err)?.doc.clone();
         let mut r = Renderer::new();
         r.render(&doc, 2880, 1800, Affine::scale(1.6), &opts);
-        rows.push((format!("render, 2,000 paths with {fx} (warm)"), median_ms(5, || drop(r.render(&doc, 2880, 1800, Affine::scale(1.6), &opts)))));
+        rows.push((
+            format!("render, 2,000 paths with {fx} (warm)"),
+            median_ms(5, || {
+                drop(r.render(&doc, 2880, 1800, Affine::scale(1.6), &opts))
+            }),
+        ));
     }
     note("after live effects");
     // Every Pathfinder operation on 300 overlapping paths.
-    for op in ["unite", "intersect", "exclude", "minusFront", "minusBack", "divide", "trim", "merge", "crop", "outline"] {
+    for op in [
+        "unite",
+        "intersect",
+        "exclude",
+        "minusFront",
+        "minusBack",
+        "divide",
+        "trim",
+        "merge",
+        "crop",
+        "outline",
+    ] {
         let ms = median_ms(1, || {
             let mut s = redrob_vector_engine::Session::new();
             if let Ok(d) = synthetic(300) {
                 s.add_document(d, None);
-                let _ = s.execute("select.all", &json!({})).and_then(|_| s.execute(&format!("object.pathfinder.{op}"), &json!({})));
+                let _ = s
+                    .execute("select.all", &json!({}))
+                    .and_then(|_| s.execute(&format!("object.pathfinder.{op}"), &json!({})));
             }
         });
         rows.push((format!("Pathfinder {op}, 300 paths"), ms));
@@ -227,7 +325,15 @@ fn deep(n: usize) -> Result<(), String> {
     // Typing one character in the middle of a 20,000-character area-type story.
     let mut s = redrob_vector_engine::Session::new();
     s.add_document(Document::new(1600.0, 1200.0), None);
-    let text: String = (0..2000).map(|i| if i % 12 == 11 { "paragraph.\n" } else { "lorem ips " }).collect();
+    let text: String = (0..2000)
+        .map(|i| {
+            if i % 12 == 11 {
+                "paragraph.\n"
+            } else {
+                "lorem ips "
+            }
+        })
+        .collect();
     let id = s.execute("text.create", &json!({"x": 20, "y": 20, "text": text, "size": 10, "area": {"width": 1500, "height": 1100}})).map_err(err)?;
     let id = id.get("id").cloned().unwrap_or(json!(0));
     let mut at = 10_000;
@@ -235,7 +341,10 @@ fn deep(n: usize) -> Result<(), String> {
         "type one character, 20,000-character area text".into(),
         median_ms(9, || {
             at += 1;
-            let _ = s.execute("text.editRange", &json!({"id": id, "start": at, "end": at, "insert": "x"}));
+            let _ = s.execute(
+                "text.editRange",
+                &json!({"id": id, "start": at, "end": at, "insert": "x"}),
+            );
         }),
     ));
     note("after typing");
@@ -246,13 +355,37 @@ fn deep(n: usize) -> Result<(), String> {
         let mut d = Document::new(1600.0, 1200.0);
         let l = d.layers.first().map(|l| l.id);
         for i in 0..4u32 {
-            let photo = Renderer::new().render(&art, 6000, 4000, Affine::scale(3.75 + f64::from(i) * 0.1), &opts).to_png()?;
+            let photo = Renderer::new()
+                .render(
+                    &art,
+                    6000,
+                    4000,
+                    Affine::scale(3.75 + f64::from(i) * 0.1),
+                    &opts,
+                )
+                .to_png()?;
             let key = format!("photo {i}");
-            d.images.insert(key.clone(), redrob_vector_doc::ImageBlob::new("image/png", photo));
-            let xf = Affine::translate((f64::from(i % 2) * 800.0, f64::from(i / 2) * 600.0)) * Affine::scale(800.0 / 6000.0);
-            let image = redrob_vector_doc::ImageObject { key, width: 6000, height: 4000, xf, link: None, placement: Default::default() };
+            d.images.insert(
+                key.clone(),
+                redrob_vector_doc::ImageBlob::new("image/png", photo),
+            );
+            let xf = Affine::translate((f64::from(i % 2) * 800.0, f64::from(i / 2) * 600.0))
+                * Affine::scale(800.0 / 6000.0);
+            let image = redrob_vector_doc::ImageObject {
+                key,
+                width: 6000,
+                height: 4000,
+                xf,
+                link: None,
+                placement: Default::default(),
+            };
             let id = d.alloc_id();
-            d.insert(l, usize::MAX, Node::new(id, redrob_vector_doc::NodeKind::Image(Box::new(image)))).map_err(|e| e.to_string())?;
+            d.insert(
+                l,
+                usize::MAX,
+                Node::new(id, redrob_vector_doc::NodeKind::Image(Box::new(image))),
+            )
+            .map_err(|e| e.to_string())?;
         }
         note("4 embedded 24 MP photos");
         let mut renderers = [Renderer::new(), Renderer::new(), Renderer::new()];
@@ -261,22 +394,37 @@ fn deep(n: usize) -> Result<(), String> {
                 r.render(&d, 2880, 1800, Affine::scale(1.6), &opts);
             }
         });
-        rows.push(("render 4 embedded 24 MP photos with 3 renderers (cold)".into(), ms));
+        rows.push((
+            "render 4 embedded 24 MP photos with 3 renderers (cold)".into(),
+            ms,
+        ));
         note("after rendering the photos with 3 renderers");
     }
     // Output hashes, to compare builds: the SVG export and a save → open → save round trip.
-    let fnv = |b: &[u8]| b.iter().fold(0xcbf2_9ce4_8422_2325u64, |h, &x| (h ^ u64::from(x)).wrapping_mul(0x100_0000_01b3));
+    let fnv = |b: &[u8]| {
+        b.iter().fold(0xcbf2_9ce4_8422_2325u64, |h, &x| {
+            (h ^ u64::from(x)).wrapping_mul(0x100_0000_01b3)
+        })
+    };
     let doc = synthetic(n)?;
     let svg = redrob_vector_svg::export(&doc, &redrob_vector_svg::ExportOptions::default());
     let saved = redrob_vector_format::save_file(&doc);
     let reopened = redrob_vector_format::load(&saved).map_err(|e| e.to_string())?;
-    outln!("  output hash: SVG export {:016x}, save→open→save {:016x}", fnv(svg.as_bytes()), fnv(&redrob_vector_format::save_file(&reopened)));
+    outln!(
+        "  output hash: SVG export {:016x}, save→open→save {:016x}",
+        fnv(svg.as_bytes()),
+        fnv(&redrob_vector_format::save_file(&reopened))
+    );
     outln!("  tracked (no budget yet)");
     for (name, ms) in &rows {
         outln!("  {name:<52} {ms:>10.2} ms");
     }
     // `rss_mb` reads the working set on Windows.
-    let memory = if cfg!(windows) { "working set" } else { "memory" };
+    let memory = if cfg!(windows) {
+        "working set"
+    } else {
+        "memory"
+    };
     for (what, mb) in &mem {
         outln!("  {:<52} {mb:>8.0} MB", format!("{memory} {what}"));
     }
@@ -290,7 +438,12 @@ pub fn run(args: &[String]) -> Result<(), String> {
     while let Some(a) = it.next() {
         match a.as_str() {
             "--deep" => want_deep = true,
-            "--paths" => n = it.next().and_then(|v| v.parse().ok()).ok_or("--paths needs a number")?,
+            "--paths" => {
+                n = it
+                    .next()
+                    .and_then(|v| v.parse().ok())
+                    .ok_or("--paths needs a number")?
+            }
             other => return Err(format!("unknown perf option `{other}`")),
         }
     }
@@ -300,7 +453,10 @@ pub fn run(args: &[String]) -> Result<(), String> {
     let (load, label) = (load_average(), "load average");
     #[cfg(windows)]
     let (load, label) = (busy_cores(cores), "cores busy");
-    outln!("Vector performance budgets — {n} paths, {cores} cores, {label} {}", load.map_or("?".into(), |l| format!("{l:.1}")));
+    outln!(
+        "Vector performance budgets — {n} paths, {cores} cores, {label} {}",
+        load.map_or("?".into(), |l| format!("{l:.1}"))
+    );
     let noisy = load.is_some_and(|l| l > cores as f64 * 0.75);
     if noisy {
         outln!("WARNING: the machine is busy; wall-clock timings below are not trustworthy.");
@@ -316,7 +472,11 @@ pub fn run(args: &[String]) -> Result<(), String> {
     r.render(&doc, 2880, 1800, fit, &opts);
     // The canvas never waits for these: while panning/zooming it shows the last frame reprojected
     // and re-renders in the background, so the budget is for that refresh to land quickly.
-    rows.push(("render: fit page, 2880×1800", median_ms(5, || drop(r.render(&doc, 2880, 1800, fit, &opts))), 100.0));
+    rows.push((
+        "render: fit page, 2880×1800",
+        median_ms(5, || drop(r.render(&doc, 2880, 1800, fit, &opts))),
+        100.0,
+    ));
     let mut dx = 0.0;
     rows.push((
         "render: background refresh after a pan",
@@ -329,10 +489,16 @@ pub fn run(args: &[String]) -> Result<(), String> {
     let zoom = Affine::scale(6.4) * Affine::translate((-600.0, -400.0));
     r.render(&doc, 2880, 1800, zoom, &opts);
     // Zoomed in, culling leaves few objects: this one should fit a frame.
-    rows.push(("render: 400% zoom, 2880×1800", median_ms(5, || drop(r.render(&doc, 2880, 1800, zoom, &opts))), 16.0));
+    rows.push((
+        "render: 400% zoom, 2880×1800",
+        median_ms(5, || drop(r.render(&doc, 2880, 1800, zoom, &opts))),
+        16.0,
+    ));
 
     let mut rng = Rng(7);
-    let points: Vec<Point> = (0..200).map(|_| Point::new(rng.next() * 1600.0, rng.next() * 1200.0)).collect();
+    let points: Vec<Point> = (0..200)
+        .map(|_| Point::new(rng.next() * 1600.0, rng.next() * 1200.0))
+        .collect();
     let hits = median_ms(3, || {
         for p in &points {
             drop(hit::hit_test(&doc, *p, hit::HitOptions::default()));
@@ -341,7 +507,11 @@ pub fn run(args: &[String]) -> Result<(), String> {
     rows.push(("hit test (per click)", hits, 2.0));
 
     let mut bytes = vec![];
-    rows.push(("save .rvector", median_ms(3, || bytes = redrob_vector_format::save_file(&doc)), 300.0));
+    rows.push((
+        "save .rvector",
+        median_ms(3, || bytes = redrob_vector_format::save_file(&doc)),
+        300.0,
+    ));
     let mut failed = None;
     let open = median_ms(3, || {
         if let Err(e) = redrob_vector_format::load(&bytes) {
@@ -350,14 +520,20 @@ pub fn run(args: &[String]) -> Result<(), String> {
     });
     rows.push(("open .rvector", open, 300.0));
     let svg_opts = redrob_vector_svg::ExportOptions::default();
-    rows.push(("export SVG", median_ms(3, || drop(redrob_vector_svg::export(&doc, &svg_opts))), 500.0));
+    rows.push((
+        "export SVG",
+        median_ms(3, || drop(redrob_vector_svg::export(&doc, &svg_opts))),
+        500.0,
+    ));
 
     // Pathfinder Unite on 1,000 overlapping paths.
     let unite = median_ms(3, || {
         let mut s = redrob_vector_engine::Session::new();
         let r = synthetic(1000).and_then(|d| {
             s.add_document(d, None);
-            s.execute("select.all", &json!({})).and_then(|_| s.execute("object.pathfinder.unite", &json!({}))).map_err(|e| e.to_string())
+            s.execute("select.all", &json!({}))
+                .and_then(|_| s.execute("object.pathfinder.unite", &json!({})))
+                .map_err(|e| e.to_string())
         });
         if let Err(e) = r {
             failed = Some(format!("Pathfinder Unite: {e}"));
@@ -385,7 +561,10 @@ pub fn run(args: &[String]) -> Result<(), String> {
     for (name, ms, budget) in &rows {
         let ok = ms <= budget;
         over += usize::from(!ok);
-        outln!("  {name:<40} {ms:>8.2} ms {budget:>7.0} ms  {}", if ok { "ok" } else { "OVER" });
+        outln!(
+            "  {name:<40} {ms:>8.2} ms {budget:>7.0} ms  {}",
+            if ok { "ok" } else { "OVER" }
+        );
     }
     match (over, noisy) {
         (0, _) => Ok(()),
@@ -398,6 +577,7 @@ pub fn run(args: &[String]) -> Result<(), String> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 mod tests {
     use super::*;
 
@@ -405,7 +585,10 @@ mod tests {
     fn busy_share_leaves_out_idle_time() {
         // In one second four processors log 40,000,000 ticks of 100 ns of kernel and user time,
         // 10,000,000 of them idle.
-        assert_eq!(busy_share([7, 100, 50], [10_000_007, 25_000_100, 15_000_050]), Some(0.75));
+        assert_eq!(
+            busy_share([7, 100, 50], [10_000_007, 25_000_100, 15_000_050]),
+            Some(0.75)
+        );
         // There is no share when no time passed, a time went back, or the idle time exceeds the
         // kernel and user time.
         assert_eq!(busy_share([7, 100, 50], [7, 100, 50]), None);
@@ -419,7 +602,10 @@ mod tests {
     fn windows_reads_how_many_cores_are_busy() {
         let cores = std::thread::available_parallelism().map_or(1, |c| c.get());
         let busy = busy_cores(cores);
-        assert!(busy.is_some_and(|b| (0.0..=cores as f64).contains(&b)), "{busy:?} of {cores}");
+        assert!(
+            busy.is_some_and(|b| (0.0..=cores as f64).contains(&b)),
+            "{busy:?} of {cores}"
+        );
     }
 
     /// On Windows `rss_mb` gives this process's working set: more than 0 MB and less than

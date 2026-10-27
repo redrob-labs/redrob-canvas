@@ -36,13 +36,7 @@ pub fn visible(app: &PhotoApp, ctx: &egui::Context, kind: &str, name: &str) -> b
 }
 
 /// Keeps only the items of `groups` that pass the filter (`name` picks the item's name).
-pub fn filter_groups<T>(
-    app: &PhotoApp,
-    ctx: &egui::Context,
-    kind: &str,
-    groups: &mut [redrob_photo_engine::presets::Group<T>],
-    name: impl Fn(&T) -> String,
-) {
+pub fn filter_groups<T>(app: &PhotoApp, ctx: &egui::Context, kind: &str, groups: &mut [redrob_photo_engine::presets::Group<T>], name: impl Fn(&T) -> String) {
     let q = query(ctx, kind);
     if q.trim().is_empty() {
         return;

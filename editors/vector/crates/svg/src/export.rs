@@ -790,10 +790,7 @@ impl Writer<'_> {
         if let Some((bytes, hash)) = native {
             line(
                 2,
-                &format!(
-                    "<vector:document xmlns:vector=\"{EDITING_NS}\" hash=\"{hash}\"><![CDATA[{}]]></vector:document>",
-                    base64_encode(bytes)
-                ),
+                &format!("<vector:document xmlns:vector=\"{EDITING_NS}\" hash=\"{hash}\"><![CDATA[{}]]></vector:document>", base64_encode(bytes)),
             );
         }
         line(1, "</metadata>");

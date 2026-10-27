@@ -355,13 +355,12 @@ impl<T: Settings> SettingsStore<T> {
         merge_into(&mut self.doc, &self.value).map_err(|e| SettingsError::Serialize(e.to_string()))?;
         set_schema_version(&mut self.doc, T::SCHEMA_VERSION);
         let text = document::render(&self.doc);
-        redrob_canvas_atomic::WriteOptions::default().with_new_file_permissions(redrob_canvas_atomic::NewFilePermissions::Private).atomic_write_with(
-            &path,
-            |file| {
+        redrob_canvas_atomic::WriteOptions::default()
+            .with_new_file_permissions(redrob_canvas_atomic::NewFilePermissions::Private)
+            .atomic_write_with(&path, |file| {
                 restrict_permissions(file)?;
                 file.write_all(text.as_bytes())
-            },
-        )?;
+            })?;
         self.seen_text = Some(text);
         self.dirty = false;
         self.written = true;

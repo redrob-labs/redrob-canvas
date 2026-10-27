@@ -328,9 +328,9 @@ impl Headless {
             "app.save" => self.save(p),
             "app.export" => self.export(p),
             "app.quit" => Ok(Value::Null),
-            m if m.starts_with("ui.") => {
-                Err(format!("`{m}` needs the desktop app (use a control port, which the Redrob Canvas window does not open yet and use `redrob-canvas vector mcp --connect`)"))
-            }
+            m if m.starts_with("ui.") => Err(format!(
+                "`{m}` needs the desktop app (use a control port, which the Redrob Canvas window does not open yet and use `redrob-canvas vector mcp --connect`)"
+            )),
             other => Err(format!("unknown method `{other}`")),
         }
     }

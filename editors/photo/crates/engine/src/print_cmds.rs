@@ -563,8 +563,7 @@ pub fn disable_printing() {
 
 /// Whether spooling is blocked by [`disable_printing`] or `REDROB_PHOTO_NO_PRINT`.
 pub fn printing_disabled() -> bool {
-    PRINTING_DISABLED.load(std::sync::atomic::Ordering::Relaxed)
-        || std::env::var_os("REDROB_PHOTO_NO_PRINT").is_some_and(|v| !v.is_empty() && v != "0")
+    PRINTING_DISABLED.load(std::sync::atomic::Ordering::Relaxed) || std::env::var_os("REDROB_PHOTO_NO_PRINT").is_some_and(|v| !v.is_empty() && v != "0")
 }
 
 fn require_printing_enabled() -> Result<()> {

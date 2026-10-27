@@ -1,0 +1,3 @@
+# Wide lines, compact small items (the style this editor was written in).
+max_width = 160
+use_small_heuristics = "Max"

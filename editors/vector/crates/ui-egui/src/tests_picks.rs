@@ -94,12 +94,7 @@ fn dialog_kind(app: &VectorApp) -> Option<&str> {
 const SCREEN: (f32, f32) = (1600.0, 6000.0);
 
 /// One frame of `draw` with `events` → its texts and where they were drawn.
-fn frame(
-    ctx: &egui::Context,
-    app: &mut VectorApp,
-    events: Vec<egui::Event>,
-    draw: &impl Fn(&mut VectorApp, &mut egui::Ui),
-) -> Vec<(String, Rect)> {
+fn frame(ctx: &egui::Context, app: &mut VectorApp, events: Vec<egui::Event>, draw: &impl Fn(&mut VectorApp, &mut egui::Ui)) -> Vec<(String, Rect)> {
     fn texts(s: &egui::Shape, out: &mut Vec<(String, Rect)>) {
         match s {
             egui::Shape::Text(t) => out.push((t.galley.text().to_string(), t.visual_bounding_rect())),

@@ -10,9 +10,8 @@ use crate::{VectorApp, menus};
 fn type_font_menu_lists_every_available_family() {
     let mut app = VectorApp::new(Session::new(), Default::default());
     app.run("file.new", json!({})).unwrap();
-    let fonts = |app: &VectorApp| -> Vec<String> {
-        menus::menu_entries(app).into_iter().filter(|e| e.path == ["Type", "Font"]).map(|e| e.label).collect()
-    };
+    let fonts =
+        |app: &VectorApp| -> Vec<String> { menus::menu_entries(app).into_iter().filter(|e| e.path == ["Type", "Font"]).map(|e| e.label).collect() };
     let labels = fonts(&app);
     assert_eq!(labels, *FontDb::global().menu_family_list());
     let installed = FontDb::with_font_dirs(system_font_dirs());

@@ -1012,11 +1012,7 @@ mod tests {
         }
     }
 
-    fn artboard_navigation_properties_frame(
-        app: &mut crate::VectorApp,
-        ctx: &egui::Context,
-        events: Vec<egui::Event>,
-    ) -> Vec<(String, egui::Rect)> {
+    fn artboard_navigation_properties_frame(app: &mut crate::VectorApp, ctx: &egui::Context, events: Vec<egui::Event>) -> Vec<(String, egui::Rect)> {
         let screen = egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1200.0, 700.0));
         let mut out = ctx.run_ui(egui::RawInput { screen_rect: Some(screen), events, ..Default::default() }, |ui| {
             egui::Panel::right("navigation-properties").exact_size(300.0).show(ui, |ui| crate::panels::properties::show(app, ui));

@@ -31,9 +31,7 @@ pub struct Opening {
 /// Does opening happen off the UI thread here? Not on wasm (no threads), in unit tests (they look
 /// at the document right after asking for it), or with `REDROB_VECTOR_SYNC_OPEN` set.
 pub fn available() -> bool {
-    !(cfg!(target_arch = "wasm32")
-        || cfg!(test)
-        || std::env::var_os("REDROB_VECTOR_SYNC_OPEN").is_some())
+    !(cfg!(target_arch = "wasm32") || cfg!(test) || std::env::var_os("REDROB_VECTOR_SYNC_OPEN").is_some())
 }
 
 /// Decode `bytes`, the file at `path`, read its linked files and lay out its type on a thread of its

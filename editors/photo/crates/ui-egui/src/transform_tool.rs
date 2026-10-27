@@ -2343,14 +2343,7 @@ pub(crate) fn carries_selection_of(app: &PhotoApp, document: DocId) -> bool {
 /// rotation, skew, distort, perspective or warp while it is made, to where applying it leaves it.
 /// `segs` is the outline of `document`'s selection at rest. False when no open transform carries
 /// that selection: the caller draws it where it is.
-pub(crate) fn draw_selection(
-    app: &PhotoApp,
-    painter: &egui::Painter,
-    xf: &ViewXform,
-    document: DocId,
-    segs: &[crate::outline::Segment],
-    time: f64,
-) -> bool {
+pub(crate) fn draw_selection(app: &PhotoApp, painter: &egui::Painter, xf: &ViewXform, document: DocId, segs: &[crate::outline::Segment], time: f64) -> bool {
     let Some(t) = app.ui.transform.as_ref().filter(|_| carries_selection_of(app, document)) else { return false };
     let scr = |(x, y): (f64, f64)| xf.to_screen(x as f32, y as f32);
     let doc = |p: [i32; 2]| [f64::from(p[0]), f64::from(p[1])];

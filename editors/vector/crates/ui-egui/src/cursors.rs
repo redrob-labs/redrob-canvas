@@ -691,8 +691,7 @@ mod tests {
         }
         assert_eq!(ctx.zoom_factor(), 2.0);
         let over = app.canvas_rect.unwrap().center();
-        let shown =
-            |app: &mut VectorApp, d: f32| frame(app, &ctx, vec![egui::Event::PointerMoved(over + vec2(d, 0.0))]).platform_output.cursor_image;
+        let shown = |app: &mut VectorApp, d: f32| frame(app, &ctx, vec![egui::Event::PointerMoved(over + vec2(d, 0.0))]).platform_output.cursor_image;
         if OS_CURSORS {
             assert_eq!(shown(&mut app, 0.0).unwrap(), app.canvas.cursors.get(Cursor::Arrow, 1.0).unwrap(), "off: its own size");
             app.run("prefs.set", json!({"key": "scaleCursorWithUi", "value": true})).unwrap();

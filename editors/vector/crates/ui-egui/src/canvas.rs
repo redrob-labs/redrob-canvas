@@ -3373,8 +3373,7 @@ mod tests {
             assert_eq!(app.session.tool_id(), "pen", "back to the Pen tool");
             used
         };
-        let bounds =
-            |app: &VectorApp| app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().geometric_bounds().unwrap();
+        let bounds = |app: &VectorApp| app.session.active().unwrap().doc.node(redrob_vector_doc::NodeId(id)).unwrap().geometric_bounds().unwrap();
         // Direct Selection used last: the drag moves the rectangle's bottom-right corner only (once
         // the rectangle isn't selected whole, which would move all its anchors).
         app.select_tool("directSelection");
@@ -3453,8 +3452,7 @@ mod tests {
         app.session.execute("select.set", &json!({"ids": [a, b]})).unwrap();
         let ctx = egui::Context::default();
         frame(&mut app, &ctx, vec![]);
-        let thick =
-            |app: &mut VectorApp| shapes(app, &ctx).iter().filter(|s| matches!(s, Shape::Path(ps) if ps.stroke.width == KEY_OUTLINE)).count();
+        let thick = |app: &mut VectorApp| shapes(app, &ctx).iter().filter(|s| matches!(s, Shape::Path(ps) if ps.stroke.width == KEY_OUTLINE)).count();
         assert_eq!(thick(&mut app), 0, "no key yet");
         app.session.execute("select.key", &json!({"id": b})).unwrap();
         assert!(thick(&mut app) > 0, "the key's outline");

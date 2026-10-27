@@ -243,9 +243,7 @@ pub fn raster_to_layout(shell: &mut ShellApp) -> Result<String, String> {
 /// The Vector document's active artboard as an SVG string (`redrob_vector_svg::export`,
 /// editors/vector/crates/svg/src/lib.rs L321; `ExportOptions::artboard` sets the viewBox,
 /// L186), with the document's title and the artboard's size in points. `None` with no document.
-pub fn vector_svg(
-    app: &redrob_vector_ui_egui::VectorApp,
-) -> Option<(String, String, (f64, f64))> {
+pub fn vector_svg(app: &redrob_vector_ui_egui::VectorApp) -> Option<(String, String, (f64, f64))> {
     let st = app.session.active()?;
     let index = app
         .view()

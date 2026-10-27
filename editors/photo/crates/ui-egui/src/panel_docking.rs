@@ -521,8 +521,7 @@ pub(crate) fn legacy_tab(app: &mut PhotoApp, ui: &mut egui::Ui, panel: &str, res
             egui::pos2(bounds.left(), response.rect.top()),
             egui::vec2(bounds.width().clamp(240.0, 600.0), bounds.height().clamp(200.0, 600.0)),
         );
-        if ensure(&mut layout, id).is_ok() && redrob_canvas_ui::docking::begin_drag(ui.ctx(), egui::Id::new("photo-panel-docking"), id.to_string(), source)
-        {
+        if ensure(&mut layout, id).is_ok() && redrob_canvas_ui::docking::begin_drag(ui.ctx(), egui::Id::new("photo-panel-docking"), id.to_string(), source) {
             ui.ctx().data_mut(|data| {
                 data.insert_temp(
                     egui::Id::new("photo-panel-docking").with("legacy-origin"),
@@ -880,9 +879,7 @@ impl redrob_canvas_ui::docking::DockContent<String> for PanelContent<'_> {
             let members = self.app.ui.docking.as_ref().map(|layout| group_members(layout, id)).unwrap_or_default();
             target.tabs = members
                 .into_iter()
-                .filter_map(|panel| {
-                    ui.ctx().read_response(egui::Id::new("photo-panel-docking").with(("tab", &panel))).map(|response| (panel, response.rect))
-                })
+                .filter_map(|panel| ui.ctx().read_response(egui::Id::new("photo-panel-docking").with(("tab", &panel))).map(|response| (panel, response.rect)))
                 .collect();
         }
         if !self.collapsed.contains(id) {

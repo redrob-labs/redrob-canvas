@@ -174,15 +174,7 @@ fn render(app: &VectorApp, paints: Paints, g: &GraphicStyle, preview: Preview, p
 }
 
 /// The thumbnail of style `g` (`look`: its [`look_hash`]) at `size` points.
-fn thumb(
-    app: &VectorApp,
-    ctx: &egui::Context,
-    paints: Paints,
-    g: &GraphicStyle,
-    look: u64,
-    preview: Preview,
-    size: f32,
-) -> Option<TextureHandle> {
+fn thumb(app: &VectorApp, ctx: &egui::Context, paints: Paints, g: &GraphicStyle, look: u64, preview: Preview, size: f32) -> Option<TextureHandle> {
     let px = (size * ctx.pixels_per_point()).round().max(8.0) as u32;
     // Override Character Color changes only how type takes a style.
     let key = (look, px, preview, preview == Preview::Text && app.session.prefs.override_char_color);

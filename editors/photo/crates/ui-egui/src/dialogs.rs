@@ -1096,8 +1096,7 @@ mod tests {
         let radius = |h: &egui_kittest::Harness<'static, PhotoApp>| h.state().ui.dialogs.last().and_then(|d| d.fields["radius"].as_f64());
         assert_eq!(radius(&h), Some(1.0), "the default the first time");
         // The Radius field comes before the Blending Options' Opacity field.
-        let first_number =
-            |h: &egui_kittest::Harness<'static, PhotoApp>| h.get_all_by_role(egui::accesskit::Role::SpinButton).next().unwrap().is_focused();
+        let first_number = |h: &egui_kittest::Harness<'static, PhotoApp>| h.get_all_by_role(egui::accesskit::Role::SpinButton).next().unwrap().is_focused();
         assert!(first_number(&h), "the Radius field has focus");
         h.event(egui::Event::Text("5".into()));
         h.run_steps(1);

@@ -97,7 +97,10 @@ fn parsing_without_interpretation_exposes_pages_and_objects() {
 #[cfg_attr(not(target_arch = "wasm32"), test)]
 fn caller_input_policy_is_checked_before_parser_and_copy() {
     let options = redrob_canvas_pdf::OpenOptions { max_input_bytes: 3, ..Default::default() };
-    assert!(matches!(redrob_canvas_pdf::open_slice_with_options(b"bad!", None, &options), Err(redrob_canvas_pdf::OpenError::InputLimit { limit: 3 })));
+    assert!(matches!(
+        redrob_canvas_pdf::open_slice_with_options(b"bad!", None, &options),
+        Err(redrob_canvas_pdf::OpenError::InputLimit { limit: 3 })
+    ));
     assert!(matches!(
         redrob_canvas_pdf::open_with_options(std::sync::Arc::new(b"bad!".to_vec()), None, &options),
         Err(redrob_canvas_pdf::OpenError::InputLimit { limit: 3 })

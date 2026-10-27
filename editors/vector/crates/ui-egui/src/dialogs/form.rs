@@ -536,14 +536,7 @@ pub(super) fn preview(app: &mut crate::VectorApp, ui: &mut egui::Ui, d: &mut Dia
 
 /// As [`preview`], returning the command's result only when a new preview succeeds.
 /// A dialog can retain a small summary (such as point counts) in its private fields.
-pub(super) fn preview_result(
-    app: &mut crate::VectorApp,
-    ui: &mut egui::Ui,
-    d: &mut Dialog,
-    label: &str,
-    cmd: &str,
-    params: Value,
-) -> Option<Value> {
+pub(super) fn preview_result(app: &mut crate::VectorApp, ui: &mut egui::Ui, d: &mut Dialog, label: &str, cmd: &str, params: Value) -> Option<Value> {
     const LAST: &str = PREVIEWED;
     ui.add_space(8.0);
     let mut on = d.bool("preview");

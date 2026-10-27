@@ -2143,10 +2143,7 @@ pub fn default_threads() -> u16 {
             return o.min(64) as u16;
         }
         if std::env::var_os("REDROB_VECTOR_RENDER_THREADS").is_some() {
-            return std::env::var("REDROB_VECTOR_RENDER_THREADS")
-                .ok()
-                .and_then(|v| v.parse().ok())
-                .unwrap_or(0);
+            return std::env::var("REDROB_VECTOR_RENDER_THREADS").ok().and_then(|v| v.parse().ok()).unwrap_or(0);
         }
         std::thread::available_parallelism().map(|n| (n.get().saturating_sub(1)).min(8) as u16).unwrap_or(0)
     }

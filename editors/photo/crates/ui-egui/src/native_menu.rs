@@ -837,7 +837,7 @@ mod tests {
 
     /// Redrob Canvas keeps Photoshop's ⌘H, ⌘M, ⌘W and ⌘, (Hide Layers): the system items give way.
     #[test]
-    fn clashes_are_resolved_in_photo's_favour() {
+    fn clashes_are_resolved_in_photos_favour() {
         let l = layout(true);
         let clash = |sc: &str| l.clashes.iter().find(|c| c.shortcut == sc).map(|c| c.command.as_str());
         assert_eq!(clash("Cmd+H"), Some("view.extras"));
