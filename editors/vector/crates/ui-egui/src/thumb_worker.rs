@@ -47,10 +47,8 @@ impl<S: PartialEq + Send + 'static, K: Send + 'static> ThumbWorker<S, K> {
     pub fn spawn(ctx: &egui::Context, name: &str) -> Option<Self> {
         if cfg!(target_arch = "wasm32")
             || cfg!(test)
-            // legacy: the upstream variable is read when ours is unset
-            || std::env::var_os("REDROB_VECTOR_SYNC_RENDER").or_else(|| std::env::var_os("VECTORCRAFT_SYNC_RENDER")).is_some()
+            || std::env::var_os("REDROB_VECTOR_SYNC_RENDER").is_some()
         {
-            // legacy: the upstream variable is read when ours is unset
             return None;
         }
         Self::start(ctx, name)
@@ -62,7 +60,7 @@ impl<S: PartialEq + Send + 'static, K: Send + 'static> ThumbWorker<S, K> {
         let (done_tx, rx) = channel::<Done<K>>();
         let ctx = ctx.clone();
         std::thread::Builder::new()
-            .name(format!("vectorcraft-{name}"))
+            .name(format!("vector-{name}"))
             .spawn(move || {
                 let mut r = Renderer::new();
                 let mut queue: VecDeque<Job<S, K>> = VecDeque::new();

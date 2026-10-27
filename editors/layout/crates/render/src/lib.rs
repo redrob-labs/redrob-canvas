@@ -261,8 +261,7 @@ pub fn default_threads() -> u16 {
     }
     #[cfg(not(target_arch = "wasm32"))]
     {
-        // legacy: the upstream variable is read when ours is unset
-        let threads = std::env::var("REDROB_LAYOUT_RENDER_THREADS").or_else(|_| std::env::var("DESIGNCRAFT_RENDER_THREADS"));
+        let threads = std::env::var("REDROB_LAYOUT_RENDER_THREADS");
         if let Some(n) = threads.ok().and_then(|v| v.parse().ok()) {
             return n;
         }

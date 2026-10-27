@@ -302,7 +302,7 @@ fn warped_type_in_a_symbol_reopens_unchanged() {
     s.execute("symbol.new", &json!({"name": "Master"})).unwrap();
     let render = |s: &Session| redrob_vector_render::Renderer::new().render(&s.doc().unwrap().doc, 400, 300, Affine::IDENTITY, &Default::default());
     let before = render(&s);
-    let dir = std::env::temp_dir().join(format!("vectorcraft-1738-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("vector-1738-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join("warped.rvector");
     s.execute("document.save", &json!({"path": path})).unwrap();

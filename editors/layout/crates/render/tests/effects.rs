@@ -68,7 +68,7 @@ fn golden(name: &str, img: &Rendered) {
     let n = (img.width * img.height) as usize;
     let mean = sum as f64 / n as f64;
     if bad * 200 > n || mean > 1.0 {
-        let out = std::env::temp_dir().join(format!("designcraft-golden-{name}.png"));
+        let out = std::env::temp_dir().join(format!("layout-golden-{name}.png"));
         let _ = std::fs::write(&out, img.to_png());
         panic!("{name}: {bad} pixels differ by > 8 (worst {worst}, mean {mean:.2}); got {}", out.display());
     }

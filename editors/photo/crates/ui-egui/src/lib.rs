@@ -1,4 +1,4 @@
-//! Photocraft's first UI shell, built on egui/eframe.
+//! Photo's first UI shell, built on egui/eframe.
 //!
 //! This crate is deliberately thin. Every action goes through
 //! [`redrob_photo_engine::Session::execute`], and all UI state lives in [`state::UiState`] (plain

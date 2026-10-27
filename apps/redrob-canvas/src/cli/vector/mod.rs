@@ -1,4 +1,4 @@
-//! `redrob-canvas vector`: VectorCraft from the command line.
+//! `redrob-canvas vector`: Vector from the command line.
 //!
 //! ```text
 //! redrob-canvas vector mcp [--connect 127.0.0.1:7979 | --headless] [--automation-read-root DIR] [--automation-write-root DIR]
@@ -50,16 +50,16 @@ fn stdout_failed(e: std::io::Error) -> ! {
 }
 
 const USAGE: &str = "\
-redrob-canvas vector — VectorCraft automation
+redrob-canvas vector — Vector automation
 
 USAGE:
   redrob-canvas vector mcp [--connect ADDR | --headless] [--automation-read-root DIR] [--automation-write-root DIR]
       Run the MCP server on stdio. Default: connect to a running app at 127.0.0.1:7979
-      (vectorcraft --control 7979), falling back to a headless in-process session.
+      (vector --control 7979), falling back to a headless in-process session.
       --automation-read-root / --automation-write-root confine the files the agent's commands read
       (open, place, relink, library loads…) and write (save, export, package, library saves…) to
       DIR, links followed; a root left out grants none of its access. They imply --headless: a
-      running app enforces its own (vectorcraft --control PORT --automation-read-root DIR …).
+      running app enforces its own (vector --control PORT --automation-read-root DIR …).
 
   redrob-canvas vector run [--in FILE] [--cmd ID [--params JSON]]... [--export FILE]... [--scale N]
       Headless batch: open FILE (any readable format) or start a new document, run commands in
@@ -163,7 +163,7 @@ fn mcp(args: &[String]) -> Result<(), String> {
     }
     let roots = AutomationRoots::new(read_root.as_deref().map(Path::new), write_root.as_deref().map(Path::new))?;
     if roots.is_some() && connect.is_some() {
-        return Err("--automation-read-root and --automation-write-root confine the headless server; a running app enforces its own roots:                     start it with `vectorcraft --control <port> --automation-read-root <dir> --automation-write-root <dir>`"
+        return Err("--automation-read-root and --automation-write-root confine the headless server; a running app enforces its own roots:                     start it with `vector --control <port> --automation-read-root <dir> --automation-write-root <dir>`"
             .into());
     }
     let backend: Box<dyn Backend> = if let Some(roots) = roots {

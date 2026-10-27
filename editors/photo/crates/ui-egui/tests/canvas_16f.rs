@@ -226,7 +226,7 @@ fn sixteen_bit_gradient_on_screen() {
     let _gpu = gpu_lock();
     // A 16-bit ramp drawn by the app's canvas: smooth, monotonic, no visible steps.
     let doc = gradient(SampleType::U16, 2048, 1024, 0.0, 1.0);
-    let Some(img) = screen(doc, &[], "photocraft-canvas-16f-gradient.png") else { return };
+    let Some(img) = screen(doc, &[], "photo-canvas-16f-gradient.png") else { return };
     let (n, step) = screen_levels(&img, img.h / 2, 150, 600);
     assert!(n > 100 && step <= 3, "{n} levels, max step {step}");
 }
@@ -237,7 +237,7 @@ fn thirty_two_bit_preview_exposes_values_above_one() {
     // A dark 32-bit ramp brightened +4 stops by View › 32-bit Preview Options: with an 8-bit
     // canvas texture its 0..1/16 range has 16 codes (banding); the float texture keeps it smooth.
     let doc = gradient(SampleType::F32, 2048, 1024, 0.0, 1.0 / 16.0);
-    let Some(img) = screen(doc, &[("view.thirtyTwoBitPreviewOptions", json!({"exposure": 4.0, "gamma": 1.0}))], "photocraft-canvas-16f-hdr-ramp.png") else {
+    let Some(img) = screen(doc, &[("view.thirtyTwoBitPreviewOptions", json!({"exposure": 4.0, "gamma": 1.0}))], "photo-canvas-16f-hdr-ramp.png") else {
         return;
     };
     let (n, _) = screen_levels(&img, img.h / 2, 150, 600);
@@ -248,7 +248,7 @@ fn thirty_two_bit_preview_exposes_values_above_one() {
     let mut s = Surface::new(PixelFormat::new(ColorMode::Rgb, SampleType::F32, true));
     s.fill_rect(Rect::new(0, 0, 512, 512), &[2.0, 2.0, 2.0, 1.0]);
     flat.layers.push(Layer::new("bright", LayerContent::Raster(s)));
-    let Some(img) = screen(flat, &[("view.thirtyTwoBitPreviewOptions", json!({"exposure": -3.0, "gamma": 1.0}))], "photocraft-canvas-16f-hdr-flat.png") else {
+    let Some(img) = screen(flat, &[("view.thirtyTwoBitPreviewOptions", json!({"exposure": -3.0, "gamma": 1.0}))], "photo-canvas-16f-hdr-flat.png") else {
         return;
     };
     let got = img.green(img.w * 2 / 5, img.h / 2) as f32;

@@ -15,14 +15,14 @@ struct LegacyDrag {
 
 pub(crate) fn cancel_gesture(app: &mut DesignApp, ctx: &egui::Context) {
     cancel_legacy_drag(app, ctx);
-    redrob_canvas_ui::docking::cancel_drag::<String>(ctx, egui::Id::new("designcraft-panel-docking"));
+    redrob_canvas_ui::docking::cancel_drag::<String>(ctx, egui::Id::new("layout-panel-docking"));
 }
 
 fn cancel_legacy_drag(app: &mut DesignApp, ctx: &egui::Context) -> bool {
-    let key = egui::Id::new("designcraft-panel-docking").with("legacy-origin");
+    let key = egui::Id::new("layout-panel-docking").with("legacy-origin");
     let previous = ctx.data_mut(|data| data.remove_temp::<LegacyDrag>(key));
     if let Some(previous) = previous {
-        redrob_canvas_ui::docking::cancel_drag::<String>(ctx, egui::Id::new("designcraft-panel-docking"));
+        redrob_canvas_ui::docking::cancel_drag::<String>(ctx, egui::Id::new("layout-panel-docking"));
         if previous.generation != app.ui.docking_generation {
             return false;
         }
@@ -281,7 +281,7 @@ fn change(app: &mut DesignApp, operation: &str, params: &Value) -> Result<Value,
 }
 
 pub(crate) fn show(app: &mut DesignApp, ui: &mut egui::Ui) -> bool {
-    let area = egui::Id::new("designcraft-panel-docking");
+    let area = egui::Id::new("layout-panel-docking");
     let changed_workspace = ui.ctx().data_mut(|data| {
         let previous = data.get_temp::<u64>(area.with("generation"));
         data.insert_temp(area.with("generation"), app.ui.docking_generation);
@@ -334,7 +334,7 @@ pub(crate) fn show(app: &mut DesignApp, ui: &mut egui::Ui) -> bool {
         style.panels_label = crate::i18n::tr(&language, "Panels").to_owned();
         style.resize_label = crate::i18n::tr(&language, "Resize panels").to_owned();
         style.resize_window_label = crate::i18n::tr(&language, "Resize panel window").to_owned();
-        let mut area = redrob_canvas_ui::docking::DockArea::new(egui::Id::new("designcraft-panel-docking")).blocked_rects(&blocked);
+        let mut area = redrob_canvas_ui::docking::DockArea::new(egui::Id::new("layout-panel-docking")).blocked_rects(&blocked);
         if let Some(panel) = &raise {
             area = area.raise_panel(panel.clone());
         }
@@ -375,7 +375,7 @@ pub(crate) fn show(app: &mut DesignApp, ui: &mut egui::Ui) -> bool {
         if !output.actions.iter().any(|action| matches!(action, Action::Move { .. } | Action::Float { .. })) && cancel_legacy_drag(app, ui.ctx()) {
             return app.ui.docking.is_some();
         }
-        ui.ctx().data_mut(|data| data.remove::<LegacyDrag>(egui::Id::new("designcraft-panel-docking").with("legacy-origin")));
+        ui.ctx().data_mut(|data| data.remove::<LegacyDrag>(egui::Id::new("layout-panel-docking").with("legacy-origin")));
     }
     for action in output.actions {
         if let Err(error) = app.run("window.panel.layout", json!({"action": action})) {
@@ -429,11 +429,11 @@ pub(crate) fn legacy_tab(app: &mut DesignApp, ui: &mut egui::Ui, panel: &str, re
             egui::vec2(bounds.width().clamp(240.0, 600.0), bounds.height().clamp(200.0, 600.0)),
         );
         if ensure(&mut layout, id).is_ok()
-            && redrob_canvas_ui::docking::begin_drag(ui.ctx(), egui::Id::new("designcraft-panel-docking"), id.to_string(), source)
+            && redrob_canvas_ui::docking::begin_drag(ui.ctx(), egui::Id::new("layout-panel-docking"), id.to_string(), source)
         {
             ui.ctx().data_mut(|data| {
                 data.insert_temp(
-                    egui::Id::new("designcraft-panel-docking").with("legacy-origin"),
+                    egui::Id::new("layout-panel-docking").with("legacy-origin"),
                     LegacyDrag {
                         layout: app.ui.docking.clone(),
                         open_panel: app.ui.open_panel.clone(),

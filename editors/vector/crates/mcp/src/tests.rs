@@ -28,7 +28,7 @@ fn text_of(result: &Value) -> String {
 }
 
 fn tmp(name: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("vectorcraft-mcp-test-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("vector-mcp-test-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     dir.join(name)
 }

@@ -2142,14 +2142,11 @@ pub fn default_threads() -> u16 {
         if o >= 0 {
             return o.min(64) as u16;
         }
-        if std::env::var_os("REDROB_VECTOR_RENDER_THREADS").or_else(|| std::env::var_os("VECTORCRAFT_RENDER_THREADS")).is_some() {
-            // legacy: the upstream variable is read when ours is unset
+        if std::env::var_os("REDROB_VECTOR_RENDER_THREADS").is_some() {
             return std::env::var("REDROB_VECTOR_RENDER_THREADS")
-                // legacy: the upstream variable is read when ours is unset
-                .or_else(|_| std::env::var("VECTORCRAFT_RENDER_THREADS"))
                 .ok()
                 .and_then(|v| v.parse().ok())
-                .unwrap_or(0); // legacy: the upstream variable is read when ours is unset
+                .unwrap_or(0);
         }
         std::thread::available_parallelism().map(|n| (n.get().saturating_sub(1)).min(8) as u16).unwrap_or(0)
     }

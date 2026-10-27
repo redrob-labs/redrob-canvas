@@ -13,7 +13,7 @@ fn run(h: &mut Headless, command: &str, params: Value) -> Value {
 
 #[test]
 fn headless_links_report_missing_files_and_relink() {
-    let dir = std::env::temp_dir().join(format!("vectorcraft-mcp-links-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("vector-mcp-links-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let file = |n: &str| dir.join(n).to_string_lossy().into_owned();
     let mut h = Headless::new();

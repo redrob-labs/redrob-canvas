@@ -337,7 +337,7 @@ pub fn export_full(doc: &Document, opts: &ExportOptions, native: Option<&[u8]>) 
 }
 
 /// The XML namespace of the editing data [`ExportOptions::preserve_editing`] embeds.
-pub const EDITING_NS: &str = "urn:vectorcraft:editing";
+pub const EDITING_NS: &str = "urn:vector:editing";
 
 /// The native document an SVG carries ([`ExportOptions::preserve_editing`]).
 #[derive(Clone, Debug, PartialEq, Eq)]

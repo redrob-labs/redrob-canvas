@@ -139,7 +139,7 @@ fn export_to_files_and_pdf() {
     add_square(&mut s, Rect::new(0, 0, 10, 10), [1.0, 0.0, 0.0, 1.0]);
     s.execute("layer.new.artboardFromLayers", json!({"name": "Red Board"})).unwrap();
     s.execute("layer.new.artboard", json!({"rect": [20, 0, 30, 15], "name": "Empty/One", "background": "transparent"})).unwrap();
-    let dir = std::env::temp_dir().join(format!("photocraft-artboards-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-artboards-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let d = dir.to_string_lossy().into_owned();
@@ -314,7 +314,7 @@ fn artboards_at_ordinary_coordinates_still_place_and_edit() {
 fn export_rejects_a_board_too_far_from_the_origin() {
     let mut s = session(8);
     s.execute("layer.new.artboard", json!({"x": i32::MIN, "width": 50, "height": 50, "name": "Far"})).unwrap();
-    let dir = std::env::temp_dir().join(format!("photocraft-artboards-931-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-artboards-931-{}", std::process::id()));
     let d = dir.to_string_lossy().into_owned();
     // Moving the board to the origin needs dx = 2^31, one past i32::MAX: an error, not a panic.
     let err = s.execute("file.export.artboardsToFiles", json!({"dir": d})).unwrap_err().to_string();

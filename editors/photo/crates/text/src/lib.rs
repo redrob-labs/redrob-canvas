@@ -1,4 +1,4 @@
-//! Photocraft's type engine.
+//! Photo's type engine.
 //!
 //! * [`fonts::FontDb`]: bundled fonts (Inter, JetBrains Mono; always available, including on the
 //!   web), optional system fonts from platform directory scans plus Fontconfig's Linux file list,
@@ -145,7 +145,7 @@ static SHARED: warm::Warm<std::sync::Mutex<TextEngine>> = warm::Warm::new();
 fn uses_system_fonts() -> bool {
     cfg!(not(target_arch = "wasm32"))
         && !cfg!(test)
-        && std::env::var_os("REDROB_PHOTO_NO_SYSTEM_FONTS").or_else(|| std::env::var_os("PHOTOCRAFT_NO_SYSTEM_FONTS")).is_none() // legacy: the upstream variable is read when ours is unset
+        && std::env::var_os("REDROB_PHOTO_NO_SYSTEM_FONTS").is_none()
 }
 
 fn new_shared() -> std::sync::Mutex<TextEngine> {
@@ -198,7 +198,7 @@ pub fn set_shared_missing_glyph_protection(on: bool) {
         // The waiting thread reads the newest setting when it applies it.
         return;
     }
-    let spawned = std::thread::Builder::new().name("photocraft-glyph-protection".into()).spawn(|| apply_glyph_protection(shared()));
+    let spawned = std::thread::Builder::new().name("photo-glyph-protection".into()).spawn(|| apply_glyph_protection(shared()));
     if spawned.is_err() {
         // No thread: apply it here, as before.
         GLYPH_PROTECTION_WAITING.store(false, std::sync::atomic::Ordering::SeqCst);
@@ -251,7 +251,7 @@ mod warm {
                     drop(scan);
                     Some(self.get_or_init(init))
                 }
-                None => match std::thread::Builder::new().name("photocraft-font-scan".into()).spawn(move || {
+                None => match std::thread::Builder::new().name("photo-font-scan".into()).spawn(move || {
                     self.get_or_init(init);
                 }) {
                     Ok(worker) => {

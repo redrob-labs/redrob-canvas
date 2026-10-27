@@ -10,7 +10,7 @@
 //!
 //! It also writes `WEB_FONTS`: the faces listed in `web-fonts.txt`, which web builds fetch from
 //! `fonts/<sha16>/` beside the wasm instead of embedding (`cargo xtask web-fonts` copies them
-//! there; `apps/vectorcraft-web/src/fonts.rs` fetches them). A list line the manifest lacks is left
+//! there; `apps/vector-web/src/fonts.rs` fetches them). A list line the manifest lacks is left
 //! out with a warning, never an error, and never costs the desktop its fonts.
 
 use std::fmt::Write as _;
@@ -27,10 +27,8 @@ fn main() {
     let required = std::env::var_os("REDROB_CRAFT_FONTS_REQUIRED").or_else(|| std::env::var_os("CRAFT_FONTS_REQUIRED")).is_some(); // legacy: the upstream variable is read when ours is unset
     let (mut fonts, mut web) = (String::new(), String::new());
     if let Some(dir) =
-        // legacy: the upstream variable is read when ours is unset
         std::env::var_os("REDROB_CRAFT_FONTS_DIR").or_else(|| std::env::var_os("CRAFT_FONTS_DIR")).filter(|d| !d.is_empty()).map(PathBuf::from)
     {
-        // legacy: the upstream variable is read when ours is unset
         let dir = from_workspace(dir);
         match craft_fonts(&dir) {
             Ok(entries) => fonts = entries,

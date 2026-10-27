@@ -167,7 +167,7 @@ impl TextSlots {
 
 /// Replace every `<text>` usvg would draw by a placeholder group (see the module docs).
 pub(super) fn prepare<'s>(svg: &'s str, xml: &roxmltree::Document, dpi: f64, warnings: &mut Vec<String>) -> (Cow<'s, str>, TextSlots) {
-    let mut prefix = String::from("vectorcraft-text-");
+    let mut prefix = String::from("vector-text-");
     while xml.descendants().any(|n| n.attribute("id").is_some_and(|id| id.starts_with(&prefix))) {
         prefix.insert(0, '_');
     }

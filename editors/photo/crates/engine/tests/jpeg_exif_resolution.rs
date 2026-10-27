@@ -67,7 +67,7 @@ fn exif_resolution_opens_and_saves_consistently() {
     let d = &s.active().unwrap().doc;
     assert_eq!((d.resolution_dpi, d.size.width, d.size.height), (240.0, 16, 8));
 
-    let dir = std::env::temp_dir().join(format!("photocraft-1691-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-1691-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let out = dir.join("saved.jpg");
     s.execute("file.saveACopy", json!({"path": out.to_string_lossy()})).unwrap();

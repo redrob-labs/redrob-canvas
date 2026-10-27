@@ -6480,7 +6480,7 @@ mod tests {
             sink.lock().unwrap().push((path.to_string(), bytes.to_vec()));
             Ok(())
         }));
-        app.services.pick_save = Some(Box::new(|_name: &str| Some("/tmp/designcraft-test.pdf".to_string())));
+        app.services.pick_save = Some(Box::new(|_name: &str| Some("/tmp/layout-test.pdf".to_string())));
 
         app.ui.dialog = Some(Dialog::new("pdfExport", json!({})));
         {
@@ -6495,7 +6495,7 @@ mod tests {
 
         let got = writes.lock().unwrap();
         assert_eq!(got.len(), 1, "confirming the dialog writes exactly one file");
-        assert_eq!(got[0].0, "/tmp/designcraft-test.pdf");
+        assert_eq!(got[0].0, "/tmp/layout-test.pdf");
         assert!(got[0].1.starts_with(b"%PDF"), "the written bytes are a PDF");
         drop(got);
 

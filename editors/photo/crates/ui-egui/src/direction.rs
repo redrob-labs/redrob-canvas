@@ -55,7 +55,7 @@ pub fn direction_scope(dir: Dir) -> impl Drop {
 
 fn env_override() -> Option<Dir> {
     static ENV: OnceLock<Option<Dir>> = OnceLock::new();
-    *ENV.get_or_init(|| parse_dir(&std::env::var("REDROB_PHOTO_UI_DIRECTION").or_else(|_| std::env::var("PHOTOCRAFT_UI_DIRECTION")).ok()?)) // legacy: the upstream variable is read when ours is unset
+    *ENV.get_or_init(|| parse_dir(&std::env::var("REDROB_PHOTO_UI_DIRECTION").ok()?))
 }
 
 /// `rtl` / `ltr`, any case; anything else (including empty) follows the language.

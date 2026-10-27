@@ -88,8 +88,8 @@ fn ordinary_panel_tab_drag_enters_shared_docking_and_can_redock_into_another_tab
     drag(&mut h, source, egui::pos2(160.0, 140.0));
     let layout = h.state().ui.docking.as_ref().expect("ordinary tab drag starts shared docking");
     assert!(layout.floating.iter().any(|g| g.panels.contains(&"layers".into())), "{layout:?}");
-    let source = h.ctx.read_response(egui::Id::new("designcraft-panel-docking").with(("tab", &"layers".to_string()))).unwrap().rect.center();
-    let destination = h.ctx.read_response(egui::Id::new("designcraft-panel-docking").with(("tab", &"properties".to_string()))).unwrap().rect.center();
+    let source = h.ctx.read_response(egui::Id::new("layout-panel-docking").with(("tab", &"layers".to_string()))).unwrap().rect.center();
+    let destination = h.ctx.read_response(egui::Id::new("layout-panel-docking").with(("tab", &"properties".to_string()))).unwrap().rect.center();
     drag(&mut h, source, destination);
     let layout = h.state().ui.docking.as_ref().unwrap();
     assert!(!layout.floating.iter().any(|g| g.panels.contains(&"layers".into())));
@@ -156,10 +156,10 @@ fn capture_custom_panel_docking_visual_fixtures() {
                 harness
                     .render()
                     .unwrap()
-                    .save(directory.join(format!("designcraft-shared-docking-{}-{language}-{width}-{scale}x.png", theme.id())))
+                    .save(directory.join(format!("layout-shared-docking-{}-{language}-{width}-{scale}x.png", theme.id())))
                     .unwrap();
                 if language == "ar" {
-                    let tab = egui::Id::new("designcraft-panel-docking").with(("tab", &"swatches".to_string()));
+                    let tab = egui::Id::new("layout-panel-docking").with(("tab", &"swatches".to_string()));
                     let at = harness.ctx.read_response(tab).unwrap().rect.center();
                     harness.input_mut().events.extend([
                         Event::PointerMoved(at),
@@ -180,7 +180,7 @@ fn capture_custom_panel_docking_visual_fixtures() {
                             "both logical reference and actual menu label must exist"
                         );
                     }
-                    harness.render().unwrap().save(directory.join(format!("designcraft-dock-context-{}-ar.png", theme.id()))).unwrap();
+                    harness.render().unwrap().save(directory.join(format!("layout-dock-context-{}-ar.png", theme.id()))).unwrap();
                 }
             }
         }
@@ -289,15 +289,15 @@ fn populated_canvas_keeps_a_real_stroke_edit_after_floating_and_redocking() {
     assert_eq!(h.state().session.active().unwrap().doc.item(redrob_layout_doc::ItemId(id)).unwrap().stroke.join, redrob_layout_doc::Join::Bevel);
     if let Some(directory) = &directory {
         std::fs::create_dir_all(directory).unwrap();
-        h.render().unwrap().save(directory.join("designcraft-populated-stroke-floating.png")).unwrap();
+        h.render().unwrap().save(directory.join("layout-populated-stroke-floating.png")).unwrap();
     }
-    let from = h.ctx.read_response(egui::Id::new("designcraft-panel-docking").with(("tab", &"stroke".to_string()))).unwrap().rect.center();
-    let to = h.ctx.read_response(egui::Id::new("designcraft-panel-docking").with(("tab", &"properties".to_string()))).unwrap().rect.center();
+    let from = h.ctx.read_response(egui::Id::new("layout-panel-docking").with(("tab", &"stroke".to_string()))).unwrap().rect.center();
+    let to = h.ctx.read_response(egui::Id::new("layout-panel-docking").with(("tab", &"properties".to_string()))).unwrap().rect.center();
     drag(&mut h, from, to);
     assert!(h.state().ui.docking.as_ref().unwrap().floating.is_empty());
     assert_eq!(h.state().session.active().unwrap().doc.item(redrob_layout_doc::ItemId(id)).unwrap().stroke.join, redrob_layout_doc::Join::Bevel);
     if let Some(directory) = &directory {
-        h.render().unwrap().save(directory.join("designcraft-populated-stroke-redocked.png")).unwrap();
+        h.render().unwrap().save(directory.join("layout-populated-stroke-redocked.png")).unwrap();
     }
 }
 
@@ -447,7 +447,7 @@ fn modal_overlay_blocks_a_real_tab_drag_release() {
     let mut app = app();
     app.run("window.panel.float", json!({"panel":"layers"})).unwrap();
     let mut h = harness(app, vec2(1280.0, 800.0));
-    let area = egui::Id::new("designcraft-panel-docking");
+    let area = egui::Id::new("layout-panel-docking");
     let source = h.ctx.read_response(area.with(("tab", &"properties".to_string()))).unwrap().rect.center();
     h.event(Event::PointerMoved(source));
     h.run_steps(1);
@@ -497,7 +497,7 @@ fn first_story_editor_frame_conservatively_blocks_owned_tab_release() {
     app.run("window.panel.float", json!({"panel":"layers"})).unwrap();
     let doc = serde_json::to_value(&app.session.active().unwrap().doc).unwrap();
     let mut h = crate::test_window::open(app, vec2(1440.0, 900.0));
-    let tab = egui::Id::new("designcraft-panel-docking").with(("tab", &"properties".to_string()));
+    let tab = egui::Id::new("layout-panel-docking").with(("tab", &"properties".to_string()));
     let from = h.ctx.read_response(tab).unwrap().rect.center();
     h.event(Event::PointerMoved(from));
     h.run_steps(1);
@@ -530,7 +530,7 @@ fn first_story_editor_frame_conservatively_blocks_owned_tab_release() {
         .find(|p| !editor.contains(*p))
         .expect("fixture has space outside editor");
     let before_outside = h.state().app.ui.docking.clone();
-    let tab = egui::Id::new("designcraft-panel-docking").with(("tab", &"layers".to_string()));
+    let tab = egui::Id::new("layout-panel-docking").with(("tab", &"layers".to_string()));
     let from = h.ctx.read_response(tab).unwrap().rect.center();
     h.event(Event::PointerMoved(from));
     h.run_steps(1);
@@ -591,12 +591,12 @@ fn capture_legacy_panel_menu_visual_fixture() {
     h.run_steps(2);
     assert!(egui::Popup::is_any_open(&h.ctx));
     assert_eq!(h.query_all_by_label(crate::i18n::tr("ar", "Float Panel")).count(), 2, "reference and actual logical action must be accessible");
-    h.render().unwrap().save(directory.join("designcraft-legacy-context-dark-ar.png")).unwrap();
+    h.render().unwrap().save(directory.join("layout-legacy-context-dark-ar.png")).unwrap();
     let group = h.get_by_label_contains(crate::i18n::tr("ar", "Group with")).rect().center();
     h.hover_at(group);
     h.run_steps(4);
     assert_eq!(h.query_all_by_label(crate::i18n::tr("ar", "Layers")).count(), 2, "reference and actual target must be accessible");
-    h.render().unwrap().save(directory.join("designcraft-legacy-targets-dark-ar.png")).unwrap();
+    h.render().unwrap().save(directory.join("layout-legacy-targets-dark-ar.png")).unwrap();
     assert!(h.state().ui.docking.is_none());
     let (last, last_label, _) = crate::dock::ICON_PANELS.last().unwrap();
     let logical = crate::i18n::tr("ar", last_label);
@@ -613,7 +613,7 @@ fn capture_legacy_panel_menu_visual_fixture() {
     let target = h.query_all_by_label(logical).find(|node| submenu.x_range().contains(node.rect().center().x)).unwrap().rect();
     assert!(submenu.contains_rect(target), "last target must be inside the actual submenu after scrolling");
     assert!(h.ctx.content_rect().contains_rect(target), "last target must be physically visible after wheel scrolling");
-    h.render().unwrap().save(directory.join("designcraft-legacy-targets-scrolled-dark-ar.png")).unwrap();
+    h.render().unwrap().save(directory.join("layout-legacy-targets-scrolled-dark-ar.png")).unwrap();
     h.query_all_by_label(logical).find(|node| submenu.contains_rect(node.rect())).unwrap().click();
     h.run_steps(4);
     let layout = h.state().ui.docking.as_ref().unwrap();
@@ -623,7 +623,7 @@ fn capture_legacy_panel_menu_visual_fixture() {
     assert!(group.iter().any(|panel| panel == "properties"));
     assert_eq!(group.last().map(String::as_str), Some("properties"), "clicked destination must receive the original panel after it");
     assert_eq!(serde_json::to_value(&h.state().session.active().unwrap().doc).unwrap(), doc);
-    h.render().unwrap().save(directory.join("designcraft-legacy-last-target-selected-dark-ar.png")).unwrap();
+    h.render().unwrap().save(directory.join("layout-legacy-last-target-selected-dark-ar.png")).unwrap();
 }
 
 #[test]

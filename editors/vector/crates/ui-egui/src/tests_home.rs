@@ -118,7 +118,7 @@ fn home_lists_recent_files_and_a_click_opens_one() {
     crate::theme::install_fonts(&ctx);
     let has = |texts: &[(String, egui::Rect)], s: &str| texts.iter().any(|(t, _)| t == s);
     assert!(!has(&home_texts(&mut app, &ctx, vec![]), "Recent Files"), "none: no section");
-    let dir = std::env::temp_dir().join("vectorcraft-home-recent");
+    let dir = std::env::temp_dir().join("vector-home-recent");
     let missing = dir.join("Gone.svg").to_string_lossy().into_owned();
     app.ui.recent_files = (0..9).map(|i| dir.join(format!("Drawing {i}.svg")).to_string_lossy().into_owned()).collect();
     app.ui.recent_files.insert(0, missing);

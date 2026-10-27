@@ -14,7 +14,7 @@ struct Folder(PathBuf);
 
 impl Folder {
     fn new(name: &str) -> Self {
-        let dir = std::env::temp_dir().join(format!("vectorcraft-svgimport-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("vector-svgimport-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(dir.join("img")).unwrap();
         Self(dir)

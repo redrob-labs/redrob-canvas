@@ -390,7 +390,7 @@ fn area_type_from_a_circle_keeps_glyphs_inside() {
     let mut s = session();
     let e = s.execute("shape.ellipse", &json!({"x": 100, "y": 100, "width": 240, "height": 240})).unwrap();
     let pid = e["id"].as_u64().unwrap();
-    let r = s.execute("text.createInPath", &json!({"path": pid, "mode": "area", "text": vectorcraft_engine_placeholder()})).unwrap();
+    let r = s.execute("text.createInPath", &json!({"path": pid, "mode": "area", "text": vector_engine_placeholder()})).unwrap();
     let id = NodeId(r["id"].as_u64().unwrap());
     assert!(s.doc().unwrap().doc.node(NodeId(pid)).is_none(), "the path became the frame");
     let t = obj(&s, id);
@@ -408,7 +408,7 @@ fn area_type_from_a_circle_keeps_glyphs_inside() {
     assert!(s.execute("text.createInPath", &json!({"path": 9999})).is_err());
 }
 
-fn vectorcraft_engine_placeholder() -> String {
+fn vector_engine_placeholder() -> String {
     "Type flows inside any closed shape, line by line, trimmed to the shape's edges at each band. ".repeat(4)
 }
 

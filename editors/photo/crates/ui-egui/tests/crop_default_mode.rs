@@ -118,7 +118,7 @@ fn a_ratio_dropdown_updates_the_preview_and_enter_without_touching_a_handle() {
     if let Some(dir) = std::env::var_os("REDROB_CRAFT_UI_VISUAL_FIXTURES") {
         let dir = std::path::PathBuf::from(dir);
         std::fs::create_dir_all(&dir).unwrap();
-        h.render().unwrap().save(dir.join("photocraft-crop-square.png")).unwrap();
+        h.render().unwrap().save(dir.join("photo-crop-square.png")).unwrap();
     }
     h.key_press(Key::Enter);
     h.run_steps(3);

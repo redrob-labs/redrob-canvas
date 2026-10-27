@@ -249,7 +249,7 @@ pub fn start_fontconfig_cjk_scan() {
     }
     let scan = fontconfig_cjk_scan();
     if std::thread::Builder::new()
-        .name("photocraft-fontconfig-cjk".into())
+        .name("photo-fontconfig-cjk".into())
         .spawn(move || {
             let result = [CjkScript::Japanese, CjkScript::SimplifiedChinese, CjkScript::TraditionalChinese, CjkScript::Korean].map(fontconfig_match);
             *scan.result.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = Some(result);

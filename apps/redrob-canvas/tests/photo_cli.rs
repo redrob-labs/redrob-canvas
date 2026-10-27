@@ -581,7 +581,7 @@ fn mcp_stdio_handshake_and_tool_call() {
     send(json!({"jsonrpc":"2.0","id":1,"method":"initialize","params":{
         "protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test","version":"0"}}}));
     let init = recv(1);
-    assert_eq!(init["result"]["serverInfo"]["name"], "photocraft", "{init}");
+    assert_eq!(init["result"]["serverInfo"]["name"], "photo", "{init}");
     send(json!({"jsonrpc":"2.0","method":"notifications/initialized"}));
     send(json!({"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}));
     let tools = recv(2);
@@ -695,7 +695,7 @@ fn a_non_unicode_argument_is_a_usage_error_not_a_panic() {
 }
 
 /// `batch --actions set.atn`: a Photoshop Actions file plays like an Actions set, and its steps
-/// PhotoCraft can't play are warned about up front.
+/// Photo can't play are warned about up front.
 #[test]
 fn batch_plays_a_photoshop_actions_file() {
     use redrob_photo_engine::actions_cmds::Action;

@@ -277,7 +277,7 @@ mod tests {
     #[cfg(not(target_arch = "wasm32"))]
     #[test]
     fn the_csv_gets_one_header_and_every_strokes_frames() {
-        let dir = std::env::temp_dir().join(format!("photocraft-stroke-trace-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("photo-stroke-trace-{}", std::process::id()));
         let _ = std::fs::create_dir_all(&dir);
         let path = dir.join("trace.csv");
         let _ = std::fs::remove_file(&path);

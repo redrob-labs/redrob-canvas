@@ -147,7 +147,7 @@ fn main() {
         let imported = redrob_photo_io::abr_map::read_abr(&bytes, "Generated").unwrap();
         assert_eq!(imported.presets.len(), ids.len(), "every generated preset imports");
         file_no += 1;
-        let path = out.join(format!("photocraft-test-brushes-{file_no:02}.abr"));
+        let path = out.join(format!("photo-test-brushes-{file_no:02}.abr"));
         std::fs::write(&path, &bytes).unwrap();
         println!("{}: {} brushes, {:.1} MB on disk, {:.1} MB decoded", path.display(), ids.len(), bytes.len() as f64 / 1e6, decoded as f64 / 1e6);
         total_bytes += bytes.len() as u64;

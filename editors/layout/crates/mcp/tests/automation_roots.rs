@@ -24,7 +24,7 @@ const PNG: &[u8] = &[
 ];
 
 /// A `.rlayout` file of `pages` pages with `text` in a frame on the first, made outside any roots.
-fn designcraft_file(path: &Path, pages: u32, text: &str) {
+fn layout_file(path: &Path, pages: u32, text: &str) {
     let mut s = Session::new();
     s.execute("file.new", &json!({"pages": pages})).unwrap();
     s.execute("frame.create", &json!({"rect": [36, 36, 300, 100], "content": "text", "text": text})).unwrap();
@@ -43,7 +43,7 @@ fn confined(tag: &str, read: bool, write: bool) -> (Server, PathBuf) {
     }
     for (dir, text) in [("in", "Inside text"), ("outside", SECRET), ("in2", "Sibling")] {
         let dir = base.join(dir);
-        designcraft_file(&dir.join("doc.rlayout"), if dir.ends_with("in") { 1 } else { 3 }, text);
+        layout_file(&dir.join("doc.rlayout"), if dir.ends_with("in") { 1 } else { 3 }, text);
         std::fs::write(dir.join("pic.png"), PNG).unwrap();
         std::fs::write(dir.join("data.csv"), format!("name,city\n{text},Oslo\n")).unwrap();
         std::fs::write(dir.join("swatches.ase"), b"not a swatch file").unwrap();
@@ -335,7 +335,7 @@ fn without_roots_nothing_is_confined() {
     let base = std::env::temp_dir().join(format!("dc-mcp-roots-none-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&base);
     std::fs::create_dir_all(&base).unwrap();
-    designcraft_file(&base.join("a.rlayout"), 3, "Anywhere");
+    layout_file(&base.join("a.rlayout"), 3, "Anywhere");
     let mut server = Server::new(Box::new(Headless::with_document().with_automation_roots(AutomationRoots::new(None, None).unwrap())));
     ok(&mut server, "open_document", json!({"path": s(&base.join("a.rlayout"))}));
     assert_eq!(pages(&mut server), 3);

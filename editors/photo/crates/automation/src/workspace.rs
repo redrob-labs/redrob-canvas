@@ -455,7 +455,7 @@ mod tests {
     use super::*;
 
     fn roots(name: &str) -> (PathBuf, PathBuf, AuthorizedWorkspace) {
-        let base = std::env::temp_dir().join(format!("photocraft-workspace-{}-{name}", std::process::id()));
+        let base = std::env::temp_dir().join(format!("photo-workspace-{}-{name}", std::process::id()));
         let inside = base.join("inside");
         let outside = base.join("outside");
         let _ = std::fs::remove_dir_all(&base);
@@ -819,16 +819,16 @@ mod tests {
     #[test]
     fn registry_filesystem_path_params_are_classified() {
         let probe = serde_json::json!({
-            "path": "/outside/photocraft-probe",
-            "file": "/outside/photocraft-probe.icc",
-            "mapPath": "/outside/photocraft-probe.png",
-            "profile": "/outside/photocraft-probe.icc",
-            "workingRgb": "/outside/photocraft-probe.icc",
-            "workingCmyk": "/outside/photocraft-probe.icc",
-            "workingGray": "/outside/photocraft-probe.icc",
-            "input": "/outside/photocraft-input",
-            "output": "/outside/photocraft-output",
-            "paths": ["/outside/photocraft-probe.psd"],
+            "path": "/outside/photo-probe",
+            "file": "/outside/photo-probe.icc",
+            "mapPath": "/outside/photo-probe.png",
+            "profile": "/outside/photo-probe.icc",
+            "workingRgb": "/outside/photo-probe.icc",
+            "workingCmyk": "/outside/photo-probe.icc",
+            "workingGray": "/outside/photo-probe.icc",
+            "input": "/outside/photo-input",
+            "output": "/outside/photo-output",
+            "paths": ["/outside/photo-probe.psd"],
         });
         let preference_probe = serde_json::json!({"path": ".scriptEvents", "value": {}});
         let unclassified: Vec<_> = redrob_photo_engine::command_specs()

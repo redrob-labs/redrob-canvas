@@ -3,7 +3,7 @@ name = "redrob-layout-format"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft native file format: zip with document.json and embedded assets; versioned"
+description = "Layout native file format: zip with document.json and embedded assets; versioned"
 
 [lints]
 workspace = true

@@ -3,7 +3,7 @@ name = "redrob-vector-trace"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "VectorCraft Image Trace: raster to vector tracing (quantize, boundary follow, polygon, Bezier fit)"
+description = "Vector Image Trace: raster to vector tracing (quantize, boundary follow, polygon, Bezier fit)"
 
 [lints]
 workspace = true

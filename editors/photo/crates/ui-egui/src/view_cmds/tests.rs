@@ -364,7 +364,7 @@ fn lookup_export_dialog_uses_the_current_adjustment_selection() {
 #[test]
 fn batch_dialogs_include_all_subfolders() {
     let (mut app, ctx) = app_with(1);
-    let dir = std::env::temp_dir().join(format!("photocraft-ui-batch-subfolders-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-ui-batch-subfolders-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(dir.join("in/sub")).unwrap();
     let input = dir.join("in").to_string_lossy().into_owned();

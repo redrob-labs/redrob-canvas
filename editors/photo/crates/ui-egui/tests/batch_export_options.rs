@@ -132,7 +132,7 @@ struct Scratch(PathBuf);
 impl Scratch {
     fn new() -> Self {
         let now = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-        let path = std::env::temp_dir().join(format!("photocraft-batch-options-{}-{now}", std::process::id()));
+        let path = std::env::temp_dir().join(format!("photo-batch-options-{}-{now}", std::process::id()));
         std::fs::create_dir_all(&path).unwrap();
         Self(path)
     }

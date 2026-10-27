@@ -3,7 +3,7 @@ name = "redrob-vector-text"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "VectorCraft text: font database, shaping, layout, glyph outlines"
+description = "Vector text: font database, shaping, layout, glyph outlines"
 
 [lints]
 workspace = true

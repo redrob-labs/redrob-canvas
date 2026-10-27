@@ -2,7 +2,7 @@
 
 `redrob-canvas-atomic` provides crash-safe atomic file writing and replacement for the Craft suite.
 
-Extracted from the storage engine in **PhotoCraft** (refs #2, #14), it guarantees that a failed save or abnormal termination never leaves user documents truncated, corrupted, or missing.
+Extracted from the storage engine in **Photo** (refs #2, #14), it guarantees that a failed save or abnormal termination never leaves user documents truncated, corrupted, or missing.
 
 ## Core Guarantees: Atomicity vs. Durability
  

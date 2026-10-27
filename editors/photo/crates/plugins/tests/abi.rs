@@ -304,7 +304,7 @@ fn registry_install_list_remove() {
 
 #[test]
 fn folder_loading_skips_bad_files() {
-    let dir = std::env::temp_dir().join(format!("photocraft-plugins-test-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-plugins-test-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("a-invert.wasm"), INVERT).unwrap();
     std::fs::write(dir.join("b-broken.wasm"), b"\0asm junk").unwrap();

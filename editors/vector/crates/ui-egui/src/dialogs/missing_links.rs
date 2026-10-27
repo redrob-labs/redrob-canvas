@@ -210,7 +210,7 @@ mod tests {
     /// A document with two placed linked files, saved to a fresh folder; the files are then
     /// deleted → (app, folder, document path).
     fn opened_without_links(name: &str) -> (VectorApp, std::path::PathBuf, String) {
-        let dir = std::env::temp_dir().join(format!("vectorcraft-missing-{name}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("vector-missing-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         let mut app = VectorApp::new(Session::new(), Default::default());
@@ -280,7 +280,7 @@ mod tests {
 
     #[test]
     fn modified_links_are_offered_for_update_when_the_preference_asks() {
-        let dir = std::env::temp_dir().join(format!("vectorcraft-modified-ui-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("vector-modified-ui-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let mut app = VectorApp::new(Session::new(), Default::default());
         app.services.read = Some(Box::new(|p: &str| std::fs::read(p).map_err(|e| e.to_string())));

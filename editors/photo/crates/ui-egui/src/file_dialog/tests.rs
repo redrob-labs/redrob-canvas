@@ -172,7 +172,7 @@ fn menu_place_starts_transform_for_each_chosen_image() {
         let initial_history = app.session.active().unwrap().history.past_len();
         let linked_dir = (command == "file.placeLinked").then(|| {
             let unique = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_nanos();
-            let dir = std::env::temp_dir().join(format!("photocraft-menu-place-{}-{unique}", std::process::id()));
+            let dir = std::env::temp_dir().join(format!("photo-menu-place-{}-{unique}", std::process::id()));
             std::fs::create_dir(&dir).unwrap();
             dir
         });

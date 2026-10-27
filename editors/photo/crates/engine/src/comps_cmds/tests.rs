@@ -236,7 +236,7 @@ fn export_comps_to_files_naming() {
     })
     .unwrap();
     s.execute("layerComp.new", json!({"name": "No/B"})).unwrap();
-    let dir = std::env::temp_dir().join(format!("photocraft-comps-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-comps-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let d = dir.to_string_lossy().into_owned();
@@ -269,7 +269,7 @@ fn out_of_range_comp_ids_are_rejected_not_wrapped() {
     let doc = &s.active().unwrap().doc;
     assert_eq!(doc.layer_comps.len(), 1);
     assert_eq!(doc.layer_comps[0].name, "Start");
-    let dir = std::env::temp_dir().join(format!("photocraft-comps-wrap-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-comps-wrap-{}", std::process::id()));
     let r = s.execute("file.export.layerCompsToFiles", json!({"dir": dir.to_string_lossy(), "comps": [wrapped]}));
     assert!(r.is_err());
     let _ = std::fs::remove_dir_all(dir);

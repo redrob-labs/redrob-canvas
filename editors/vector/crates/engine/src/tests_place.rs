@@ -283,7 +283,7 @@ fn info_reports_size_resolution_colour_mode_and_link() {
     assert_eq!((thumb.width(), thumb.height()), (16, 8));
     assert!(top_children(&s).is_empty(), "info places nothing");
     // A path is linked by default.
-    let path = std::env::temp_dir().join(format!("vectorcraft-place-{}.png", std::process::id()));
+    let path = std::env::temp_dir().join(format!("vector-place-{}.png", std::process::id()));
     std::fs::write(&path, &gray).unwrap();
     let path = path.to_string_lossy().to_string();
     let r = s.execute("file.place", &json!({"path": path})).unwrap();

@@ -1058,7 +1058,7 @@ mod tests {
             radiance
                 .iter()
                 .map(|r| {
-                    let f = |v: f32| photocraft_algo_srgb((v * dt).min(1.0));
+                    let f = |v: f32| photo_algo_srgb((v * dt).min(1.0));
                     [f(r[0]), f(r[1]), f(r[2]), 1.0]
                 })
                 .collect()
@@ -1102,7 +1102,7 @@ mod tests {
         assert!(s.execute("file.automate.mergeToHdrPro", json!({"useOpenDocuments": true, "exposures": [0, 1]})).is_err());
     }
 
-    fn photocraft_algo_srgb(v: f32) -> f32 {
+    fn photo_algo_srgb(v: f32) -> f32 {
         if v <= 0.003_130_8 { v * 12.92 } else { 1.055 * v.powf(1.0 / 2.4) - 0.055 }
     }
 

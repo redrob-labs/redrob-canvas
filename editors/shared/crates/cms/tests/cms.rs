@@ -959,7 +959,7 @@ fn white_is_exact_on_every_path() {
 
                     // Near white: the last step to white exceeds the step before it by the ink
                     // the profile itself puts at white: 2·10⁻⁵ for Coated FOGRA39, whose white
-                    // is a grid node, and up to 0.8 % (C + M + Y) for the Photocraft profile,
+                    // is a grid node, and up to 0.8 % (C + M + Y) for the Photo profile,
                     // whose white falls between nodes (as with lcms's white-node fix).
                     let ink = |g: f32| {
                         let mut o = [0.0f32; 4];

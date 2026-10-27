@@ -1267,7 +1267,7 @@ impl DesignApp {
         if presenting || self.ui.hidden_panels != 0 {
             panel_docking::cancel_gesture(self, &ctx);
         }
-        let dbg = std::env::var_os("REDROB_LAYOUT_DEBUG_LAYOUT").or_else(|| std::env::var_os("DESIGNCRAFT_DEBUG_LAYOUT")).is_some(); // legacy: the upstream variable is read when ours is unset
+        let dbg = std::env::var_os("REDROB_LAYOUT_DEBUG_LAYOUT").is_some();
         if dbg {
             eprintln!("root start {:?}", ui.available_rect_before_wrap());
         }
@@ -1352,7 +1352,7 @@ impl DesignApp {
             let fill = t.pasteboard;
             let ctx = ui.ctx().clone();
             ctx.show_viewport_immediate(
-                egui::ViewportId::from_hash_of("designcraft_second_window"),
+                egui::ViewportId::from_hash_of("layout_second_window"),
                 egui::ViewportBuilder::default().with_title(title).with_inner_size([960.0, 720.0]),
                 |ui, _class| {
                     egui::CentralPanel::default().frame(egui::Frame::NONE.fill(fill)).show(ui, |ui| {
@@ -1553,7 +1553,7 @@ mod tests {
     #[test]
     fn closing_with_save_writes_the_file_then_closes() {
         let mut app = app_with_unsaved_document();
-        let path = std::env::temp_dir().join(format!("designcraft-close-test-{}.rlayout", std::process::id()));
+        let path = std::env::temp_dir().join(format!("layout-close-test-{}.rlayout", std::process::id()));
         app.run("file.saveAs", json!({"path": path})).unwrap();
         let saved = std::fs::metadata(&path).unwrap().len();
         app.run("frame.create", json!({"rect": [200, 200, 300, 300]})).unwrap();
@@ -1819,7 +1819,7 @@ mod tests {
         let mut app = app_with_unsaved_document();
         second_unsaved_document(&mut app);
         let path = std::env::temp_dir()
-            .join(format!("designcraft-quit-missing-{}-{}", std::process::id(), app.session.active().unwrap().uid))
+            .join(format!("layout-quit-missing-{}-{}", std::process::id(), app.session.active().unwrap().uid))
             .join("missing")
             .join("document.rlayout");
         assert!(!path.parent().unwrap().exists());
@@ -1843,7 +1843,7 @@ mod tests {
         let mut app = app_with_unsaved_document();
         second_unsaved_document(&mut app);
         let first = app.session.documents()[0].uid;
-        let path = std::env::temp_dir().join(format!("designcraft-quit-save-{}-{first}.rlayout", std::process::id()));
+        let path = std::env::temp_dir().join(format!("layout-quit-save-{}-{first}.rlayout", std::process::id()));
         let picked = path.to_string_lossy().to_string();
         app.services.pick_save = Some(Box::new(move |_| Some(picked.clone())));
         quit_frame(&mut app, &ctx, true);
@@ -1896,7 +1896,7 @@ mod tests {
         let mut app = app_with_unsaved_document();
         second_unsaved_document(&mut app);
         let first = app.session.documents()[0].uid;
-        let path = std::env::temp_dir().join(format!("designcraft-quit-uid-{}-{first}.rlayout", std::process::id()));
+        let path = std::env::temp_dir().join(format!("layout-quit-uid-{}-{first}.rlayout", std::process::id()));
         let picked = path.to_string_lossy().to_string();
         app.services.pick_save = Some(Box::new(move |_| Some(picked.clone())));
         quit_frame(&mut app, &ctx, true);
@@ -1915,7 +1915,7 @@ mod tests {
         let ctx = egui::Context::default();
         let mut app = app_with_unsaved_document();
         let uid = app.session.active().unwrap().uid;
-        let dir = std::env::temp_dir().join(format!("designcraft-quit-recovery-{}-{uid}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("layout-quit-recovery-{}-{uid}", std::process::id()));
         app.session.recovery_dir = Some(dir.clone());
         app.run("file.recovery.save", json!({})).unwrap();
         let entry = dir.join(format!("{uid}.rlayout"));
@@ -2089,7 +2089,7 @@ mod tests {
 
     /// A temporary file named `name` whose bytes aren't a document or a graphic.
     fn unreadable_file(name: &str) -> std::path::PathBuf {
-        let path = std::env::temp_dir().join(format!("designcraft-ui-{}-{name}", std::process::id()));
+        let path = std::env::temp_dir().join(format!("layout-ui-{}-{name}", std::process::id()));
         std::fs::write(&path, b"neither a document nor a graphic").unwrap();
         path
     }
@@ -2142,7 +2142,7 @@ mod tests {
         app.canvas_rect = Some(egui::Rect::from_min_size(egui::Pos2::ZERO, egui::vec2(1400.0, 900.0)));
         app.run("layout.parents.edit", json!({"on": true})).unwrap();
         let _ = app.view_mut();
-        let path = std::env::temp_dir().join(format!("designcraft-ui-{}-drop.png", std::process::id()));
+        let path = std::env::temp_dir().join(format!("layout-ui-{}-drop.png", std::process::id()));
         std::fs::write(&path, redrob_layout_render::Rendered { width: 10, height: 10, pixels: vec![200; 400] }.to_png()).unwrap();
         let r = app.open_dropped(&path.to_string_lossy());
         let _ = std::fs::remove_file(&path);
@@ -2160,7 +2160,7 @@ mod tests {
         let data = source.execute("swatch.save", &json!({"names": ["Dropped Teal"]})).unwrap();
         let bytes = redrob_layout_engine::cmd::base64_decode(data["base64"].as_str().unwrap());
         for name in ["palette.ase", "PALETTE.ASE"] {
-            let path = std::env::temp_dir().join(format!("designcraft-ui-{}-{name}", std::process::id()));
+            let path = std::env::temp_dir().join(format!("layout-ui-{}-{name}", std::process::id()));
             std::fs::write(&path, &bytes).unwrap();
             let mut app = DesignApp::new(Session::new(), Services::default());
             app.run("file.new", json!({})).unwrap();
@@ -2263,7 +2263,7 @@ mod import_warning_tests {
 
     #[test]
     fn native_open_reports_partial_import_warnings_without_losing_documents() {
-        let path = std::env::temp_dir().join(format!("designcraft-partial-import-{}", std::process::id())).join("partial.idml");
+        let path = std::env::temp_dir().join(format!("layout-partial-import-{}", std::process::id())).join("partial.idml");
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
         std::fs::write(&path, idml(true)).unwrap();
         let picked = path.to_string_lossy().to_string();
@@ -2605,7 +2605,7 @@ mod browser_import_tests {
     #[test]
     fn native_pdf_dialog_keeps_path_and_uid_at_confirmation() {
         let mut app = app();
-        let path = std::env::temp_dir().join(format!("designcraft-native-import-{}-{}.pdf", std::process::id(), app.session.doc().unwrap().uid));
+        let path = std::env::temp_dir().join(format!("layout-native-import-{}-{}.pdf", std::process::id(), app.session.doc().unwrap().uid));
         std::fs::write(&path, pdf()).unwrap();
         let pick_path = path.to_string_lossy().to_string();
         app.services.pick_open = Some(Box::new(move |_| Some(pick_path.clone())));

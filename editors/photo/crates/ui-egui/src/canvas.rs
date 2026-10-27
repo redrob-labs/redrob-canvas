@@ -7261,7 +7261,7 @@ mod tests {
     fn home_recent_list_hides_when_the_preference_is_off() {
         use egui_kittest::kittest::Queryable;
         let mut app = PhotoApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
-        app.push_recent("/tmp/photocraft-217/hidden.psd");
+        app.push_recent("/tmp/photo-217/hidden.psd");
         let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(900.0, 760.0)).build_ui_state(
             |ui, (app, ready): &mut (PhotoApp, bool)| {
                 if *ready {
@@ -7287,7 +7287,7 @@ mod tests {
         use egui_kittest::kittest::Queryable;
         let mut app = PhotoApp::new(redrob_photo_engine::Session::new(), crate::Services::default());
         for name in ["c.tif", "b.psd", "a.png"] {
-            app.push_recent(&format!("/tmp/photocraft-2691/{name}"));
+            app.push_recent(&format!("/tmp/photo-2691/{name}"));
         }
         let mut h = egui_kittest::Harness::builder().with_size(egui::vec2(900.0, 760.0)).build_ui_state(
             |ui, (app, ready): &mut (PhotoApp, bool)| {

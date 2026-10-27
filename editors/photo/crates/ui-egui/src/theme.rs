@@ -747,7 +747,7 @@ impl Tokens {
 
     /// Tokens for the active theme (stored in egui's context data by [`apply`]).
     pub fn get(ctx: &egui::Context) -> Tokens {
-        ctx.data(|d| d.get_temp::<Tokens>(egui::Id::new("photocraft-theme"))).unwrap_or_else(|| Tokens::for_kind(ThemeKind::Studio))
+        ctx.data(|d| d.get_temp::<Tokens>(egui::Id::new("photo-theme"))).unwrap_or_else(|| Tokens::for_kind(ThemeKind::Studio))
     }
 
     /// Thin RGB outlines; the filled bands use the same hues with subdued coverage.
@@ -898,7 +898,7 @@ fn ui_fonts_active(ctx: &egui::Context) -> bool {
 }
 
 fn ui_fonts_id() -> egui::Id {
-    egui::Id::new("photocraft-ui-fonts")
+    egui::Id::new("photo-ui-fonts")
 }
 
 fn ui_font_size(ctx: &egui::Context) -> UiFontSize {
@@ -942,7 +942,7 @@ struct UiFontSizePlugin {
 
 impl egui::Plugin for UiFontSizePlugin {
     fn debug_name(&self) -> &'static str {
-        "photocraft-ui-font-size"
+        "photo-ui-font-size"
     }
 
     fn output_hook(&mut self, ctx: &egui::Context, _output: &mut egui::FullOutput) {
@@ -993,7 +993,7 @@ pub fn apply(ctx: &egui::Context, kind: ThemeKind) {
     // including when an integration or restored egui state pinned its own theme preference.
     ctx.set_theme(egui::ThemePreference::System);
     let t = Tokens::for_kind(kind);
-    ctx.data_mut(|d| d.insert_temp(egui::Id::new("photocraft-theme"), t));
+    ctx.data_mut(|d| d.insert_temp(egui::Id::new("photo-theme"), t));
     let mut v = if t.dark() { Visuals::dark() } else { Visuals::light() };
     v.panel_fill = t.chrome;
     v.window_fill = t.card;
@@ -1417,10 +1417,9 @@ pub mod live {
     impl LiveTokens {
         pub fn from_env() -> Self {
             Self {
-                // legacy: the upstream variable is read when ours is unset
-                path: std::env::var_os("REDROB_PHOTO_THEME_FILE").or_else(|| std::env::var_os("PHOTOCRAFT_THEME_FILE")).map(Into::into),
+                path: std::env::var_os("REDROB_PHOTO_THEME_FILE").map(Into::into),
                 ..Default::default()
-            } // legacy: the upstream variable is read when ours is unset
+            }
         }
 
         /// Re-apply overrides if the file changed. Returns true when tokens were updated.
@@ -1445,7 +1444,7 @@ pub mod live {
                     super::apply(ctx, kind);
                     let mut t = Tokens::get(ctx);
                     let unknown = apply_overrides(&mut t, &v);
-                    ctx.data_mut(|d| d.insert_temp(egui::Id::new("photocraft-theme"), t));
+                    ctx.data_mut(|d| d.insert_temp(egui::Id::new("photo-theme"), t));
                     if !unknown.is_empty() {
                         log::warn!("unknown token keys: {unknown:?}");
                     }

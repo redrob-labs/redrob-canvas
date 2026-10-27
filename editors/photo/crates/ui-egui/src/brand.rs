@@ -1,5 +1,5 @@
-//! The Redrob Canvas brand mark at the left of the title bar: the app icon (the kitsune,
-//! `assets/app-icon/`, see its README), where Photoshop shows its "Ps" tile. The PNG carries the
+//! The Redrob Canvas brand mark at the left of the title bar: the Redrob Canvas app icon
+//! (`resources/icons/`), where Photoshop shows its "Ps" tile. The PNG carries the
 //! icon's rounded corners; it is decoded once per context into a mipmapped texture, so it stays
 //! crisp at the title bar's size on any display scale.
 
@@ -22,19 +22,19 @@ fn decode() -> egui::ColorImage {
 
 /// The icon texture, uploaded on first use and kept in the context.
 fn texture(ctx: &Context) -> TextureHandle {
-    let id = Id::new("photocraft-brand-mark");
+    let id = Id::new("photo-brand-mark");
     if let Some(tex) = ctx.data(|d| d.get_temp::<TextureHandle>(id)) {
         return tex;
     }
     let options = TextureOptions { mipmap_mode: Some(egui::TextureFilter::Linear), ..TextureOptions::LINEAR };
-    let tex = ctx.load_texture("photocraft-brand-mark", decode(), options);
+    let tex = ctx.load_texture("photo-brand-mark", decode(), options);
     ctx.data_mut(|d| d.insert_temp(id, tex.clone()));
     tex
 }
 
 /// Where the mark was painted this frame (tests and screenshots).
 fn rect_id() -> Id {
-    Id::new("photocraft-brand-mark-rect")
+    Id::new("photo-brand-mark-rect")
 }
 
 /// Paint the mark into `r` (square).

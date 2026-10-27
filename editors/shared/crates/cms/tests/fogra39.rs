@@ -436,7 +436,7 @@ fn in_gamut_lab_round_trips() {
     let to_lab = profile_lab(profile);
     // Targets: the profile's own colours of the patches inside the gamut (no solid ink, well
     // within the 330 % ink limit). Gamut-edge colours with black (e.g. C100 K100) come back
-    // up to ~7 ΔE00 off, as with the Photocraft profile: black generation fixes K before the
+    // up to ~7 ΔE00 off, as with the Photo profile: black generation fixes K before the
     // CMY solve.
     let mut de: Vec<f64> = patches()
         .iter()
@@ -498,10 +498,10 @@ fn srgb_lab(rgb: [u8; 3]) -> [f64; 3] {
 #[test]
 fn matches_reference_srgb_values() {
     let ours = to_srgb(fogra39());
-    let photocraft = to_srgb(Builtin::CoatedCmyk.profile());
+    let photo = to_srgb(Builtin::CoatedCmyk.profile());
     let mut worst = 0.0f64;
     for (cmyk, want) in REFERENCE_SRGB {
-        let (got, pc) = (ours(cmyk), photocraft(cmyk));
+        let (got, pc) = (ours(cmyk), photo(cmyk));
         let de = delta_e2000(srgb_lab(got), srgb_lab(want));
         let de_pc = delta_e2000(srgb_lab(pc), srgb_lab(want));
         eprintln!("{cmyk:?}: reference {want:?} | FOGRA39 {got:?} ΔE00 {de:.2} | Redrob Canvas {pc:?} ΔE00 {de_pc:.2}");

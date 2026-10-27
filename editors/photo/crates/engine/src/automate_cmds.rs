@@ -329,6 +329,7 @@ fn create_droplet(s: &mut Session, p: &Value) -> Result<Value> {
             options.insert(k.into(), v.clone());
         }
     }
+    // legacy: the droplet file key saved droplets carry
     let mut droplet = json!({"photocraftDroplet": 1, "name": name, "action": {"name": name, "steps": steps_json}, "options": options});
     if !called.is_empty() {
         droplet["calledActions"] = json!(called);
@@ -370,6 +371,7 @@ fn run_droplet(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "file.automate.runDroplet";
     let path = p.get("droplet").or_else(|| p.get("path")).and_then(Value::as_str).ok_or_else(|| bad(cmd, "missing \"droplet\""))?;
     let v: Value = serde_json::from_slice(&read_file(path)?).map_err(|e| bad(cmd, format!("{path}: {e}")))?;
+    // legacy: the droplet file key
     if v.get("photocraftDroplet").is_none() {
         return Err(bad(cmd, format!("{path} is not a Redrob Canvas droplet")));
     }

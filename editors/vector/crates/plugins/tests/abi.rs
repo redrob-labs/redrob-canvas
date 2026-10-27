@@ -193,7 +193,7 @@ fn registry_install_list_remove() {
 
 #[test]
 fn folder_loading_skips_bad_files() {
-    let dir = std::env::temp_dir().join(format!("vectorcraft-plugins-test-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("vector-plugins-test-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     std::fs::write(dir.join("a-desaturate.wasm"), DESATURATE).unwrap();
     std::fs::write(dir.join("b-broken.wasm"), b"\0asm junk").unwrap();

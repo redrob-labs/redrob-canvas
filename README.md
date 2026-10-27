@@ -11,8 +11,8 @@ Redrob Canvas is an agentic graphics editor: photo, vector and page layout in on
 tools layer across all three and an agent that edits the document beside you.
 
 It is one desktop application (`apps/redrob-canvas`, Rust and egui) with three modes, each a complete
-editor, vendored under `crafts/` (origins and licences: UPSTREAM.md and NOTICE)
-and built from source:
+editor, under `editors/` and built from source (where the code came from: SOURCE_ORIGINS.md and
+NOTICE):
 
 | Mode | Kind | What it is for |
 | --- | --- | --- |
@@ -23,7 +23,11 @@ and built from source:
 The shell owns the window, the mode switch (`Ctrl+1` / `Ctrl+2` / `Ctrl+3`, or `--mode photo|vector|layout`),
 one config directory (`ai.redrob.canvas`) and the agent. Switching modes keeps every editor's open
 documents. The shared docking, colour-management and printing code the three editors have in common
-is [craft-libs](https://github.com/storytold/craft-libs), the fourth subtree.
+lives in `editors/shared`.
+
+The same binary is the command line: `redrob-canvas photo|vector|layout ARGS` converts, inspects,
+runs command batches and serves MCP on stdio without opening the window
+(`redrob-canvas photo --help`).
 
 ## AI tools and the agent
 
@@ -67,8 +71,8 @@ What each mode opens and saves comes from its editor. The short list:
 | Layout | `.rlayout`, IDML, images, PDFs and vectors as placed assets | `.rlayout`, PDF (PDF/X-4, PDF/A-2b), IDML, PPTX, EPUB, PNG |
 
 `docs/formats.md` says how the shell routes a file to a mode, where each editor's format tables
-live in the code, and which upstream extensions (`.pcraft`, `.vectorcraft`, `.designcraft`) still
-open.
+live in the code, and which legacy extensions (`.pcraft`, `.vectorcraft`, `.designcraft`)
+still open.
 
 ## Build
 
@@ -85,8 +89,6 @@ The gates every pull request must pass, as CI runs them (`.github/workflows/ci.y
 job, then `rust` over our crates only with `--profile ci`):
 
 ```bash
-scripts/verify-upstream.sh
-python3 scripts/check_upstream_ids.py
 cargo fetch --locked && python3 tools/generate_distribution_artifacts.py --check
 python3 tools/check_design_system.py
 python3 -m unittest discover -s tools/tests -p "test_*.py"
@@ -95,9 +97,8 @@ cargo clippy -p redrob-canvas -p redrob-ai -p redrob-agent --all-targets --locke
 cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked --profile ci
 ```
 
-There is no Qt, CMake or Node anywhere in the build. The root `Cargo.toml` is **generated** by
-`tools/merge_workspaces.py` from the four subtrees' parked manifests (`editors/*/Cargo.upstream.toml`);
-edit the script, not the file.
+There is no Qt, CMake or Node anywhere in the build. The root `Cargo.toml` is the one workspace
+manifest for the shell, the editors and their libraries.
 
 ## Project structure
 
@@ -105,27 +106,22 @@ edit the script, not the file.
 apps/redrob-canvas/     The shell: window, mode switch, services, agent panel (egui / eframe)
 crates/redrob-agent/    Redrob Code client: streaming chat completions, tool loop, approvals
 crates/redrob-ai/       AI tools layer (IOPaint engine, vectorize); in progress
-editors/photo/      storytold/photocraft  (subtree)  Photo mode
-editors/vector/     storytold/vectorcraft (subtree)  Vector mode
-editors/layout/     storytold/designcraft (subtree)  Layout mode
-editors/shared/      storytold/craft-libs  (subtree)  shared UI, CMS, print, PDF crates
+editors/photo/          Photo mode
+editors/vector/         Vector mode
+editors/layout/         Layout mode
+editors/shared/         Shared UI, colour management, print and PDF crates
 installer/              macOS disk image and Windows setup
-tools/                  Workspace generator, notice generator, design-system guard, release packaging
-docs/                   Architecture, formats, licensing, pinned upstreams
+tools/                  Notice generator, design-system guard, release packaging
+docs/                   Architecture, formats, licensing
 ```
 
-## Upstream
+## Where the editors came from
 
-The four editors are taken as git subtrees and updated with `git subtree pull --squash`; the pins live
-in `upstream-base.json` and `docs/upstream-sources.toml`, the process in [UPSTREAM.md](UPSTREAM.md),
-and `scripts/verify-upstream.sh` checks the two pin files against each other, against the subtree
-squash commits and against GitHub. Redrob Canvas adds the shell, the agent and the AI layer; it does
-not fork any editor's internals, so upstream improvements arrive by merge.
-
-The four vendored editors are MIT OR Apache-2.0 and keep their authors' copyright: their licence and
-NOTICE files stay intact under `editors/<name>/` and are reproduced in [NOTICE](NOTICE) and
-[COPYRIGHT](COPYRIGHT). Their original names and logos are trademarks of their authors, not open
-source, and are not used or shipped here (their `docs/` are removed from the tree after every pull).
+The editors started as four MIT OR Apache-2.0 projects and are no longer synced with them; they are
+developed here. Their authors keep their copyright: the licence and NOTICE files stay intact under
+`editors/<name>/` and are reproduced in [NOTICE](NOTICE) and [COPYRIGHT](COPYRIGHT), and
+[SOURCE_ORIGINS.md](SOURCE_ORIGINS.md) records each origin and commit. Their original names and
+logos are trademarks of their authors, not open source, and are not used or shipped here.
 
 ## Roadmap
 
@@ -170,5 +166,5 @@ the binary.
 
 MIT OR Apache-2.0, at your option: [LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE),
 [COPYRIGHT](COPYRIGHT). Third-party attribution is in [NOTICE](NOTICE),
-[UPSTREAM_NOTICES.md](UPSTREAM_NOTICES.md) and the generated
+[SOURCE_ORIGINS.md](SOURCE_ORIGINS.md) and the generated
 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md); the policy is in [docs/licensing.md](docs/licensing.md).

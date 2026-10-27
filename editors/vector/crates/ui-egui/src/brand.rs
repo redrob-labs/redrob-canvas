@@ -1,5 +1,5 @@
-//! The Redrob Canvas brand mark: the app icon (the engraved dragon, `assets/app-icon/`, see its
-//! README). The PNG carries the icon's rounded corners; it is decoded once per context into a
+//! The Redrob Canvas brand mark: the app icon (`resources/icons/`). The PNG carries the
+//! icon's rounded corners; it is decoded once per context into a
 //! mipmapped texture, so it stays crisp from the 18 pt app-bar mark to the About box.
 
 use egui::{Color32, Context, Id, Rect, TextureHandle, TextureOptions, Ui, pos2};
@@ -20,12 +20,12 @@ fn decode() -> egui::ColorImage {
 
 /// The icon texture, uploaded on first use and kept in the context.
 fn texture(ctx: &Context) -> TextureHandle {
-    let id = Id::new("vectorcraft-brand-mark");
+    let id = Id::new("vector-brand-mark");
     if let Some(tex) = ctx.data(|d| d.get_temp::<TextureHandle>(id)) {
         return tex;
     }
     let options = TextureOptions { mipmap_mode: Some(egui::TextureFilter::Linear), ..TextureOptions::LINEAR };
-    let tex = ctx.load_texture("vectorcraft-brand-mark", decode(), options);
+    let tex = ctx.load_texture("vector-brand-mark", decode(), options);
     ctx.data_mut(|d| d.insert_temp(id, tex.clone()));
     tex
 }

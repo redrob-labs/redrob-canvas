@@ -8,7 +8,7 @@ use redrob_photo_ui_egui::{
 use serde_json::json;
 
 fn main() {
-    let output = std::env::args().nth(1).unwrap_or_else(|| "/tmp/photocraft-color-picker".into());
+    let output = std::env::args().nth(1).unwrap_or_else(|| "/tmp/photo-color-picker".into());
     std::fs::create_dir_all(&output).expect("output directory");
     let mut session = redrob_photo_engine::Session::new();
     session.execute("file.new", json!({"width":800,"height":500,"background":"white"})).unwrap();

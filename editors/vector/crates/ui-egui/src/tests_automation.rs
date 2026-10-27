@@ -1,4 +1,4 @@
-//! `vectorcraft --control <port> --automation-read-root <dir> --automation-write-root <dir>` (#832):
+//! `vector --control <port> --automation-read-root <dir> --automation-write-root <dir>` (#832):
 //! control requests read and write only inside the roots; the person at the keyboard is not
 //! confined.
 

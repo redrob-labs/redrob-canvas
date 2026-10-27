@@ -493,7 +493,7 @@ fn screenshot(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
     let target = match keep {
         Some(p) => p.to_string(),
         None => std::env::temp_dir()
-            .join(format!("designcraft-mcp-{}-{}.png", std::process::id(), std::time::SystemTime::UNIX_EPOCH.elapsed().map_or(0, |d| d.as_millis())))
+            .join(format!("layout-mcp-{}-{}.png", std::process::id(), std::time::SystemTime::UNIX_EPOCH.elapsed().map_or(0, |d| d.as_millis())))
             .to_string_lossy()
             .to_string(),
     };

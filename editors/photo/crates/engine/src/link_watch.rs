@@ -158,7 +158,7 @@ mod tests {
     use crate::Session;
 
     fn dir(name: &str) -> std::path::PathBuf {
-        let d = std::env::temp_dir().join(format!("photocraft-link-watch-{name}-{}", std::process::id()));
+        let d = std::env::temp_dir().join(format!("photo-link-watch-{name}-{}", std::process::id()));
         let _ = std::fs::remove_dir_all(&d);
         std::fs::create_dir_all(&d).unwrap();
         d

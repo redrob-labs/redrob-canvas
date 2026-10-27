@@ -5,7 +5,7 @@
 //! tools and resources and forwards everything to a [`Backend`]:
 //!
 //! - [`Remote`] talks to a running desktop app through its loopback JSON-lines control channel
-//!   (`designcraft --control 7979`): one `{"id","method","params"}` line in, one
+//!   (`layout --control 7979`): one `{"id","method","params"}` line in, one
 //!   `{"id","ok","result"|"error"}` line out (see `docs/control-protocol.md`).
 //! - [`Headless`] hosts an in-process [`redrob_layout_engine::Session`] and implements the
 //!   engine-level control-channel methods itself (rendering pages with `redrob-layout-render`), so

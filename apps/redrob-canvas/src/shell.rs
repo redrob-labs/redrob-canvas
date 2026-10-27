@@ -51,7 +51,7 @@ pub const STATUS_WITH_ACTION_SECS: f32 = 20.0;
 const ABOUT_LOCKUP_PNG: &[u8] = include_bytes!("../../../resources/brand/redrob-canvas-lockup.png");
 /// The lockup's height in the About window (above the 18px minimum in 10-logo.md).
 const ABOUT_LOCKUP_HEIGHT: f32 = 40.0;
-/// The editors this app is built on (UPSTREAM_NOTICES.md); translated through `i18n`.
+/// The editors this app is built on (SOURCE_ORIGINS.md); translated through `i18n`.
 const ABOUT_ATTRIBUTION: &str =
     "MIT OR Apache-2.0. Third-party notices: NOTICE and THIRD_PARTY_NOTICES.md.";
 
@@ -370,8 +370,8 @@ impl ShellApp {
     }
 
     /// Writes `lang` into `mode`'s own preference (the editor's Language menu and preferences
-    /// file follow: photocraft `interface.language`, vectorcraft `interfaceLanguage`,
-    /// designcraft `UiState::language`).
+    /// file follow: photo `interface.language`, vector `interfaceLanguage`,
+    /// layout `UiState::language`).
     fn write_editor_language(&mut self, mode: Mode, lang: &i18n::LangInfo) {
         let value = Self::editor_value(mode, lang);
         let result = match mode {
@@ -903,7 +903,7 @@ impl ShellApp {
     /// The active mode's document name and whether it has unsaved changes, read from the
     /// editor's session (`DocState::is_dirty`: editors/photo/crates/engine/src/lib.rs L291,
     /// editors/vector/crates/engine/src/lib.rs L419, editors/layout/crates/engine/src/
-    /// lib.rs L155; `DocState::title` vectorcraft L479, designcraft L158).
+    /// lib.rs L155; `DocState::title` vector L479, layout L158).
     pub fn active_document(&self) -> Option<(String, bool)> {
         match self.mode {
             Mode::Photo => self
@@ -1358,15 +1358,11 @@ impl ShellApp {
         app.session.fetch_url = Some(Box::new(services::fetch_url));
         // Long commands and file opens run as background jobs with progress and Cancel.
         app.background_jobs = std::env::var_os("REDROB_PHOTO_INLINE_JOBS")
-            .or_else(|| std::env::var_os("PHOTOCRAFT_INLINE_JOBS"))
-            .is_none(); // legacy: the upstream variable is read when ours is unset
+            .is_none();
         if let Some(rs) = wgpu
             && rs.adapter.get_info().device_type != eframe::wgpu::DeviceType::Cpu
             && std::env::var_os("REDROB_PHOTO_CPU_CANVAS")
-                // legacy: the upstream variable is read when ours is unset
-                .or_else(|| std::env::var_os("PHOTOCRAFT_CPU_CANVAS"))
                 .is_none()
-        // legacy: the upstream variable is read when ours is unset
         {
             app.set_wgpu(rs);
         }

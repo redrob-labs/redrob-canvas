@@ -192,8 +192,7 @@ pub fn show(app: &mut DesignApp, ui: &mut egui::Ui) {
             }
         }
     });
-    if std::env::var_os("REDROB_LAYOUT_DEBUG_LAYOUT").or_else(|| std::env::var_os("DESIGNCRAFT_DEBUG_LAYOUT")).is_some() {
-        // legacy: the upstream variable is read when ours is unset
+    if std::env::var_os("REDROB_LAYOUT_DEBUG_LAYOUT").is_some() {
         eprintln!("tools panel rect {:?} (wanted width {width}); remaining {:?}", r.response.rect, ui.available_rect_before_wrap());
     }
 }

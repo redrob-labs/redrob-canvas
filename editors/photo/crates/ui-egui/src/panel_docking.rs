@@ -38,10 +38,10 @@ struct LegacyDrag {
 }
 
 fn cancel_legacy_drag(app: &mut PhotoApp, ctx: &egui::Context) -> bool {
-    let key = egui::Id::new("photocraft-panel-docking").with("legacy-origin");
+    let key = egui::Id::new("photo-panel-docking").with("legacy-origin");
     let previous = ctx.data_mut(|data| data.remove_temp::<LegacyDrag>(key));
     if let Some(previous) = previous {
-        redrob_canvas_ui::docking::cancel_drag::<String>(ctx, egui::Id::new("photocraft-panel-docking"));
+        redrob_canvas_ui::docking::cancel_drag::<String>(ctx, egui::Id::new("photo-panel-docking"));
         if previous.generation != app.ui.docking_generation {
             return false;
         }
@@ -367,7 +367,7 @@ fn change(app: &mut PhotoApp, operation: &str, params: &Value) -> Result<Value, 
 }
 
 pub(crate) fn show(app: &mut PhotoApp, ui: &mut egui::Ui) -> bool {
-    let area = egui::Id::new("photocraft-panel-docking");
+    let area = egui::Id::new("photo-panel-docking");
     let stale_origin =
         ui.ctx().data_mut(|data| data.get_temp::<LegacyDrag>(area.with("legacy-origin")).is_some_and(|origin| origin.generation != app.ui.docking_generation));
     let changed_workspace = ui.ctx().data_mut(|data| {
@@ -423,7 +423,7 @@ pub(crate) fn show(app: &mut PhotoApp, ui: &mut egui::Ui) -> bool {
         style.panels_label = tl!("Panels").to_string();
         style.resize_label = tl!("Resize panels").to_string();
         style.resize_window_label = tl!("Resize panel window").to_string();
-        let mut area = redrob_canvas_ui::docking::DockArea::new(egui::Id::new("photocraft-panel-docking"));
+        let mut area = redrob_canvas_ui::docking::DockArea::new(egui::Id::new("photo-panel-docking"));
         if let Some(panel) = &reveal {
             area = area.raise_panel(panel.clone());
         }
@@ -466,7 +466,7 @@ pub(crate) fn show(app: &mut PhotoApp, ui: &mut egui::Ui) -> bool {
         if !output.actions.iter().any(|action| matches!(action, Action::Move { .. } | Action::Float { .. })) && cancel_legacy_drag(app, ui.ctx()) {
             return app.ui.docking.is_some();
         }
-        ui.ctx().data_mut(|data| data.remove::<LegacyDrag>(egui::Id::new("photocraft-panel-docking").with("legacy-origin")));
+        ui.ctx().data_mut(|data| data.remove::<LegacyDrag>(egui::Id::new("photo-panel-docking").with("legacy-origin")));
     }
     if let Some(panel) = output.group_drag.as_ref()
         && let Some(pointer) = ui.ctx().pointer_interact_pos()
@@ -499,7 +499,7 @@ pub(crate) fn show(app: &mut PhotoApp, ui: &mut egui::Ui) -> bool {
 }
 
 pub(crate) fn legacy_tab(app: &mut PhotoApp, ui: &mut egui::Ui, panel: &str, response: &egui::Response) {
-    let suppressed = egui::Id::new("photocraft-panel-docking").with("legacy-suppressed");
+    let suppressed = egui::Id::new("photo-panel-docking").with("legacy-suppressed");
     if ui.input(|input| input.pointer.button_pressed(egui::PointerButton::Primary)) {
         ui.ctx().data_mut(|data| data.remove::<bool>(suppressed));
     }
@@ -521,11 +521,11 @@ pub(crate) fn legacy_tab(app: &mut PhotoApp, ui: &mut egui::Ui, panel: &str, res
             egui::pos2(bounds.left(), response.rect.top()),
             egui::vec2(bounds.width().clamp(240.0, 600.0), bounds.height().clamp(200.0, 600.0)),
         );
-        if ensure(&mut layout, id).is_ok() && redrob_canvas_ui::docking::begin_drag(ui.ctx(), egui::Id::new("photocraft-panel-docking"), id.to_string(), source)
+        if ensure(&mut layout, id).is_ok() && redrob_canvas_ui::docking::begin_drag(ui.ctx(), egui::Id::new("photo-panel-docking"), id.to_string(), source)
         {
             ui.ctx().data_mut(|data| {
                 data.insert_temp(
-                    egui::Id::new("photocraft-panel-docking").with("legacy-origin"),
+                    egui::Id::new("photo-panel-docking").with("legacy-origin"),
                     LegacyDrag {
                         generation: app.ui.docking_generation,
                         layout: app.ui.docking.clone(),
@@ -881,7 +881,7 @@ impl redrob_canvas_ui::docking::DockContent<String> for PanelContent<'_> {
             target.tabs = members
                 .into_iter()
                 .filter_map(|panel| {
-                    ui.ctx().read_response(egui::Id::new("photocraft-panel-docking").with(("tab", &panel))).map(|response| (panel, response.rect))
+                    ui.ctx().read_response(egui::Id::new("photo-panel-docking").with(("tab", &panel))).map(|response| (panel, response.rect))
                 })
                 .collect();
         }

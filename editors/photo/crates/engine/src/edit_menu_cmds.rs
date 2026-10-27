@@ -1068,7 +1068,7 @@ pub struct PresetFile {
     pub custom_shapes: Vec<CustomShape>,
 }
 
-pub const PRESET_FORMAT: &str = "photocraft-presets";
+pub const PRESET_FORMAT: &str = "photocraft-presets"; // legacy: the format id saved preset files carry
 
 fn export_import(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "edit.presets.exportImportPresets";

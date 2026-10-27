@@ -275,7 +275,7 @@ fn stop_ends_only_the_search_it_names() {
 }
 
 #[test]
-fn adding_fonts_needs_vectorcraft_s_fonts_folder() {
+fn adding_fonts_needs_vector_s_fonts_folder() {
     let mut s = Session::new();
     let r = s.execute("text.addFontFiles", &json!({"files": ["/fonts/a.ttf"]}));
     assert!(matches!(&r, Err(EngineError::Other(m)) if m.contains("isn't set here")), "{r:?}");

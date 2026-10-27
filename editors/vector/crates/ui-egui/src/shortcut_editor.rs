@@ -378,9 +378,9 @@ pub fn preset(name: &str) -> Option<BTreeMap<String, String>> {
     PRESETS.contains(&set_name(name)).then(BTreeMap::new)
 }
 
-/// Export format: `{"format": "vectorcraft-shortcuts", "set": name, "overrides": {...}}`.
+/// Export format: `{"format": "vector-shortcuts", "set": name, "overrides": {...}}`.
 pub fn export_json(set: &str, overrides: &BTreeMap<String, String>) -> Value {
-    json!({"format": "vectorcraft-shortcuts", "version": 1, "set": set, "overrides": overrides})
+    json!({"format": "vector-shortcuts", "version": 1, "set": set, "overrides": overrides})
 }
 
 pub fn import_json(v: &Value) -> Result<(String, BTreeMap<String, String>), String> {

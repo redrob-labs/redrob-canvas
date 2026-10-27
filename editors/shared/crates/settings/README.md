@@ -39,7 +39,7 @@ struct General { language: String, autosave_minutes: u32 }
 struct Appearance { theme: String, ui_scale: f64 }
 
 impl Settings for Prefs {
-    const APP_ID: &'static str = "photocraft";
+    const APP_ID: &'static str = "photo";
     const SCHEMA_VERSION: u32 = 1;
 
     fn migrate(from: u32, doc: &mut DocumentMut) -> Result<(), MigrateError> {
@@ -106,8 +106,8 @@ import, a different debounce, and a `Probe` for tests.
    layout keeps it by overriding `Settings::PORTABLE_MARKERS` and `Settings::PORTABLE_DIR`:
 
    ```rust,ignore
-   const PORTABLE_MARKERS: &'static [&'static str] = &["portable.txt", "PhotoCraft.portable"];
-   const PORTABLE_DIR: &'static str = "PhotoCraftData";
+   const PORTABLE_MARKERS: &'static [&'static str] = &["portable.txt", "Photo.portable"];
+   const PORTABLE_DIR: &'static str = "PhotoData";
    ```
 4. The platform config folder: `$XDG_CONFIG_HOME/<app>/` or `~/.config/<app>/` on Linux,
    `~/Library/Application Support/<app>/` on macOS, `%APPDATA%\<app>\` on Windows.

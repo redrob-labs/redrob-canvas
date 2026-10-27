@@ -1075,6 +1075,7 @@ fn print_body(app: &mut PhotoApp, ui: &mut egui::Ui, f: &mut Map<String, Value>)
                 "colorHandling",
                 &[
                     ("printerManages", tl!("Printer Manages Colors")),
+                    // legacy: the colorHandling value scripts pass
                     ("photocraftManages", tl!("Redrob Canvas Manages Colors")),
                     ("noColorManagement", tl!("No Color Management")),
                 ],
@@ -1239,8 +1240,8 @@ mod tests {
         }
         #[cfg(not(target_os = "macos"))]
         assert_eq!(fallback, ".");
-        app.session.active_mut().unwrap().path = Some("/tmp/photocraft/drawing.rphoto".into());
-        assert_eq!(droplet_default_dir(&app), "/tmp/photocraft");
+        app.session.active_mut().unwrap().path = Some("/tmp/photo/drawing.rphoto".into());
+        assert_eq!(droplet_default_dir(&app), "/tmp/photo");
     }
 
     #[test]

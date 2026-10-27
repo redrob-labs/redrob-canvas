@@ -183,8 +183,8 @@ def generate_notice(
         "notice text once, keyed by the SHA-256 of the original bytes.",
         "",
         "Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). "
-        "The four vendored editors under `crafts/` and their own NOTICE texts are recorded in `NOTICE` "
-        "and `UPSTREAM_NOTICES.md`; the workspace crates they contribute appear in the inventory below "
+        "The editors under `editors/` came from four MIT OR Apache-2.0 projects; their NOTICE texts are recorded in `NOTICE` "
+        "and `SOURCE_ORIGINS.md`; the workspace crates they contribute appear in the inventory below "
         "as `workspace source`.",
         "",
         f"- Cargo.lock SHA-256: `{sha256(LOCK_PATH.read_bytes())}`",

@@ -1,7 +1,7 @@
 //! The folders automation may read and write (#832).
 //!
 //! `redrob-canvas vector mcp --automation-read-root <dir> --automation-write-root <dir>`, and
-//! `vectorcraft --control <port>` with the same flags, confine the files an agent's commands
+//! `vector --control <port>` with the same flags, confine the files an agent's commands
 //! reach. [`AutomationRoots`] holds the two folders. While they are in force, every path a command
 //! reads goes through [`check_read`] and every path it writes through [`check_write`]:
 //!

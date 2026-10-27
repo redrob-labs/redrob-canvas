@@ -21,7 +21,7 @@ fn png(w: u32, h: u32, ppi: f64) -> Vec<u8> {
 
 /// `bytes` written to a fresh temporary file named `name` → its path.
 fn temp_file(name: &str, bytes: &[u8]) -> String {
-    let dir = std::env::temp_dir().join(format!("vectorcraft-ui-place-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("vector-ui-place-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let path = dir.join(name);
     std::fs::write(&path, bytes).unwrap();
@@ -561,7 +561,7 @@ fn the_control_bars_mask_clips_the_image_and_selects_the_clipping_path() {
 }
 
 #[test]
-fn a_vectorcraft_document_places_linked_and_edit_original_opens_it() {
+fn a_vector_document_places_linked_and_edit_original_opens_it() {
     let mut app = app();
     // A one-artboard document with a rectangle.
     let mut src = Session::new();

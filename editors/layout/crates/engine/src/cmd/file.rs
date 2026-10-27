@@ -904,7 +904,7 @@ mod document_fonts_tests {
     #[test]
     fn opening_a_document_loads_its_document_fonts() {
         const FAMILY: &str = "DocFont Open Test";
-        let dir = temp_dir("designcraft");
+        let dir = temp_dir("layout");
         let fonts = dir.join(DOCUMENT_FONTS_FOLDER);
         std::fs::write(fonts.join("open.ttf"), font_with(FAMILY, &['H', 'e', 'l', 'o']).unwrap()).unwrap();
         std::fs::write(fonts.join("broken.otf"), b"not a font").unwrap();

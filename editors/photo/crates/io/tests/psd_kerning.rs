@@ -236,7 +236,7 @@ fn photoshop_positions(txt2: &E, index: usize) -> Option<Vec<f64>> {
 }
 
 /// Photoshop-authored kerning oracles (`corpus/photoshop/text/kerning-*.psd`, made from scratch
-/// by photocraft-corpus's generator): the automatic mode read from `Txt2` per character, the
+/// by photo-corpus's generator): the automatic mode read from `Txt2` per character, the
 /// EngineData kerning fields after export, and our layout against Photoshop's glyph positions.
 #[cfg(feature = "corpus")]
 #[test]

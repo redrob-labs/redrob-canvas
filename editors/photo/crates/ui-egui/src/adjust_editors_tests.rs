@@ -671,7 +671,7 @@ fn gradient_map_picker_import_cancel_and_errors_preserve_state() {
             redrob_photo_psd::grd::write(&[redrob_photo_psd::grd::GrdGradient { noise: true, ..Default::default() }]),
         )),
         Some(FileDialogAnswer::Contents("wrong.abr".into(), Vec::new())),
-        Some(FileDialogAnswer::Paths(vec!["/nonexistent/photocraft-gradients.grd".into()])),
+        Some(FileDialogAnswer::Paths(vec!["/nonexistent/photo-gradients.grd".into()])),
         Some(FileDialogAnswer::Unavailable("dialog unavailable".into())),
     ] {
         let mut h = app_harness("gradientMap", "rgb", 8);

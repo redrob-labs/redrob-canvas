@@ -599,7 +599,7 @@ fn translate(bar: &mut MenuBar, lang: Lang) {
 
 /// Redrob Canvas's menus as a Mac menu bar, in the UI language; `language` is the
 /// `interface.language` preference (`auto` or a code), checked in the app menu's Language.
-pub fn photocraft_layout(items: &[MenuItem], lang: Lang, language: &str) -> Layout {
+pub fn photo_layout(items: &[MenuItem], lang: Lang, language: &str) -> Layout {
     let mut bar = from_items(&crate::menus::TOP_MENUS, items);
     bar.tag_item("help.about", ItemRole::About);
     bar.tag_item("file.exit", ItemRole::Quit);
@@ -721,7 +721,7 @@ pub fn sync(app: &mut PhotoApp, ctx: &egui::Context) {
     for it in &mut items {
         it.enabled &= crate::menus::modal_allows(app, &it.id);
     }
-    let layout = photocraft_layout(&items, lang, &app.session.prefs().interface.language);
+    let layout = photo_layout(&items, lang, &app.session.prefs().interface.language);
     let Some(menu) = app.services.native_menu.as_mut() else { return };
     if !menu.logged {
         for c in &layout.clashes {
@@ -781,7 +781,7 @@ mod tests {
     }
 
     fn layout(doc: bool) -> Layout {
-        photocraft_layout(&crate::menus::menu_items(&app(doc)), Lang::EN, "auto")
+        photo_layout(&crate::menus::menu_items(&app(doc)), Lang::EN, "auto")
     }
 
     fn ids(nodes: &[Node]) -> Vec<String> {
@@ -797,7 +797,7 @@ mod tests {
     }
 
     #[test]
-    fn photocraft_gets_a_mac_app_menu() {
+    fn photo_gets_a_mac_app_menu() {
         let l = layout(true);
         let app = &l.bar.menus[0];
         assert_eq!((app.title.as_str(), app.role), ("Redrob Canvas", MenuRole::App));
@@ -837,7 +837,7 @@ mod tests {
 
     /// Redrob Canvas keeps Photoshop's ⌘H, ⌘M, ⌘W and ⌘, (Hide Layers): the system items give way.
     #[test]
-    fn clashes_are_resolved_in_photocrafts_favour() {
+    fn clashes_are_resolved_in_photo's_favour() {
         let l = layout(true);
         let clash = |sc: &str| l.clashes.iter().find(|c| c.shortcut == sc).map(|c| c.command.as_str());
         assert_eq!(clash("Cmd+H"), Some("view.extras"));
@@ -858,7 +858,7 @@ mod tests {
     fn themes_move_to_the_app_menus_appearance() {
         let mut a = app(false);
         a.ui.theme = crate::theme::ThemeKind::Classic;
-        let l = photocraft_layout(&crate::menus::menu_items(&a), Lang::EN, "auto");
+        let l = photo_layout(&crate::menus::menu_items(&a), Lang::EN, "auto");
         let app_menu = l.bar.menu(MenuRole::App).unwrap();
         let Some(Node::Submenu { children, .. }) = app_menu.children.iter().find(|n| matches!(n, Node::Submenu { label, .. } if label == "Appearance")) else {
             panic!("an Appearance submenu");
@@ -876,7 +876,7 @@ mod tests {
         a.session.prefs.edit(|p| p.interface.appearance_mode = redrob_photo_engine::prefs::AppearanceMode::Auto);
         for palette in [crate::theme::ThemeKind::Classic, crate::theme::ThemeKind::ProMedium] {
             a.ui.theme = palette;
-            let automatic = photocraft_layout(&crate::menus::menu_items(&a), Lang::EN, "auto");
+            let automatic = photo_layout(&crate::menus::menu_items(&a), Lang::EN, "auto");
             assert_eq!(automatic.bar.find("window.theme.system").unwrap().checked, Some(true));
             for kind in crate::theme::ThemeKind::ALL {
                 assert_eq!(automatic.bar.find(&format!("window.theme.{}", kind.id())).unwrap().checked, Some(false));
@@ -888,7 +888,7 @@ mod tests {
     /// the preference checked; choosing one sets `interface.language`.
     #[test]
     fn the_app_menu_switches_the_ui_language() {
-        let l = photocraft_layout(&crate::menus::menu_items(&app(false)), Lang::EN, "ja");
+        let l = photo_layout(&crate::menus::menu_items(&app(false)), Lang::EN, "ja");
         let app_menu = l.bar.menu(MenuRole::App).unwrap();
         let Some(Node::Submenu { children, .. }) = app_menu.children.iter().find(|n| matches!(n, Node::Submenu { label, .. } if label == "Language")) else {
             panic!("a Language submenu");
@@ -897,7 +897,7 @@ mod tests {
         assert_eq!(l.bar.find("app.language.ja").map(|it| (it.label.as_str(), it.checked)), Some(("日本語", Some(true))));
         assert_eq!(l.bar.find("app.language.auto").and_then(|it| it.checked), Some(false));
         // Native names stay native in another UI language.
-        let de = photocraft_layout(&crate::menus::menu_items(&app(false)), Lang::from_pref("de"), "de");
+        let de = photo_layout(&crate::menus::menu_items(&app(false)), Lang::from_pref("de"), "de");
         assert_eq!(de.bar.find("app.language.ja").map(|it| it.label.as_str()), Some("日本語"));
         let mut a = app(false);
         let ctx = egui::Context::default();
@@ -951,14 +951,14 @@ mod tests {
         let mut a = app(true);
         a.run("file.new", json!({"width": 32, "height": 32})).unwrap();
         a.sync_views();
-        let bar = photocraft_layout(&crate::menus::menu_items(&a), Lang::EN, "auto").bar;
+        let bar = photo_layout(&crate::menus::menu_items(&a), Lang::EN, "auto").bar;
         let window = ids(&bar.menu(MenuRole::Window).unwrap().children);
         assert_eq!(window[window.len() - 4..], ["<BringAllToFront>", "---", "window.document.0", "window.document.1"]);
         assert_eq!(bar.find("window.document.1").and_then(|i| i.checked), Some(true));
         assert_eq!(bar.find("window.document.0").and_then(|i| i.checked), Some(false));
 
         a.session.set_active(0);
-        let switched = photocraft_layout(&crate::menus::menu_items(&a), Lang::EN, "auto").bar;
+        let switched = photo_layout(&crate::menus::menu_items(&a), Lang::EN, "auto").bar;
         assert_eq!(switched.find("window.document.0").and_then(|i| i.checked), Some(true));
         assert_eq!((structure_key(&switched), window_key(&switched)), (structure_key(&bar), window_key(&bar)), "a check moves in place");
     }

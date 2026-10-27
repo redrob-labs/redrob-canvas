@@ -6,49 +6,43 @@ run. Where a fact was not verified it says so.
 
 ## What this repository is
 
-Redrob Canvas is an agentic graphics editor: one egui/eframe window (`apps/redrob-canvas`) hosting
-three complete editors as modes, each vendored whole as a git subtree under `crafts/` from
-[storytold](https://github.com/storytold): the Photo editor (Photo), the Vector editor (Vector), the Layout editor
-(Layout), plus their shared craft-libs. Redrob's own code is the shell, `crates/redrob-agent` (the
-Redrob Code client) and `crates/redrob-ai` (the AI tools layer, in progress). Everything is Rust;
-there is no Qt, CMake, Node or QML anywhere in the build. If a document, script or comment you find
-talks about Qt, `native/`, `qml/`, `redrob-core`, `redrob-ffi`, Krita or GIMP, it describes the tree
-before commit `d4854f2` and is stale.
+Redrob Canvas is an agentic graphics editor: one egui/eframe binary (`apps/redrob-canvas`) hosting
+three complete editors as modes, Photo, Vector and Layout, under `editors/{photo,vector,layout}`,
+plus the libraries they share under `editors/shared`. The same binary is the command line:
+`redrob-canvas photo|vector|layout ARGS` (`apps/redrob-canvas/src/cli`) converts, inspects, runs
+command batches and serves MCP without opening the window. Redrob's own code is the shell, the
+editors, `crates/redrob-agent` (the Redrob Code client) and `crates/redrob-ai` (the AI tools layer,
+in progress). Everything is Rust; there is no Qt, CMake, Node or QML anywhere in the build. If a
+document, script or comment you find talks about Qt, `native/`, `qml/`, `redrob-core`, `redrob-ffi`,
+Krita or GIMP, it describes the tree before commit `d4854f2` and is stale.
+
+The editors started as four MIT OR Apache-2.0 projects and are no longer synced with them: they are
+our code now and are edited here like any other file. `SOURCE_ORIGINS.md` records where each one
+came from and at which commit.
 
 The project is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). Until 0.6 it was
-GPL-3.0-or-later; the relicensing rests on no copyleft input remaining, and
-`scripts/verify-upstream.sh` refuses any `code` pin whose licence is not permissive. Do not vendor or
-translate GPL or LGPL source into this tree.
+GPL-3.0-or-later; the relicensing rests on no copyleft input remaining. Do not vendor or translate
+GPL or LGPL source into this tree.
 
-## The two rules you cannot learn late
+## The rule you cannot learn late
 
-1. **Never edit a file under `crafts/` by hand.** The four directories are git subtrees. A fix an
-   editor needs goes upstream (the storytold repository) and comes back by
-   `scripts/fetch-upstream.sh <name> <sha>`; a local edit turns the next pull into a conflict hunt and
-   is lost at the next squash. The one exception is the parked `editors/<name>/Cargo.upstream.toml`,
-   which `tools/merge_workspaces.py` renames and which you also do not edit.
-2. **Never replace an upstream copyright notice, and never touch `editors/*/docs/brand/`.** The upstream
-   name and logos there are trademarks, not open source. `NOTICE` reproduces each upstream NOTICE
-   verbatim beneath ours; `upstream-base.json`'s `attribution` list says which strings must stay, and
-   the verify script fails when one goes missing or when anything outside `crafts/` references the
-   brand assets.
+**Never replace an original author's copyright notice.** Ours goes beside theirs. `NOTICE`
+reproduces each origin project's NOTICE verbatim beneath ours, `editors/*/NOTICE`,
+`editors/*/LICENSE-*` and `editors/*/ATTRIBUTION.md` stay as written, and `COPYRIGHT` names them.
 
 ## Layout
 
-- `Cargo.toml` at the root is **generated** by `tools/merge_workspaces.py` from the four
-  `editors/*/Cargo.upstream.toml`; its header says so. Edit the script, run it, commit both. The
-  workspace members are `crates/*`, `apps/*` and each subtree's `crates/*`; the subtrees' `apps/`,
-  web shells are excluded; `tools/prune_upstream.py` deletes their docs, packaging, CI and xtasks,
-  and `tools/rename_crates.py` / `tools/rename_identifiers.py` give crates, extensions, URI schemes,
-  MIME types and env variables the Redrob names (UPSTREAM.md). `Cargo.lock` is one lock file for all of it.
-- `apps/redrob-canvas/` is the shell: `main.rs` (args, eframe options), `shell.rs` (`Mode`, lazy
-  editors, top bar), `services.rs` (config directory, prefs). Config lives in `ai.redrob.canvas`'s
+- `Cargo.toml` at the root is the one workspace manifest: `crates/*`, `apps/*` and
+  `editors/*/crates/*`, with `editors/shared/vendor` (patched `krilla` / `hayro`) patched in by path.
+  `Cargo.lock` is one lock file for all of it.
+- `apps/redrob-canvas/` is the shell: `main.rs` (args, eframe options), `cli/` (the command line),
+  `shell.rs` (`Mode`, lazy editors, top bar), `services.rs` (config directory, prefs). Config lives in `ai.redrob.canvas`'s
   directory (`~/Library/Application Support/Redrob Canvas`, `%APPDATA%\Redrob Canvas`,
   `~/.config/redrob-canvas`).
 - `crates/redrob-agent/` is the pure-Rust Redrob Code client; `crates/redrob-ai/` the AI layer.
-- `UPSTREAM.md` + `upstream-base.json` + `docs/upstream-sources.toml` are the pins; `UPSTREAM_NOTICES.md`
-  the hand-written attribution; `THIRD_PARTY_NOTICES.md` the generated one (do not edit).
-- `tools/`: `merge_workspaces.py`, `generate_distribution_artifacts.py`, `check_design_system.py`,
+- `SOURCE_ORIGINS.md` is the hand-written origin record; `THIRD_PARTY_NOTICES.md` the generated
+  one (do not edit).
+- `tools/`: `generate_distribution_artifacts.py`, `check_design_system.py`,
   `generate_design_tokens.py` (a pin checker), `release_matrix.py`, `release_manifest.py`,
   `release/stage.py`, `release/make_deb.py`, `release/build-linux.sh`, and `tests/`.
 - `installer/macos/` (disk image, uninstaller) and `installer/windows/` (setup and uninstaller, Win32).
@@ -66,11 +60,10 @@ sudo apt-get install -y libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev
 export PATH="$HOME/.cargo/bin:$PATH"
 ```
 
-The gates, in the order CI runs them. The first and the last three need no Rust build and finish in
-seconds; run them first to fail fast.
+The gates, in the order CI runs them. The last three need no Rust build and finish in seconds;
+run them first to fail fast.
 
 ```bash
-scripts/verify-upstream.sh                                   # pins, attribution, brand boundary, GitHub reachability
 cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
@@ -80,17 +73,17 @@ python3 tools/check_design_system.py
 python3 -m unittest discover -s tools/tests -p "test_*.py"
 ```
 
-Verified in this tree on 2026-10-15: `scripts/verify-upstream.sh` (exit 0, also with `--with-trees`),
-`tools/check_design_system.py` (exit 0), the tool tests (28 tests, OK), and the workflow files parse
+Verified in this tree on 2026-10-15: `tools/check_design_system.py` (exit 0), the tool tests (28 tests, OK), and the workflow files parse
 as YAML. `cargo clippy`, `cargo test` and `cargo build` were not run while these notes were written
 (another change to `apps/` was in flight), so their status on this branch is not asserted here.
 
-The workspace is large (four editors); a cold `cargo build --release` is long. Prefer
+The workspace is large (three editors and their libraries); a cold `cargo build --release` is long. Prefer
 `cargo check -p redrob-canvas` or `cargo test -p <crate>` while iterating, and never wait on a build
 with a shell loop that greps for its own command (`while pgrep -f 'cargo ...'` matches itself).
 
 Running the app: `target/release/redrob-canvas [--mode photo|vector|layout]`; `--version` prints and
-exits, which is what the release smoke test relies on.
+exits, which is what the release smoke test relies on. `target/release/redrob-canvas photo --help`
+(or `vector`, `layout`) prints that editor's command line.
 
 ## Distribution artifacts
 
@@ -103,28 +96,18 @@ is out of step with a `Cargo.toml` and that is the thing to fix, not the generat
 
 `SOURCE_OFFER.md` and the corresponding-source bundle no longer exist. Do not recreate them.
 
-## Upstream pins
+## The `redrob-code` pin
 
-Update a subtree with `scripts/fetch-upstream.sh <name> <sha>` on a clean tree: it runs
-`git subtree pull --prefix editors/<name> <repo> <sha> --squash`, then `tools/merge_workspaces.py`,
-and commits the regenerated manifest. Then record the sha in `upstream-base.json`
-(`base.commit`, `lastSyncedUpstream`), `docs/upstream-sources.toml` (`commit`) and the subtree's
-section of `UPSTREAM_NOTICES.md`, run `scripts/verify-upstream.sh`, regenerate the notices if
-`Cargo.lock` moved, and open the pull request from a `sync/upstream-<name>-<sha7>` branch. Merge it
-as a **merge commit**, never a squash: a squash destroys the subtree's merge base.
-
-The verify script also checks that `redrob_code`'s tag in `docs/upstream-sources.toml` equals the
-`redrob-engine-client` tag in the root `Cargo.toml`; bump both together.
+`redrob-engine-client` and `redrob-app-bridge` are git dependencies on tags of
+`redrob-labs/redrob-code` (root `Cargo.toml`, `apps/redrob-canvas/Cargo.toml`); bump them together.
 
 ## What CI actually runs
 
 `.github/workflows/ci.yml` is the one pull-request workflow (no push or schedule triggers). Job
-`checks` (seconds to a couple of minutes): `scripts/verify-upstream.sh`, `scripts/check_upstream_ids.py`,
-`cargo fetch --locked` then the notice check, the design-system guard, the tool tests. Job `rust`:
+`checks` (seconds to a couple of minutes): `cargo fetch --locked` then the notice check, the design-system guard, the tool tests. Job `rust`:
 `cargo fmt --check`, then clippy and the tests of OUR crates only (`-p redrob-canvas -p redrob-ai
 -p redrob-agent`) with `--profile ci`; skipped when no Rust input changed or when the pull request
-targets `main`. There is no separate gitflow, packaging-lint, upstream-boundary or advisory
-workflow. Branch protection should require `checks` and `rust`.
+targets `main`. There is no separate gitflow, packaging-lint or advisory workflow. Branch protection should require `checks` and `rust`.
 
 `.github/workflows/pr-policy.yml` is the organisation template and only calls `redrob-labs/.github`
 (at most three open pull requests per author).
@@ -147,9 +130,9 @@ the signing order.
 - Commits: conventional prefix, imperative, lower-case subject; the body says why. No em dashes
   anywhere. Pull request bodies in English; Korean prose in `README.ko.md` uses 레드롭 캔버스 for the
   product and keeps Latin only for technical tokens.
-- Working branches are `<type>/<slug>` off `develop`, squash-merged; upstream syncs are merge commits.
-- New source files carry `SPDX-License-Identifier: MIT OR Apache-2.0`. Files under `crafts/` keep
-  upstream's headers.
+- Working branches are `<type>/<slug>` off `develop`, squash-merged.
+- New source files carry `SPDX-License-Identifier: MIT OR Apache-2.0`. Files from the origin
+  projects keep the headers they came with.
 - The shell paints from the design-system tokens; a hex literal in `apps/redrob-canvas/src` fails the
   guard unless the line is marked as a document colour.
 - This app holds no Redrob console key: the shared Redrob Code daemon does, and the agent reaches

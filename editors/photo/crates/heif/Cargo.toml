@@ -1,6 +1,6 @@
 [package]
 name = "redrob-photo-heif"
-description = "Optional HEIF/HEIC still-image decoder for PhotoCraft (a thin, panic-guarded wrapper around heic-rs)"
+description = "Optional HEIF/HEIC still-image decoder for Photo (a thin, panic-guarded wrapper around heic-rs)"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

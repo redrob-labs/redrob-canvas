@@ -10,7 +10,7 @@ Affinity files.
 
 `redrob-photo-io` maps the model to an 8-bit RGB document at the Affinity document's resolution:
 
-| Affinity | PhotoCraft |
+| Affinity | Photo |
 |---|---|
 | Pages, Publisher spreads | one artboard per spread, spreads side by side 64 px apart |
 | Artboards (legacy `ABEn`, or current `.af` `phrp`/`aprp` properties, including converted curves), with name, solid background, any transform | artboards (nested ones as groups with a vector mask; rotated/curved boards use their bounding rectangle) |
@@ -71,7 +71,7 @@ are rejected. The I/O adapter decodes it with a 128 MiB allocation limit.
 
 Affinity has no published file-format specification, so this reader is built only from a public
 description of the format and from public files, never from Affinity itself. This is how
-PhotoCraft already treats formats that are only partly documented: `redrob-photo-psd` fills the gaps
+Photo already treats formats that are only partly documented: `redrob-photo-psd` fills the gaps
 in Adobe's specification from the MIT-licensed psd-tools and ag-psd, and `redrob-photo-raw` recovered
 Nikon's compression tables by black-box analysis of CC0 sample files (see their READMEs).
 
@@ -102,7 +102,7 @@ Nikon's compression tables by black-box analysis of CC0 sample files (see their 
 * **Read-only.** Nothing is written in Affinity's format; export waits until someone can check
   written files in Affinity itself.
 
-The same reader is shared, as an independent copy, with VectorCraft's `redrob-vector-affinity`.
+The same reader is shared, as an independent copy, with Vector's `redrob-vector-affinity`.
 
 ## Validation
 

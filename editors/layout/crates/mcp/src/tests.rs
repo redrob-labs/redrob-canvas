@@ -42,7 +42,7 @@ fn image_of(result: &Value) -> Vec<u8> {
 }
 
 fn tmp(name: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("designcraft-mcp-test-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("layout-mcp-test-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     dir.join(name)
 }
@@ -94,7 +94,7 @@ fn protocol_round_trip_over_serve() {
     let lines: Vec<Value> = String::from_utf8(out).unwrap().lines().map(|l| serde_json::from_str(l).unwrap()).collect();
     assert_eq!(lines.len(), 5, "one reply per request, none for the notification");
     assert_eq!(lines[0]["result"]["protocolVersion"], PROTOCOL_VERSION);
-    assert_eq!(lines[0]["result"]["serverInfo"]["name"], "designcraft");
+    assert_eq!(lines[0]["result"]["serverInfo"]["name"], "layout");
     assert!(lines[0]["result"]["capabilities"]["tools"].is_object());
     assert!(lines[0]["result"]["instructions"].as_str().unwrap().contains("headless"));
     let tools = lines[1]["result"]["tools"].as_array().unwrap();

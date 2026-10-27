@@ -71,7 +71,7 @@ impl Background {
             let (tx, tasks) = channel::<Task>();
             let (done_tx, done) = channel();
             std::thread::Builder::new()
-                .name("vectorcraft-save".into())
+                .name("vector-save".into())
                 .spawn(move || {
                     while let Ok(Task { id, work, write, scope }) = tasks.recv() {
                         let r = scope

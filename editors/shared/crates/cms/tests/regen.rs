@@ -12,7 +12,7 @@ use redrob_canvas_cms::{Builtin, Intent, Profile, Transform};
 
 #[test]
 fn regen_or_check_coated_cmyk() {
-    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/profiles/photocraft-coated-cmyk.icc");
+    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/profiles/coated-cmyk.icc");
     if std::env::var_os("REDROB_CRAFT_CMS_REGEN_PROFILES").is_some() {
         let t = std::time::Instant::now();
         let p = redrob_canvas_cms::synth::coated_cmyk().unwrap();

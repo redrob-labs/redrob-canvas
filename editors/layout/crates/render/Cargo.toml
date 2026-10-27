@@ -3,7 +3,7 @@ name = "redrob-layout-render"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft renderer: spreads, pages, frames, composed text and images to pixels (vello_cpu)"
+description = "Layout renderer: spreads, pages, frames, composed text and images to pixels (vello_cpu)"
 
 [lints]
 workspace = true

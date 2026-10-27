@@ -190,7 +190,7 @@ pub fn show(app: &mut PhotoApp, ctx: &egui::Context) {
     let t = crate::theme::Tokens::get(ctx);
     let mut dismiss_id = None;
     // Clear the status bar (~24 px) and leave the dock's edge some air.
-    let area = egui::Area::new(egui::Id::new("photocraft-notices"))
+    let area = egui::Area::new(egui::Id::new("photo-notices"))
         .order(egui::Order::Foreground)
         .anchor(egui::Align2::RIGHT_BOTTOM, egui::vec2(-16.0, -36.0))
         .interactable(true)
@@ -259,7 +259,7 @@ mod tests {
 
     #[test]
     fn wayland_guidance_follows_language_changes_after_startup() {
-        let command = Some("WAYLAND_DISPLAY= photocraft".to_string());
+        let command = Some("WAYLAND_DISPLAY= photo".to_string());
         let app = PhotoApp::new(Session::new(), Services { is_wayland: true, xwayland_command: command, ..Default::default() });
         let notice = &app.ui.notices[0];
         assert!(notice.lines.iter().all(|line| crate::i18n::tr(crate::i18n::Lang::from_code("es").unwrap(), line) != line), "every line is a catalog template");

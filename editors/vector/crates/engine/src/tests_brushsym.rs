@@ -568,7 +568,7 @@ fn brushed_strokes_and_instances_render() {
 }
 
 #[test]
-fn brushes_and_symbols_survive_vectorcraft_round_trip() {
+fn brushes_and_symbols_survive_vector_round_trip() {
     let mut s = session();
     make_symbol(&mut s);
     s.execute("brush.new", &json!({"type": "calligraphic", "name": "Mine", "params": {"size": 7}})).unwrap();

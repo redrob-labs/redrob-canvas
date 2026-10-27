@@ -82,7 +82,7 @@ pub const MAX_GROUPS: usize = 4096;
 /// Most presets loaded from one group file.
 pub const MAX_PRESETS_PER_GROUP: usize = 50_000;
 
-const GROUP_FORMAT: &str = "photocraft-brush-group";
+const GROUP_FORMAT: &str = "photocraft-brush-group"; // legacy: the format id saved brush groups carry
 const TIP_MAGIC: &[u8; 6] = b"PCTIP1";
 const TIP_HEADER: usize = 6 + 1 + 4 + 4;
 

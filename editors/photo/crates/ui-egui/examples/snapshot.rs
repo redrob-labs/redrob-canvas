@@ -1,4 +1,4 @@
-//! Render the full Photocraft UI offscreen (no window, no focus stealing) and save a PNG.
+//! Render the full Photo UI offscreen (no window, no focus stealing) and save a PNG.
 //!
 //! ```sh
 //! cargo run --release -p redrob-photo-ui-egui --example snapshot -- \
@@ -71,7 +71,7 @@ fn main() {
             PhotoApp::setup_context(&cc.egui_ctx, Default::default());
             let mut services = services;
             services.is_wayland = wayland_notice;
-            services.xwayland_command = wayland_notice.then(|| "WAYLAND_DISPLAY= photocraft".into());
+            services.xwayland_command = wayland_notice.then(|| "WAYLAND_DISPLAY= photo".into());
             let mut app = PhotoApp::new(redrob_photo_engine::Session::new(), services);
             app.background_jobs = background_jobs;
             app.custom_titlebar = custom_titlebar;

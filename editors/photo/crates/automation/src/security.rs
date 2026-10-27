@@ -244,9 +244,9 @@ pub fn configure_stream(stream: &std::net::TcpStream) -> std::io::Result<()> {
 
 /// Environment-aware token inputs shared by the desktop app and CLI.
 pub fn token_inputs(supplied: Option<String>, token_file: Option<PathBuf>) -> (Option<String>, Option<PathBuf>) {
-    let supplied = supplied.or_else(|| std::env::var("REDROB_PHOTO_CONTROL_TOKEN").or_else(|_| std::env::var("PHOTOCRAFT_CONTROL_TOKEN")).ok()); // legacy: the upstream variable is read when ours is unset
+    let supplied = supplied.or_else(|| std::env::var("REDROB_PHOTO_CONTROL_TOKEN").ok());
     let token_file = token_file
-        .or_else(|| std::env::var_os("REDROB_PHOTO_CONTROL_TOKEN_FILE").or_else(|| std::env::var_os("PHOTOCRAFT_CONTROL_TOKEN_FILE")).map(PathBuf::from)); // legacy: the upstream variable is read when ours is unset
+        .or_else(|| std::env::var_os("REDROB_PHOTO_CONTROL_TOKEN_FILE").map(PathBuf::from));
     (supplied, token_file)
 }
 
@@ -320,7 +320,7 @@ mod tests {
 
     #[test]
     fn token_file_round_trips_between_server_and_client() {
-        let path = std::env::temp_dir().join(format!("photocraft-control-token-{}-{}.txt", std::process::id(), generate_token().unwrap()));
+        let path = std::env::temp_dir().join(format!("photo-control-token-{}-{}.txt", std::process::id(), generate_token().unwrap()));
         let server = server_token(None, Some(&path)).unwrap();
         let client = client_token(None, Some(&path)).unwrap();
         assert_eq!(server, client);

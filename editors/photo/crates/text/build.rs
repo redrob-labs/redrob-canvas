@@ -25,14 +25,11 @@ fn main() {
     let wasm = std::env::var("CARGO_CFG_TARGET_ARCH").is_ok_and(|a| a == "wasm32");
     let mut src = String::from("pub static REDROB_CRAFT_FONTS: &[CraftFont] = &[\n");
     if let Some(dir) =
-        // legacy: the upstream variable is read when ours is unset
         std::env::var_os("REDROB_CRAFT_FONTS_DIR").or_else(|| std::env::var_os("CRAFT_FONTS_DIR")).filter(|d| !d.is_empty() && !wasm).map(PathBuf::from)
     {
-        // legacy: the upstream variable is read when ours is unset
         match craft_fonts(&dir) {
             Ok(entries) => src.push_str(&entries),
             Err(e) if std::env::var_os("REDROB_CRAFT_FONTS_REQUIRED").or_else(|| std::env::var_os("CRAFT_FONTS_REQUIRED")).is_some() => {
-                // legacy: the upstream variable is read when ours is unset
                 println!("cargo::error=REDROB_CRAFT_FONTS_DIR={}: {e}", dir.display());
             }
             Err(e) => println!("cargo::warning=building without craft-fonts: REDROB_CRAFT_FONTS_DIR={}: {e}", dir.display()),

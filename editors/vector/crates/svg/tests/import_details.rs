@@ -55,7 +55,7 @@ fn png(w: u32, h: u32) -> Vec<u8> {
 
 /// A fresh folder for one test's files.
 fn folder(name: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("vectorcraft-svg-{name}-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("vector-svg-{name}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(dir.join("img")).unwrap();
     dir

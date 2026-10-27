@@ -1,11 +1,11 @@
 [package]
-name = "photocraft-psd-fuzz"
+name = "photo-psd-fuzz"
 version = "0.0.0"
 publish = false
 edition = "2024"
 license = "MIT OR Apache-2.0"
 
-# Standalone: excluded from the photocraft workspace.
+# Standalone: excluded from the photo workspace.
 [workspace]
 
 [package.metadata]

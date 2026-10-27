@@ -92,7 +92,7 @@ fn main() {
         arg(&args, "--size").and_then(|s| s.split_once('x').map(|(a, b)| (a.parse().unwrap_or(14000), b.parse().unwrap_or(14000)))).unwrap_or((14000, 14000));
     let op = arg(&args, "--op").unwrap_or_else(|| "open".into());
     let dir = arg(&args, "--cache").map_or_else(std::env::temp_dir, std::path::PathBuf::from);
-    let src = dir.join(format!("photocraft-bench-{w}x{h}.jpg"));
+    let src = dir.join(format!("photo-bench-{w}x{h}.jpg"));
     if !src.exists() {
         let t = Instant::now();
         let img = photo(w, h);

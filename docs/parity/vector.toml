@@ -3293,7 +3293,7 @@ reference = "Inkscape"
 manual = "https://inkscape-manuals.readthedocs.io/en/latest/saving.html"
 behaviour = "Documents are saved as SVG 1.1 (with SVG 2 features where used) plus editor-specific attributes in a private namespace for live shapes, effects, grids and view state; any SVG viewer renders them."
 ours = "full"
-ours_where = "editors/vector/crates/engine/src/cmd/fileio/save.rs (Save as SVG embeds the native document in the editor namespace by default: preserveEditing on, no fidelity warning), editors/vector/crates/svg/src/export.rs (<vectorcraft:document> metadata), editors/vector/crates/svg/src/lib.rs (editing() restores it on open)"
+ours_where = "editors/vector/crates/engine/src/cmd/fileio/save.rs (Save as SVG embeds the native document in the editor namespace by default: preserveEditing on, no fidelity warning), editors/vector/crates/svg/src/export.rs (<vector:document> metadata), editors/vector/crates/svg/src/lib.rs (editing() restores it on open)"
 gap = ""
 priority = 1
 

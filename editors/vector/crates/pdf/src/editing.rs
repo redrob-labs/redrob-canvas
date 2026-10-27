@@ -15,7 +15,7 @@ use crate::PdfError;
 use crate::lab_spot::find;
 
 /// The embedded file holding the native document (its name among the PDF's attachments).
-pub const EDITING_FILE: &str = "vectorcraft-editing.rvector";
+pub const EDITING_FILE: &str = "vector-editing.rvector";
 /// The editing file's name from before the project was renamed: still read.
 pub const LEGACY_EDITING_FILE: &str = "drawcraft-editing.drawcraft"; // legacy: upstream extension still read
 

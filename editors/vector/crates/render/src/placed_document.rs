@@ -215,7 +215,7 @@ mod workers {
         let mut started = 0;
         for i in 0..n {
             let rx = rx.clone();
-            let spawned = std::thread::Builder::new().name(format!("vectorcraft-placed-{i}")).spawn(move || {
+            let spawned = std::thread::Builder::new().name(format!("vector-placed-{i}")).spawn(move || {
                 let mut r = crate::Renderer::new();
                 r.threads = 0;
                 loop {

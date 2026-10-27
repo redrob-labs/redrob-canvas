@@ -9,7 +9,7 @@ use serde_json::json;
 
 #[test]
 fn a_relative_path_finds_relative_links() {
-    let dir = std::env::temp_dir().join(format!("vectorcraft-relative-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("vector-relative-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let mut png = Vec::new();
     image::RgbaImage::from_pixel(4, 4, image::Rgba([255, 0, 0, 255])).write_to(&mut std::io::Cursor::new(&mut png), image::ImageFormat::Png).unwrap();

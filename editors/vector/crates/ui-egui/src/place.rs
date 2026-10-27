@@ -161,8 +161,8 @@ fn open_dialog(app: &mut VectorApp, files: Vec<Value>) {
             "template": false,
             "replace": false,
             "__replace": files.len() == 1 && one_object,
-            "__documents": files.iter().any(is_vectorcraft_file),
-            "__others": !files.iter().all(is_vectorcraft_file),
+            "__documents": files.iter().any(is_vector_file),
+            "__others": !files.iter().all(is_vector_file),
             "__info": info,
         }),
     ));
@@ -170,7 +170,7 @@ fn open_dialog(app: &mut VectorApp, files: Vec<Value>) {
 
 /// Is dialog file entry `file` a Redrob Canvas document on disk (what Link places as one locked
 /// object)?
-fn is_vectorcraft_file(file: &Value) -> bool {
+fn is_vector_file(file: &Value) -> bool {
     let native = [
         redrob_vector_format::EXTENSION,
         redrob_vector_format::UPSTREAM_EXTENSION, // legacy: upstream documents still place as documents

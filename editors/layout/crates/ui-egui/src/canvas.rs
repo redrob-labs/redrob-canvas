@@ -673,8 +673,7 @@ fn patch_texture(app: &mut DesignApp, layout: &CanvasLayout, ppp: f64, doc_key: 
 
 #[cfg(not(target_arch = "wasm32"))]
 fn render_worker_spawn(ctx: &egui::Context) -> Option<crate::render_worker::Worker> {
-    if std::env::var_os("REDROB_LAYOUT_SYNC_RENDER").or_else(|| std::env::var_os("DESIGNCRAFT_SYNC_RENDER")).is_some() {
-        // legacy: the upstream variable is read when ours is unset
+    if std::env::var_os("REDROB_LAYOUT_SYNC_RENDER").is_some() {
         return None;
     }
     crate::render_worker::Worker::spawn(ctx.clone())

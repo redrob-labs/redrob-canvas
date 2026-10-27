@@ -731,7 +731,7 @@ pub fn list(dir: &Path) -> Vec<(u64, Value)> {
     let Ok(rd) = std::fs::read_dir(dir) else { return out };
     for e in rd.flatten() {
         let p = e.path();
-        if !matches!(p.extension().and_then(|x| x.to_str()), Some("rlayout")) && p.extension().and_then(|x| x.to_str()) != Some("designcraft")
+        if !matches!(p.extension().and_then(|x| x.to_str()), Some("rlayout")) && p.extension().and_then(|x| x.to_str()) != Some("layout")
         // legacy: entries an upstream build wrote
         {
             continue;

@@ -66,7 +66,7 @@ fn find<'a>(bar: &'a MenuBar, command: &str) -> &'a native_menu::Item {
 }
 
 #[test]
-fn vectorcraft_gets_a_mac_app_menu() {
+fn vector_gets_a_mac_app_menu() {
     let bar = bar(&app(true));
     let titles: Vec<&str> = bar.menus.iter().map(|m| m.title.as_str()).collect();
     assert_eq!(titles, ["Redrob Canvas", "File", "Edit", "Object", "Type", "Select", "Effect", "View", "Window", "Help"]);

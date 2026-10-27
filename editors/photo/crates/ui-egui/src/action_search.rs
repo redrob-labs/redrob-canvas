@@ -57,7 +57,7 @@ pub fn show(app: &mut PhotoApp, ctx: &egui::Context) {
     let pos = egui::pos2(screen.center().x - width / 2.0, screen.top() + 80.0);
     let mut run: Option<Value> = None;
     let mut close = false;
-    let id = egui::Id::new("photocraft-action-search");
+    let id = egui::Id::new("photo-action-search");
     let area = egui::Area::new(id).order(egui::Order::Foreground).fixed_pos(pos).show(ctx, |ui| {
         let t = Tokens::get(ui.ctx());
         egui::Frame::NONE

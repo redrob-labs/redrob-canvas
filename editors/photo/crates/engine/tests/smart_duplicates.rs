@@ -178,7 +178,7 @@ fn replacing_shared_contents_does_not_reuse_or_commit_a_stale_editor() {
     let (mut s, original, duplicate) = session(16);
     let child = s.execute("layer.smartObjects.editContents", json!({"layer": original})).unwrap()["document"].as_u64().unwrap() as usize;
     paint(&mut s, [0.0, 1.0, 0.0, 1.0]);
-    let path = std::env::temp_dir().join(format!("photocraft-shared-contents-{}-{original}.rphoto", std::process::id()));
+    let path = std::env::temp_dir().join(format!("photo-shared-contents-{}-{original}.rphoto", std::process::id()));
     std::fs::write(&path, redrob_photo_format::save_to_bytes(&s.active().unwrap().doc, &Default::default()).unwrap()).unwrap();
     paint(&mut s, [1.0, 0.0, 0.0, 1.0]);
     s.set_active(0);
@@ -202,7 +202,7 @@ fn contents_file(rgba: [f32; 4], tag: &str) -> std::path::PathBuf {
     s.execute("file.new", json!({"width": 8, "height": 6})).unwrap();
     s.execute("layer.new.layer", json!({})).unwrap();
     paint(&mut s, rgba);
-    let path = std::env::temp_dir().join(format!("photocraft-{tag}-{}.rphoto", std::process::id()));
+    let path = std::env::temp_dir().join(format!("photo-{tag}-{}.rphoto", std::process::id()));
     std::fs::write(&path, redrob_photo_format::save_to_bytes(&s.active().unwrap().doc, &Default::default()).unwrap()).unwrap();
     path
 }

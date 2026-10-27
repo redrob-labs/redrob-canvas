@@ -332,7 +332,7 @@ pub fn tool_definitions() -> Vec<Value> {
         tool(
             "export",
             "Export",
-            "Export the active document with the engine's document.export (the same bytes in the app and headless), in any format of the `format` enum: vectors (svg/svgz with the artboard as viewBox, eps, dxf, emf, wmf), pdf (one page per artboard: all, or `artboard` / `range`), rasters (one rendered artboard: png, jpg, webp, gif, png8 as an indexed .png, tiff, bmp, tga, psd with its layers), txt (the stories, back to front), vectorcraft or template (a native copy or template; the document keeps its path). run_command document.formats lists each format's options. For SVG/SVGZ, top-level `outlineText: true` writes text as paths; DXF takes it too (its type is outlined anyway unless `preserve: editability`). PDF instead uses `options.advanced.outlineText: true`, default false (live text). `selection: true` exports only the selected objects, cropped to their bounds. Template layers are left out; live effects are kept (geometry baked, SVG filters for shadows/glows/blur). Without `path` the bytes come back as dataBase64.",
+            "Export the active document with the engine's document.export (the same bytes in the app and headless), in any format of the `format` enum: vectors (svg/svgz with the artboard as viewBox, eps, dxf, emf, wmf), pdf (one page per artboard: all, or `artboard` / `range`), rasters (one rendered artboard: png, jpg, webp, gif, png8 as an indexed .png, tiff, bmp, tga, psd with its layers), txt (the stories, back to front), vector or template (a native copy or template; the document keeps its path). run_command document.formats lists each format's options. For SVG/SVGZ, top-level `outlineText: true` writes text as paths; DXF takes it too (its type is outlined anyway unless `preserve: editability`). PDF instead uses `options.advanced.outlineText: true`, default false (live text). `selection: true` exports only the selected objects, cropped to their bounds. Template layers are left out; live effects are kept (geometry baked, SVG filters for shadows/glows/blur). Without `path` the bytes come back as dataBase64.",
             obj(
                 json!({
                     "format": {"type": "string", "enum": FORMATS.iter().filter(|f| f.write).map(|f| f.id).collect::<Vec<_>>(), "description": "Default: from the path's extension"},
@@ -479,7 +479,7 @@ fn need_ui(b: &dyn Backend, tool: &str) -> Result<(), String> {
         Ok(())
     } else {
         Err(format!(
-            "`{tool}` needs the desktop app: run `vectorcraft --control 7979` and start the server with `redrob-canvas vector mcp --connect 127.0.0.1:7979`"
+            "`{tool}` needs the desktop app: run `vector --control 7979` and start the server with `redrob-canvas vector mcp --connect 127.0.0.1:7979`"
         ))
     }
 }
@@ -704,7 +704,7 @@ fn screenshot(b: &mut dyn Backend, a: &Args) -> Result<ToolResult, String> {
 
 /// The window of an app from before `ui.screenshot {data}`, captured through a temporary file.
 fn old_window_capture(b: &mut dyn Backend) -> Result<ToolResult, String> {
-    let tmp = std::env::temp_dir().join(format!("vectorcraft-window-{}.png", std::process::id())).to_string_lossy().to_string();
+    let tmp = std::env::temp_dir().join(format!("vector-window-{}.png", std::process::id())).to_string_lossy().to_string();
     let r = b.call("ui.screenshot", json!({"path": tmp}))?;
     let png = std::fs::read(&tmp).map_err(|e| format!("read {tmp}: {e}"))?;
     // Best effort: a temporary file left behind is harmless.

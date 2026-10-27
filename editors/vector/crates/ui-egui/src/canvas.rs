@@ -321,8 +321,7 @@ pub fn show(app: &mut VectorApp, ui: &mut Ui) {
     }
     if !app.canvas.worker_started {
         app.canvas.worker_started = true;
-        if std::env::var_os("REDROB_VECTOR_SYNC_RENDER").or_else(|| std::env::var_os("VECTORCRAFT_SYNC_RENDER")).is_none() {
-            // legacy: the upstream variable is read when ours is unset
+        if std::env::var_os("REDROB_VECTOR_SYNC_RENDER").is_none() {
             app.canvas.worker = crate::render_worker::Worker::spawn(ui.ctx().clone());
         }
     }
@@ -563,7 +562,7 @@ pub fn show(app: &mut VectorApp, ui: &mut Ui) {
             }
             // The glyph cursors are drawn here; General › Use Precise Cursors (the session turns the drawing tools' pointers
             // into crosshairs, `Cursor::precise`) needs no handling. REDROB_VECTOR_SYSTEM_CURSORS opts out of the glyphs.
-            let custom = std::env::var_os("REDROB_VECTOR_SYSTEM_CURSORS").or_else(|| std::env::var_os("VECTORCRAFT_SYSTEM_CURSORS")).is_none(); // legacy: the upstream variable is read when ours is unset
+            let custom = std::env::var_os("REDROB_VECTOR_SYSTEM_CURSORS").is_none();
             // User Interface › Scale Cursor Proportional to UI: the glyphs grow with UI Scaling;
             // off, they keep their size.
             let ui_scale = if app.session.prefs.scale_cursor_with_ui { 1.0 } else { ui.ctx().zoom_factor() };

@@ -374,7 +374,7 @@ pub struct CjkFontPlugin(pub CjkFallback);
 
 impl egui::Plugin for CjkFontPlugin {
     fn debug_name(&self) -> &'static str {
-        "photocraft-cjk-fonts"
+        "photo-cjk-fonts"
     }
 
     fn output_hook(&mut self, ctx: &egui::Context, output: &mut egui::FullOutput) {
@@ -542,7 +542,7 @@ mod tests {
     fn fake_dir() -> PathBuf {
         let mut g = DIR.lock().unwrap();
         g.get_or_insert_with(|| {
-            let dir = std::env::temp_dir().join(format!("photocraft-cjk-{}", std::process::id()));
+            let dir = std::env::temp_dir().join(format!("photo-cjk-{}", std::process::id()));
             std::fs::create_dir_all(&dir).unwrap();
             std::fs::write(dir.join("font.ttf"), include_bytes!("../../../assets/fonts/Inter-Regular.ttf")).unwrap();
             std::fs::write(dir.join("empty.ttf"), b"").unwrap();

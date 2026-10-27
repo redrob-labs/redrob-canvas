@@ -306,7 +306,7 @@ mod tests {
     #[test]
     fn the_additional_fonts_folder_joins_the_font_scan() {
         let mut s = Session::new();
-        let dir = std::env::temp_dir().join("vectorcraft-fonts-folder-pref");
+        let dir = std::env::temp_dir().join("vector-fonts-folder-pref");
         s.execute("prefs.set", &json!({"key": "fontsFolder", "value": format!("  {}  ", dir.display())})).unwrap();
         assert_eq!(redrob_vector_text::user_font_dirs(), std::slice::from_ref(&dir));
         if !cfg!(target_arch = "wasm32") {

@@ -25,7 +25,7 @@ impl Default for Headless {
 }
 
 /// Hint appended to errors for methods that need a window.
-pub(crate) const NEEDS_APP: &str = "it needs the desktop app: start `designcraft --control 7979` and run the MCP server \
+pub(crate) const NEEDS_APP: &str = "it needs the desktop app: start `layout --control 7979` and run the MCP server \
 with `redrob-canvas layout mcp --connect 7979`";
 
 const VIEW: ViewInfo = ViewInfo::at_zoom(1.0);

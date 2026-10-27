@@ -25,7 +25,7 @@ pub const MAX_ELEMENT_DEPTH: usize = if cfg!(target_arch = "wasm32") { WEB_DEPTH
 
 /// The stack of the web build: rustc links `wasm32-unknown-unknown` with
 /// `-z stack-size=1048576` (`rustc --print link-args` shows it), and the web app gives the linker
-/// no arguments of its own (`apps/vectorcraft-web`: `Trunk.toml`, `index.html`, no rustflags).
+/// no arguments of its own (`apps/vector-web`: `Trunk.toml`, `index.html`, no rustflags).
 const WEB_STACK: usize = 1 << 20;
 
 /// The stack usvg uses for each level of elements: about 70 levels overflowed the 1 MB main

@@ -808,7 +808,7 @@ steps = [
 pass = "열린 패스 개수가 원본 <path> 수와 같고, 저장된 SVG 의 해당 앵커 좌표만 20±0.5 변하며 다른 path d 는 원본과 일치한다."
 verdict_scale = "works|slow|broken|missing"
 ps = "(Illustrator) File › Open(.svg) → Direct Selection(A) → File › Save As SVG."
-canvas_entry = "vectorcraft file.open svg / path.reshape (editors/vector/crates/engine/src/cmd/fileio/svg.rs, cmd/path.rs; crates/svg)"
+canvas_entry = "vector file.open svg / path.reshape (editors/vector/crates/engine/src/cmd/fileio/svg.rs, cmd/path.rs; crates/svg)"
 mode = "vector"
 timed = false
 
@@ -844,7 +844,7 @@ steps = [
 pass = "페이지 크기 297x420mm±0.5mm, 폰트 전부 임베드, PDF/X 식별자 포함, 수정한 글자가 PDF 텍스트 추출에 나타난다."
 verdict_scale = "works|slow|broken|missing"
 ps = "(InDesign) File › Open(.idml) → File › Export › Adobe PDF(Print) PDF/X-4."
-canvas_entry = "designcraft file.open idml / export pdf (editors/layout/crates/idml/src/import.rs, crates/pdf/src/{export,pdfx}.rs, engine/src/cmd/export.rs)"
+canvas_entry = "layout file.open idml / export pdf (editors/layout/crates/idml/src/import.rs, crates/pdf/src/{export,pdfx}.rs, engine/src/cmd/export.rs)"
 mode = "layout"
 timed = false
 

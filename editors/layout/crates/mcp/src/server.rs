@@ -134,7 +134,7 @@ impl Server {
                 Ok(json!({
                     "protocolVersion": version,
                     "capabilities": {"tools": {}, "resources": {}},
-                    "serverInfo": {"name": "designcraft", "title": "Redrob Canvas", "version": env!("CARGO_PKG_VERSION"), "websiteUrl": redrob_layout_engine::links::APP_PAGE},
+                    "serverInfo": {"name": "layout", "title": "Redrob Canvas", "version": env!("CARGO_PKG_VERSION"), "websiteUrl": redrob_layout_engine::links::APP_PAGE},
                     "instructions": format!(
                         "{INSTRUCTIONS} Backend: {}. Links: {} (issues), {} (releases), {} (source). The `app.links` command returns these links.",
                         self.backend.describe(),

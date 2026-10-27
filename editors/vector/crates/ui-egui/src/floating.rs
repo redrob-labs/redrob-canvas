@@ -361,7 +361,7 @@ pub(crate) fn drop_target(app: &VectorApp, ctx: &egui::Context, what: Moving, at
         let Some((first, _)) = g.panels.first().and_then(|p| panel(p)).filter(|_| !moving.contains(&i)) else { continue };
         let Some(mut r) = ctx
             .data(|d| d.get_temp::<Rect>(group_rect_id(first)))
-            .or_else(|| ctx.memory(|m| m.area_rect(Id::new("vectorcraft-panel-docking").with(("floating", &first.to_string())))))
+            .or_else(|| ctx.memory(|m| m.area_rect(Id::new("vector-panel-docking").with(("floating", &first.to_string())))))
         else {
             continue;
         };
@@ -370,7 +370,7 @@ pub(crate) fn drop_target(app: &VectorApp, ctx: &egui::Context, what: Moving, at
         // available just outside the window. Dock columns reserve their own panel space.
         if g.docked.is_none() && r.contains(at) {
             let area = if app.ui.docking.is_some() && !crate::panel_docking::decorated(g) {
-                Id::new("vectorcraft-panel-docking").with(("floating", &first.to_string()))
+                Id::new("vector-panel-docking").with(("floating", &first.to_string()))
             } else {
                 let lead = set_of(&app.ui, i).first().and_then(|&index| app.ui.floating_panels.get(index)).and_then(|group| group.panels.first());
                 area_id(lead.map_or(first, String::as_str))
@@ -378,7 +378,7 @@ pub(crate) fn drop_target(app: &VectorApp, ctx: &egui::Context, what: Moving, at
             let moving_areas: Vec<Id> = moving
                 .iter()
                 .filter_map(|&index| app.ui.floating_panels.get(index).and_then(|group| group.panels.first()))
-                .flat_map(|panel| [area_id(panel), Id::new("vectorcraft-panel-docking").with(("floating", panel))])
+                .flat_map(|panel| [area_id(panel), Id::new("vector-panel-docking").with(("floating", panel))])
                 .collect();
             let owner = ctx.memory(|memory| {
                 let layers: Vec<_> = memory.layer_ids().collect();
@@ -1178,7 +1178,7 @@ mod tests {
         fn group(&self, first: &str) -> Rect {
             let native = group_of(&self.app.ui, first).and_then(|i| self.app.ui.floating_panels.get(i)).is_some_and(crate::panel_docking::decorated);
             let id = if self.app.ui.docking.is_some() && !native {
-                Id::new("vectorcraft-panel-docking").with(("floating", &first.to_string()))
+                Id::new("vector-panel-docking").with(("floating", &first.to_string()))
             } else {
                 area_id(first)
             };
@@ -1206,7 +1206,7 @@ mod tests {
         }
 
         fn shared_tab(&self, panel: &str) -> Rect {
-            self.ctx.read_response(Id::new("vectorcraft-panel-docking").with(("tab", &panel.to_string()))).unwrap().rect
+            self.ctx.read_response(Id::new("vector-panel-docking").with(("tab", &panel.to_string()))).unwrap().rect
         }
 
         /// The dock's tabs, left to right.
@@ -1217,7 +1217,7 @@ mod tests {
                     .panels()
                     .into_iter()
                     .filter_map(|panel| {
-                        self.ctx.read_response(Id::new("vectorcraft-panel-docking").with(("tab", panel))).map(|response| response.rect)
+                        self.ctx.read_response(Id::new("vector-panel-docking").with(("tab", panel))).map(|response| response.rect)
                     })
                     .collect();
             }

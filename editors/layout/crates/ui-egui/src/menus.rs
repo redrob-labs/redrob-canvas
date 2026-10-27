@@ -203,7 +203,7 @@ pub const UI_COMMANDS: &[(&str, &str, Option<&str>, &str)] = &[
     ("help.github", "Redrob Canvas on GitHub…", None, "{} — opens https://github.com/redrob-labs/redrob-canvas"),
     ("help.issues", "Report an Issue…", None, "{} — opens the GitHub issue tracker"),
     ("help.website", "Redrob website…", None, "{} — opens https://redrob.ai"),
-    ("help.app", "Redrob apps…", None, "{app} — opens https://redrob.ai (e.g. photocraft)"),
+    ("help.app", "Redrob apps…", None, "{app} — opens https://redrob.ai (e.g. photo)"),
     (
         "help.about",
         "About Redrob Canvas",
@@ -1534,7 +1534,7 @@ fn run_ui_inner(app: &mut DesignApp, id: &str, p: &Value) -> Option<Result<Value
                 app.ui.pending_urls.push(url.clone());
                 Ok(json!({"url": url}))
             }
-            _ => Err("help.app: give `app` (e.g. \"photocraft\")".into()),
+            _ => Err("help.app: give `app` (e.g. \"photo\")".into()),
         },
         h if h.starts_with("help.") && redrob_layout_engine::links::get(&h[5..]).is_some() => {
             let url = redrob_layout_engine::links::get(&h[5..]).unwrap_or_default().to_string();
@@ -2390,8 +2390,7 @@ pub fn shortcuts(app: &mut DesignApp, ctx: &egui::Context) {
             let sc = if modifiers.shift { format!("Shift+{name}") } else { name.to_string() };
             if let Some(tool) = redrob_layout_tools::tool_for_shortcut(&sc) {
                 log::debug!("tool shortcut {sc} -> {tool}");
-                if std::env::var_os("REDROB_LAYOUT_DEBUG_KEYS").or_else(|| std::env::var_os("DESIGNCRAFT_DEBUG_KEYS")).is_some() {
-                    // legacy: the upstream variable is read when ours is unset
+                if std::env::var_os("REDROB_LAYOUT_DEBUG_KEYS").is_some() {
                     eprintln!("tool shortcut {sc} ({key:?}, {modifiers:?}) -> {tool}");
                 }
                 app.select_tool(tool);

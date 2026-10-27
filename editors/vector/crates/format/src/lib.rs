@@ -63,7 +63,7 @@ pub const PREVIEW_MAX: u32 = 256;
 pub const EXTENSION: &str = "rvector";
 /// The `"format"` field of the JSON header. Unchanged from upstream so a file written here opens
 /// there and vice versa; it is a format identity, not a name a user types.
-pub const FORMAT_NAME: &str = "vectorcraft";
+pub const FORMAT_NAME: &str = "vectorcraft"; // legacy: the format id saved .rvector documents carry
 /// The extension the format had upstream. Still opened, never written.
 pub const UPSTREAM_EXTENSION: &str = "vectorcraft"; // legacy: upstream extension, read only
 /// Extension and format name from before upstream renamed itself (DrawCraft): still opened.
@@ -96,7 +96,7 @@ pub fn is_native_name(name: &str) -> bool {
 #[derive(Debug, thiserror::Error)]
 pub enum FormatError {
     #[error("not a Redrob Canvas file: {0}")]
-    NotVectorcraft(String),
+    NotVector(String),
     #[error("file version {0} is newer than this Redrob Canvas supports ({VERSION})")]
     TooNew(u32),
     #[error("invalid image data for `{0}`")]
@@ -524,10 +524,10 @@ pub fn load_file(bytes: &[u8]) -> Result<NativeFile, FormatError> {
     // The JSON reader stops at 128 levels (a document's objects use three each).
     let f: File = serde_json::from_slice(file.json()).map_err(|e| {
         let why = if e.to_string().contains("recursion limit") { format!("its objects are nested too deep ({e})") } else { e.to_string() };
-        FormatError::NotVectorcraft(why)
+        FormatError::NotVector(why)
     })?;
     if f.format != FORMAT_NAME && f.format != LEGACY_EXTENSION {
-        return Err(FormatError::NotVectorcraft(format!("format is `{}`", f.format)));
+        return Err(FormatError::NotVector(format!("format is `{}`", f.format)));
     }
     if f.version > VERSION {
         return Err(FormatError::TooNew(f.version));

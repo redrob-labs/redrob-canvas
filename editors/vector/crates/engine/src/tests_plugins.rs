@@ -198,7 +198,7 @@ fn plugin_management_commands() {
     assert!(s.execute("plugin.reload", &json!({})).is_err(), "no folder set");
 
     // The Additional Plug-ins Folder preference installs what's in it.
-    let dir = std::env::temp_dir().join(format!("vectorcraft-engine-plugins-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("vector-engine-plugins-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let src = tpl::returning(&tpl::manifest("test.engine.folder", "filter", "{}"), r#"{"objects":[]}"#);
     std::fs::write(dir.join("folder.wasm"), wat::parse_str(src).unwrap()).unwrap();

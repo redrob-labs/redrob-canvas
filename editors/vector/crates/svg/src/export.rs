@@ -513,6 +513,7 @@ const BIG: &str = "x=\"-100000\" y=\"-100000\" width=\"200000\" height=\"200000\
 const MASK: &str = "maskUnits=\"userSpaceOnUse\" color-interpolation=\"sRGB\"";
 /// Attribute of an exported opacity mask listing its options that differ from the defaults
 /// (clipping, not inverted): `noclip`, `invert`.
+// legacy: the attribute exported SVGs carry; read back on import
 pub(crate) const MASK_FLAGS: &str = "data-vectorcraft-mask";
 
 /// Turn an object name into a valid, readable XML id.
@@ -790,7 +791,7 @@ impl Writer<'_> {
             line(
                 2,
                 &format!(
-                    "<vectorcraft:document xmlns:vectorcraft=\"{EDITING_NS}\" hash=\"{hash}\"><![CDATA[{}]]></vectorcraft:document>",
+                    "<vector:document xmlns:vector=\"{EDITING_NS}\" hash=\"{hash}\"><![CDATA[{}]]></vector:document>",
                     base64_encode(bytes)
                 ),
             );

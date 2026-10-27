@@ -159,7 +159,7 @@ impl Capabilities {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Photo (photocraft)
+// Photo (photo)
 // ---------------------------------------------------------------------------------------------
 
 /// The Photo editor's document through `redrob_photo_engine::Session`.
@@ -177,7 +177,7 @@ impl<'a> PhotoBridge<'a> {
     }
 }
 
-/// `redrob_ai::Mask` from photocraft's selection surface (a grayscale coverage surface, 255 =
+/// `redrob_ai::Mask` from photo's selection surface (a grayscale coverage surface, 255 =
 /// selected) read over the document bounds. `Surface::convert` is
 /// editors/photo/crates/raster/src/lib.rs L930, `to_interleaved` L728.
 pub fn mask_from_selection(
@@ -193,7 +193,7 @@ pub fn mask_from_selection(
     Mask::new(bounds.width(), bounds.height(), bytes).ok()
 }
 
-/// photocraft's selection surface from a document-sized `redrob_ai::Mask`
+/// photo's selection surface from a document-sized `redrob_ai::Mask`
 /// (`Surface::from_interleaved`, editors/photo/crates/raster/src/lib.rs L704).
 pub fn selection_from_mask(mask: &Mask) -> redrob_photo_raster::Surface {
     let rect = redrob_photo_geom::Rect::new(0, 0, mask.width as i32, mask.height as i32);
@@ -351,7 +351,7 @@ impl ModeBridge for PhotoBridge<'_> {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Vector (vectorcraft)
+// Vector (vector)
 // ---------------------------------------------------------------------------------------------
 
 /// The Vector editor's document through `VectorApp` (its session and the active view's
@@ -468,7 +468,7 @@ impl ModeBridge for VectorBridge<'_> {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Layout (designcraft)
+// Layout (layout)
 // ---------------------------------------------------------------------------------------------
 
 /// The Layout editor's document through `DesignApp`: the page under the view centre.

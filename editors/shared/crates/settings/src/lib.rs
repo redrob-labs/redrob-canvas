@@ -26,7 +26,7 @@
 //! }
 //!
 //! impl Settings for Prefs {
-//!     const APP_ID: &'static str = "photocraft";
+//!     const APP_ID: &'static str = "photo";
 //!     const SCHEMA_VERSION: u32 = 1;
 //! }
 //!

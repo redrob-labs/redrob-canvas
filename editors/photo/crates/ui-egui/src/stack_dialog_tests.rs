@@ -7,7 +7,7 @@ use crate::file_dialog::{FileDialogAnswer, FileDialogRequest};
 
 /// `n` small PNGs named `names` in a fresh folder for `tag`: (folder, paths).
 fn pngs(tag: &str, names: &[&str]) -> (String, Vec<String>) {
-    let dir = std::env::temp_dir().join(format!("photocraft-load-stack-{tag}-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-load-stack-{tag}-{}", std::process::id()));
     let _ = std::fs::remove_dir_all(&dir);
     std::fs::create_dir_all(&dir).unwrap();
     let mut s = redrob_photo_engine::Session::new();

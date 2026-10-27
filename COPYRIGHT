@@ -9,7 +9,7 @@ Redrob Canvas is licensed under either of
 
 at your option.
 
-The four editors vendored under crafts/ (PhotoCraft, VectorCraft, DesignCraft and
-craft-libs) are Copyright (c) 2026 ArtCraft Team and their respective contributors,
+The editors under editors/ started as four projects (PhotoCraft, VectorCraft, DesignCraft
+and craft-libs) that are Copyright (c) 2026 ArtCraft Team and their respective contributors,
 licensed MIT OR Apache-2.0. Their own LICENSE-MIT, LICENSE-APACHE and NOTICE files
-are kept intact under crafts/<name>/, and their NOTICE texts are reproduced in NOTICE.
+are kept intact under editors/<name>/, and their NOTICE texts are reproduced in NOTICE.

@@ -46,7 +46,7 @@ fn answer(app: &mut PhotoApp) {
 
 /// Files named `names` (holding `bytes`) in a fresh directory for `tag`: (directory, paths).
 fn files(tag: &str, names: &[&str], bytes: &[u8]) -> (std::path::PathBuf, Vec<String>) {
-    let dir = std::env::temp_dir().join(format!("photocraft-file-open-{tag}-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-file-open-{tag}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let paths = names
         .iter()
@@ -259,7 +259,7 @@ fn open_failures_are_errors_and_leave_no_document() {
 
 #[test]
 fn a_picked_file_that_cannot_be_read_is_reported_like_any_open_failure() {
-    let missing = std::env::temp_dir().join("photocraft-missing-dir").join("big.psb").to_string_lossy().into_owned();
+    let missing = std::env::temp_dir().join("photo-missing-dir").join("big.psb").to_string_lossy().into_owned();
     let picked = || Some(FileDialogAnswer::Paths(vec![missing.clone()]));
     let (mut app, _) = app_with(vec![picked(), picked(), None]);
     app.open_dialog_file().unwrap();
@@ -282,7 +282,7 @@ fn a_picked_file_that_cannot_be_read_is_reported_like_any_open_failure() {
 #[test]
 fn open_paths_reports_each_failure_without_panicking() {
     let (mut app, _) = app_with(Vec::new());
-    let missing = std::env::temp_dir().join("photocraft-definitely-missing-file.psd").to_string_lossy().to_string();
+    let missing = std::env::temp_dir().join("photo-definitely-missing-file.psd").to_string_lossy().to_string();
     let dir = std::env::temp_dir().to_string_lossy().to_string();
     let n = app.open_paths(&[missing, String::new(), dir, "\u{0}".into()]);
     assert_eq!(n, 0);
@@ -296,7 +296,7 @@ fn open_paths_reports_each_failure_without_panicking() {
 
 #[test]
 fn os_open_events_open_files_with_paths() {
-    let dir = std::env::temp_dir().join(format!("photocraft-os-open-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-os-open-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let a = dir.join("a.psd");
     let b = dir.join("b.png");
@@ -350,7 +350,7 @@ fn doc_names(app: &PhotoApp) -> Vec<String> {
 #[test]
 fn dropped_files_open_with_path_and_recent() {
     let (mut app, _) = app_with(Vec::new());
-    let dir = std::env::temp_dir().join(format!("photocraft-drop-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-drop-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let abs = dir.join("dropped.psd");
     std::fs::write(&abs, b"x").unwrap();
@@ -406,7 +406,7 @@ fn history_steps(app: &PhotoApp) -> usize {
 /// Transform; the next is placed once the previous transform is committed or cancelled.
 #[test]
 fn files_dropped_onto_the_canvas_are_placed_in_free_transform_one_by_one() {
-    let dir = std::env::temp_dir().join(format!("photocraft-drop-place-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-drop-place-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let abs = dir.join("photo.png");
     std::fs::write(&abs, png_bytes(200, 100)).unwrap();
@@ -576,7 +576,7 @@ fn a_drop_slot_counts_documents_not_the_tabs_shown() {
 /// in the frame that takes the drop), so the source window ends up behind it.
 #[test]
 fn a_drop_brings_the_window_to_the_front() {
-    let dir = std::env::temp_dir().join(format!("photocraft-drop-focus-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-drop-focus-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let file = dir.join("photo.png");
     std::fs::write(&file, png_bytes(8, 8)).unwrap();
@@ -599,7 +599,7 @@ fn a_drop_brings_the_window_to_the_front() {
 /// service picks a slot; files dropped there open (in the background) at it; dropped on the canvas they're placed in Free Transform, and Esc takes the place back.
 #[test]
 fn drag_and_drop_in_the_running_app() {
-    let dir = std::env::temp_dir().join(format!("photocraft-drop-app-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-drop-app-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let file = dir.join("photo.png");
     std::fs::write(&file, png_bytes(40, 30)).unwrap();

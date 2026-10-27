@@ -1,16 +1,12 @@
 //! Where Redrob Canvas keeps its per-user data, and the platform services each hosted editor
-//! needs, ported (minimally) from the three upstream desktop binaries:
-//!
-//! - `editors/photo/apps/photocraft/src/{app_dirs,services}.rs`
-//! - `editors/vector/apps/vectorcraft/src/{main,prefs_dir}.rs`
-//! - `editors/layout/apps/designcraft/src/{main,profile}.rs`
+//! needs, ported (minimally) from the editors' former standalone desktop apps (removed; see
+//! SOURCE_ORIGINS.md for the commits they came from).
 //!
 //! One config directory for the whole app (see [`config_dir`]); each editor gets a folder of its
 //! own under it (`photo/`, `vector/`, `layout/`) so their `ui.json` / `preferences.json` and
 //! recovery stores never collide.
 //!
-//! TODO(control server): the upstream control / MCP servers
-//! (`editors/*/apps/*/src/control_server.rs`, `PhotoApp::with_control`,
+//! TODO(control server): the editors' control servers (`PhotoApp::with_control`,
 //! `VectorApp::with_control`, `DesignApp::with_control`) are not started by the shell yet.
 
 use std::cell::RefCell;
@@ -133,7 +129,7 @@ pub fn fetch_url(url: &str) -> Result<Vec<u8>, String> {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Photo (photocraft)
+// Photo (photo)
 // ---------------------------------------------------------------------------------------------
 
 pub mod photo {
@@ -489,7 +485,7 @@ pub mod photo {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Vector (vectorcraft)
+// Vector (vector)
 // ---------------------------------------------------------------------------------------------
 
 pub mod vector {
@@ -655,7 +651,7 @@ pub mod vector {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Layout (designcraft)
+// Layout (layout)
 // ---------------------------------------------------------------------------------------------
 
 pub mod layout {

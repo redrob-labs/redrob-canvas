@@ -160,7 +160,7 @@ Choose `write-pdf` only when embedding PDF pages. Cargo ignores dependency works
 root patches; copy the Krilla patch into the consuming workspace. A compile-time marker
 rejects unpatched Krilla. Check the normal dependency graph separately from the test graph
 and ensure there is one Krilla source, including uses through `krilla-svg`. This writer
-migration does not change an application's reader backend or its other craft-libs pins.
+migration does not change an application's reader backend or its other shared pins.
 The selected revision must be remotely available before fresh consumers can resolve it.
 Local path replacements are development-only and should not be committed to an app.
 

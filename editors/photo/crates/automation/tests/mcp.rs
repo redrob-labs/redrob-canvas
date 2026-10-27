@@ -106,7 +106,7 @@ async fn lists_expected_tools() {
         assert!(t.description.as_ref().is_some_and(|d| !d.is_empty()));
     }
     let info = client.peer_info().expect("server info");
-    assert_eq!(info.server_info.as_ref().unwrap().name, "photocraft");
+    assert_eq!(info.server_info.as_ref().unwrap().name, "photo");
     assert!(info.instructions.as_ref().is_some_and(|i| i.contains("command_list")));
     client.cancel().await.unwrap();
 }

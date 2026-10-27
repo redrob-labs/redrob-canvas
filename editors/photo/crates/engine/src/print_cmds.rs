@@ -227,6 +227,7 @@ fn print_image(doc: &Document, p: &Value, cmd: &str) -> Result<(PrintImage, Valu
         t.execute("image.mode.rgb", json!({}))?;
     }
     match handling {
+        // legacy: the colorHandling value scripts pass
         "photocraftManages" | "photoshopManages" => {
             let profile = p.get("printerProfile").and_then(Value::as_str).ok_or_else(|| bad(cmd, "\"photocraftManages\" needs a \"printerProfile\""))?;
             let intent = p.get("intent").and_then(Value::as_str).unwrap_or("relative");
@@ -563,7 +564,7 @@ pub fn disable_printing() {
 /// Whether spooling is blocked by [`disable_printing`] or `REDROB_PHOTO_NO_PRINT`.
 pub fn printing_disabled() -> bool {
     PRINTING_DISABLED.load(std::sync::atomic::Ordering::Relaxed)
-        || std::env::var_os("REDROB_PHOTO_NO_PRINT").or_else(|| std::env::var_os("PHOTOCRAFT_NO_PRINT")).is_some_and(|v| !v.is_empty() && v != "0") // legacy: the upstream variable is read when ours is unset
+        || std::env::var_os("REDROB_PHOTO_NO_PRINT").is_some_and(|v| !v.is_empty() && v != "0")
 }
 
 fn require_printing_enabled() -> Result<()> {

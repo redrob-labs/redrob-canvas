@@ -277,7 +277,7 @@ fn psd_too_large_for_32bit_errors_on_write() {
 #[test]
 fn save_and_open() {
     let f = testgen::small(Version::Psd, Compression::Rle);
-    let dir = std::env::temp_dir().join(format!("photocraft-psd-test-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-psd-test-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let p = dir.join("x.psd");
     f.save(&p).unwrap();

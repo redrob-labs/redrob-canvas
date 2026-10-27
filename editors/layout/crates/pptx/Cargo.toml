@@ -3,7 +3,7 @@ name = "redrob-layout-pptx"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft PowerPoint (PPTX) export: pages as slides of editable shapes, pictures and text"
+description = "Layout PowerPoint (PPTX) export: pages as slides of editable shapes, pictures and text"
 
 [lints]
 workspace = true

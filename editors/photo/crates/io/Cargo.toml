@@ -1,6 +1,6 @@
 [package]
 name = "redrob-photo-io"
-description = "Import/export between photocraft documents and PSD/PSB and flat raster formats"
+description = "Import/export between photo documents and PSD/PSB and flat raster formats"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

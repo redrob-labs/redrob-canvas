@@ -340,9 +340,9 @@ fn white_space_handling() {
 
 #[test]
 fn placeholder_ids_never_clash_with_the_files() {
-    let d = open(r#"<rect id="vectorcraft-text-0" width="5" height="5"/><text y="20">Safe</text>"#);
+    let d = open(r#"<rect id="vector-text-0" width="5" height="5"/><text y="20">Safe</text>"#);
     assert_eq!(only_text(&d).plain_text(), "Safe");
-    assert_eq!(art(&d)[0].name.as_deref(), Some("vectorcraft-text-0"));
+    assert_eq!(art(&d)[0].name.as_deref(), Some("vector-text-0"));
 }
 
 #[test]

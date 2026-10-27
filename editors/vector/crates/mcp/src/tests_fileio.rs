@@ -8,7 +8,7 @@ use serde_json::{Value, json};
 use crate::{Backend, Headless, Remote, call_tool, tool_definitions};
 
 fn tmp(name: &str) -> String {
-    let dir = std::env::temp_dir().join(format!("vectorcraft-mcp-fileio-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("vector-mcp-fileio-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     dir.join(name).to_string_lossy().to_string()
 }

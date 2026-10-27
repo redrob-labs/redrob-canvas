@@ -1319,7 +1319,7 @@ mod visual_regressions {
                         );
                     harness.input_mut().max_texture_side = Some(8192);
                     harness.run_steps(4);
-                    let stem = format!("vectorcraft-chrome-{brightness:?}-{width}-{scale}x");
+                    let stem = format!("vector-chrome-{brightness:?}-{width}-{scale}x");
                     harness.render().unwrap().save(directory.join(format!("{stem}.png"))).unwrap();
                     let mut regions = serde_json::Map::new();
                     for id in ["app_bar", "status_bar"] {

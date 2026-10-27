@@ -543,7 +543,7 @@ mod tests {
         assert!(!svg.trim().is_empty());
         assert!(svg.contains("<svg"), "{svg}");
         assert!(svg.contains("<path"), "{svg}");
-        // The SVG is what Layout stores as the asset: designcraft recognises it as SVG.
+        // The SVG is what Layout stores as the asset: layout recognises it as SVG.
         assert!(redrob_layout_images::is_svg(svg.as_bytes()));
     }
 

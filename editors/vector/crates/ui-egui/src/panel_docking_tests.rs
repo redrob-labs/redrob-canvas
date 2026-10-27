@@ -91,8 +91,8 @@ fn ordinary_panel_tab_drag_enters_shared_docking_and_can_redock_into_another_tab
     drag(&mut h, source, egui::pos2(160.0, 140.0));
     let layout = h.state().ui.docking.as_ref().expect("ordinary tab drag starts shared docking");
     assert!(layout.floating.iter().any(|g| g.panels.contains(&"layers".into())), "{layout:?}");
-    let source = h.ctx.read_response(egui::Id::new("vectorcraft-panel-docking").with(("tab", &"layers".to_string()))).unwrap().rect.center();
-    let destination = h.ctx.read_response(egui::Id::new("vectorcraft-panel-docking").with(("tab", &"properties".to_string()))).unwrap().rect.center();
+    let source = h.ctx.read_response(egui::Id::new("vector-panel-docking").with(("tab", &"layers".to_string()))).unwrap().rect.center();
+    let destination = h.ctx.read_response(egui::Id::new("vector-panel-docking").with(("tab", &"properties".to_string()))).unwrap().rect.center();
     drag(&mut h, source, destination);
     let layout = h.state().ui.docking.as_ref().unwrap();
     assert!(!layout.floating.iter().any(|g| g.panels.contains(&"layers".into())));
@@ -165,7 +165,7 @@ fn capture_custom_panel_docking_visual_fixtures() {
                 harness.input_mut().max_texture_side = Some(8192);
                 harness.run_steps(5);
                 assert!(valid(harness.state().ui.docking.as_ref().unwrap()));
-                harness.render().unwrap().save(directory.join(format!("vectorcraft-shared-docking-{}-{width}-{scale}x.png", theme.id()))).unwrap();
+                harness.render().unwrap().save(directory.join(format!("vector-shared-docking-{}-{width}-{scale}x.png", theme.id()))).unwrap();
             }
         }
     }
@@ -287,15 +287,15 @@ fn populated_canvas_keeps_a_real_stroke_edit_after_floating_and_redocking() {
     assert_eq!(dash.pattern, [12.0, 12.0]);
     if let Some(directory) = &directory {
         std::fs::create_dir_all(directory).unwrap();
-        h.render().unwrap().save(directory.join("vectorcraft-populated-stroke-floating.png")).unwrap();
+        h.render().unwrap().save(directory.join("vector-populated-stroke-floating.png")).unwrap();
     }
-    let from = h.ctx.read_response(egui::Id::new("vectorcraft-panel-docking").with(("tab", &"stroke".to_string()))).unwrap().rect.center();
-    let to = h.ctx.read_response(egui::Id::new("vectorcraft-panel-docking").with(("tab", &"properties".to_string()))).unwrap().rect.center();
+    let from = h.ctx.read_response(egui::Id::new("vector-panel-docking").with(("tab", &"stroke".to_string()))).unwrap().rect.center();
+    let to = h.ctx.read_response(egui::Id::new("vector-panel-docking").with(("tab", &"properties".to_string()))).unwrap().rect.center();
     drag(&mut h, from, to);
     assert!(h.state().ui.docking.as_ref().unwrap().floating.is_empty());
     assert_eq!(crate::panels::current_stroke(h.state()).unwrap().dash.unwrap(), dash);
     if let Some(directory) = &directory {
-        h.render().unwrap().save(directory.join("vectorcraft-populated-stroke-redocked.png")).unwrap();
+        h.render().unwrap().save(directory.join("vector-populated-stroke-redocked.png")).unwrap();
     }
 }
 
@@ -468,7 +468,7 @@ fn native_set_close_pointer_restores_shared_split_ownership() {
     if let Some(directory) = std::env::var_os("REDROB_CRAFT_UI_DOCKING_SNAPSHOT_DIR") {
         let directory = std::path::PathBuf::from(directory);
         std::fs::create_dir_all(&directory).unwrap();
-        h.render().unwrap().save(directory.join("vectorcraft-native-set-shared-split.png")).unwrap();
+        h.render().unwrap().save(directory.join("vector-native-set-shared-split.png")).unwrap();
     }
     let area = h.ctx.memory(|m| m.area_rect(crate::floating::area_id("stroke"))).unwrap();
     let at = egui::pos2(area.right() - 10.0, area.top() + 1.0 + crate::floating::TITLE / 2.0);

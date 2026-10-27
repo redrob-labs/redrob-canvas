@@ -1,4 +1,4 @@
-//! Headless Photocraft command line. `run` is the whole program, so it can be
+//! Headless Photo command line. `run` is the whole program, so it can be
 //! tested in-process as well as through the binary.
 
 #![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]
@@ -12,7 +12,7 @@ use redrob_photo_io::ExportOptions;
 use serde_json::{Value, json};
 
 pub const USAGE: &str = "\
-redrob-canvas photo: headless Photocraft
+redrob-canvas photo: headless Photo
 
 USAGE:
   redrob-canvas photo convert <in> <out> [--format <ext>] [--quality <1-100>] [--tiff-layers] [--tga-bits <24|32>] [--dpx-bits <8|10|12|16>]
@@ -42,7 +42,7 @@ USAGE:
       List the engine command registry.
   redrob-canvas photo mcp [--bridge <127.0.0.1:port>] [--control-token <64-hex> | --control-token-file <path>]
       [--automation-read-root <dir>] [--automation-write-root <dir>]
-      Run the MCP server on stdio (headless engine, or bridge to a running `photocraft --control <port>`).
+      Run the MCP server on stdio (headless engine, or bridge to a running `photo --control <port>`).
   redrob-canvas photo serve [--port <port>] [--control-token <64-hex> | --control-token-file <path>]
       [--automation-read-root <dir>] [--automation-write-root <dir>]
       Keep one headless session open and answer JSON lines ({\"id\",\"method\",\"params\"}) on stdio,
@@ -399,7 +399,7 @@ pub fn load_actions(text: &str, name: Option<&str>) -> Result<(Steps, Vec<Action
 }
 
 /// [`load_actions`] for a file on disk: a Photoshop Actions file (`.atn`, by extension or by
-/// its version word) is converted first; the played action's steps with no PhotoCraft
+/// its version word) is converted first; the played action's steps with no Photo
 /// equivalent come back as warnings (they fail at playback, as in Photoshop when a step can't run).
 pub fn load_actions_file(path: &str, name: Option<&str>) -> Result<(Steps, Vec<Action>, Vec<String>), String> {
     let bytes = std::fs::read(path).map_err(|e| format!("{path}: {e}"))?;
@@ -423,7 +423,7 @@ pub fn load_actions_file(path: &str, name: Option<&str>) -> Result<(Steps, Vec<A
         .unsupported
         .iter()
         .filter(|u| u.action == action.name)
-        .map(|u| format!("`{}` step {}: Photoshop's \"{}\" ({}) has no PhotoCraft equivalent yet", u.action, u.step + 1, u.name, u.event))
+        .map(|u| format!("`{}` step {}: Photoshop's \"{}\" ({}) has no Photo equivalent yet", u.action, u.step + 1, u.name, u.event))
         .chain(imp.warnings.iter().cloned())
         .collect();
     let play = vec![("actions.play".to_string(), json!({"action": action.name}))];
@@ -606,7 +606,7 @@ mod missing_font_warning_tests {
 
     #[test]
     fn missing_typeface_is_reported_by_run_info_and_convert() {
-        let family = "DefinitelyMissingPhotoCraftTypeface1251";
+        let family = "DefinitelyMissingPhotoTypeface1251";
         let folder = std::env::temp_dir().join(format!("redrob-canvas photo-font-warnings-{}", std::process::id()));
         std::fs::create_dir_all(&folder).unwrap();
         let native = folder.join("missing.rphoto");

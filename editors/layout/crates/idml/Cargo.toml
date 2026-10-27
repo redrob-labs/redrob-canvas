@@ -3,7 +3,7 @@ name = "redrob-layout-idml"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft IDML (InDesign Markup Language) import and export"
+description = "Layout IDML (InDesign Markup Language) import and export"
 
 [lints]
 workspace = true

@@ -17,7 +17,7 @@ fn photo() -> Image {
 }
 
 fn tmp(name: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("photocraft-2399-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-2399-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     dir.join(name)
 }

@@ -27,7 +27,7 @@ impl GraphicsLoss {
     /// second report before then adds nothing.
     pub fn report(&self, ctx: &egui::Context, why: impl Into<String>) {
         let why = why.into();
-        log::error!("vectorcraft: the graphics device was lost: {why}");
+        log::error!("vector: the graphics device was lost: {why}");
         self.0.lock().unwrap_or_else(|e| e.into_inner()).get_or_insert(why);
         ctx.request_repaint();
     }
@@ -42,7 +42,7 @@ impl GraphicsLoss {
 /// context's.
 pub(crate) fn context_tag(ctx: &egui::Context) -> u64 {
     static NEXT: AtomicU64 = AtomicU64::new(1);
-    let id = egui::Id::new("vectorcraft-context-tag");
+    let id = egui::Id::new("vector-context-tag");
     if let Some(tag) = ctx.data(|d| d.get_temp::<u64>(id)) {
         return tag;
     }
@@ -95,7 +95,7 @@ impl VectorApp {
     /// every modified document has an up-to-date copy (none modified counts).
     pub fn graphics_lost(&mut self, why: &str) -> bool {
         if let Err(e) = self.session.execute("file.recovery.save", &serde_json::json!({})) {
-            log::warn!("vectorcraft: no recovery copies after losing the graphics ({why}): {e}");
+            log::warn!("vector: no recovery copies after losing the graphics ({why}): {e}");
         }
         self.session.documents().iter().filter(|st| st.is_dirty()).all(|st| st.recovery.as_ref().is_some_and(|c| Arc::ptr_eq(&c.doc, &st.doc)))
     }
@@ -109,7 +109,7 @@ impl VectorApp {
             return;
         }
         if self.context != 0 {
-            log::info!("vectorcraft: new graphics context: uploading the UI again");
+            log::info!("vector: new graphics context: uploading the UI again");
             forget_textures();
             self.styled = false;
             self.fonts_ready = false;

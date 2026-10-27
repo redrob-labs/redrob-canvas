@@ -2239,7 +2239,7 @@ mod open_recent_tests {
             ..Default::default()
         };
         let mut app = PhotoApp::new(redrob_photo_engine::Session::new(), services);
-        let path = std::env::temp_dir().join("photocraft_recent_test.rphoto");
+        let path = std::env::temp_dir().join("photo_recent_test.rphoto");
         std::fs::write(&path, b"x").unwrap();
         let p = path.to_string_lossy().to_string();
         let ctx = egui::Context::default();
@@ -2384,7 +2384,7 @@ mod window_documents_tests {
         let items = menu_items(&app);
         let row = items.iter().find(|i| i.id == "window.document.0").unwrap();
         assert_eq!(translated_menu_label(de, row), "Layers");
-        let bar = crate::native_menu::photocraft_layout(&items, de, "de").bar;
+        let bar = crate::native_menu::photo_layout(&items, de, "de").bar;
         assert_eq!(bar.find("window.document.0").map(|i| i.label.as_str()), Some("Layers"));
         let panel = items.iter().find(|i| i.path == ["Window"] && i.label == "Layers").unwrap();
         assert_eq!(bar.find(&panel.id).map(|i| i.label.as_str()), Some("Ebenen"), "Window › Layers is still translated");

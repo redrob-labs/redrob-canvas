@@ -283,7 +283,7 @@ pub(crate) fn start_in(
     let mut spawned = 0;
     for _ in 0..n {
         let s = shared.clone();
-        let thread = std::thread::Builder::new().name("vectorcraft-find".into()).spawn(move || {
+        let thread = std::thread::Builder::new().name("vector-find".into()).spawn(move || {
             let _alive = Alive(s.clone());
             // A bug in the walk ends this walker and the others go on; when every walker ends this
             // way, the search fails ([`Alive`]).

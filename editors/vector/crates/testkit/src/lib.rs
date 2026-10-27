@@ -38,7 +38,7 @@ pub use {redrob_vector_doc as doc, redrob_vector_format as format, redrob_vector
 
 /// A per-process temporary directory for test output (created on first use).
 pub fn temp_dir(tag: &str) -> std::path::PathBuf {
-    let dir = std::env::temp_dir().join(format!("vectorcraft-testkit-{tag}-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("vector-testkit-{tag}-{}", std::process::id()));
     std::fs::create_dir_all(&dir).expect("create temp dir");
     dir
 }

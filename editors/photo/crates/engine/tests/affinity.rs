@@ -34,7 +34,7 @@ fn fixture() -> Vec<u8> {
 
 #[test]
 fn preview_never_saves_back_to_its_native_or_renamed_source() {
-    let dir = std::env::temp_dir().join(format!("photocraft-affinity-source-{}", std::process::id()));
+    let dir = std::env::temp_dir().join(format!("photo-affinity-source-{}", std::process::id()));
     std::fs::create_dir_all(&dir).unwrap();
     let bytes = fixture();
     for name in ["source.af", "renamed.psd"] {

@@ -1,4 +1,4 @@
-//! Headless UI screenshots: renders the whole DesignCraft window offscreen (wgpu) — works with a
+//! Headless UI screenshots: renders the whole Layout window offscreen (wgpu) — works with a
 //! locked screen or a hidden window, unlike `ui.screenshot`.
 //!
 //! `cargo run -p redrob-layout-ui-egui --example ui_shot -- script.jsonl`

@@ -58,7 +58,7 @@ pub struct CmykParams {
     /// a* = b* = 0, and the BToA input curves put that white on a grid node (`grid_b2a` must
     /// be odd), which holds no ink. Without them white falls between nodes of the legacy Lab
     /// encoding and separates to a trace of ink. Off by default, which keeps the bytes of the
-    /// shipped Photocraft profile.
+    /// shipped Photo profile.
     pub white_on_node: bool,
 }
 
@@ -545,7 +545,7 @@ fn lut_profile<F: Forward + ?Sized>(model: &F, a2b: Clut, paper: [f64; 3], p: &C
     .with_encoded_bytes())
 }
 
-/// The default coated profile (what `profiles/photocraft-coated-cmyk.icc` contains).
+/// The default coated profile (what `profiles/coated-cmyk.icc` contains).
 pub fn coated_cmyk() -> Result<Profile, CmsError> {
     cmyk_profile(&CmykParams::default())
 }

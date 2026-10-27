@@ -36,7 +36,7 @@ struct ProfileFile {
 impl ProfileFile {
     fn new(profile: Profile) -> Self {
         static NEXT: AtomicU64 = AtomicU64::new(0);
-        let path = std::env::temp_dir().join(format!("photocraft-working-rgb-{}-{}.icc", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
+        let path = std::env::temp_dir().join(format!("photo-working-rgb-{}-{}.icc", std::process::id(), NEXT.fetch_add(1, Ordering::Relaxed)));
         let bytes = profile.with_encoded_bytes().to_bytes();
         let profile = Profile::parse(&bytes).unwrap();
         std::fs::write(&path, &*bytes).unwrap();

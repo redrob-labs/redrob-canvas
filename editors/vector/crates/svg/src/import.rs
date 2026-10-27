@@ -484,7 +484,7 @@ fn mask_flags(xml: &roxmltree::Document) -> HashMap<String, (bool, bool)> {
 }
 
 /// Prefix of the ids [`prepass`] gives the elements it has to find again that have none.
-const MADE_UP_ID: &str = "vectorcraft-id-";
+const MADE_UP_ID: &str = "vector-id-";
 
 /// Is `id` one [`prepass`] made up (not a name)?
 fn made_up(id: &str) -> bool {

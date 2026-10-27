@@ -2,7 +2,7 @@ use super::*;
 use redrob_photo_doc::{Knot, NamedPath, Path, Subpath};
 
 fn tmp(name: &str) -> String {
-    let d = std::env::temp_dir().join(format!("photocraft-print-{}-{name}", std::process::id()));
+    let d = std::env::temp_dir().join(format!("photo-print-{}-{name}", std::process::id()));
     let _ = std::fs::remove_dir_all(&d);
     std::fs::create_dir_all(&d).unwrap();
     d.to_string_lossy().into_owned()
@@ -81,7 +81,7 @@ fn print_dry_run_renders_a_pdf_and_reports_the_platform_backend() {
 }
 
 #[test]
-fn photocraft_manages_colors_converts_to_the_printer_profile() {
+fn photo_manages_colors_converts_to_the_printer_profile() {
     let mut s = session("rgb", 8);
     let out = format!("{}/managed.pdf", tmp("managed"));
     let r = s

@@ -1191,7 +1191,7 @@ pub fn families() -> Arc<Vec<String>> {
 
 /// Where [`sync_font_names`] leaves the font menus' localized labels for this frame.
 fn font_labels_id() -> egui::Id {
-    egui::Id::new("photocraft-font-menu-localized-names")
+    egui::Id::new("photo-font-menu-localized-names")
 }
 
 /// Preferences ▸ Type ▸ Show Font Names in English: when off, font menus list a family that has a

@@ -313,7 +313,7 @@ fn hyperlinks_and_bookmarks_reach_the_pdf() {
     let mut s = Session::new();
     s.execute("file.newSample", &json!({})).unwrap();
     s.execute("selection.set", &json!({"ids": [39]})).unwrap();
-    s.execute("hyperlink.create", &json!({"url": "https://example.com/designcraft"})).unwrap();
+    s.execute("hyperlink.create", &json!({"url": "https://example.com/layout"})).unwrap();
     let d = s.execute("document.inspect", &json!({})).unwrap();
     let sid = d["stories"][0]["id"].as_u64().unwrap();
     s.execute("text.select", &json!({"story": sid, "anchor": 0, "focus": 3})).unwrap();

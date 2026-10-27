@@ -498,8 +498,7 @@ mod tests {
         assert!(image.pixel(70, 95)[..3].iter().all(|v| *v < 90));
         assert_eq!(image.pixel(5, 130), [180, 180, 180, 255]);
         // Optional synthetic preview for manual visual QA, never a checked-in fixture.
-        if let Ok(path) = std::env::var("REDROB_LAYOUT_CMYK_PREVIEW").or_else(|_| std::env::var("DESIGNCRAFT_CMYK_PREVIEW")) {
-            // legacy: the upstream variable is read when ours is unset
+        if let Ok(path) = std::env::var("REDROB_LAYOUT_CMYK_PREVIEW") {
             std::fs::write(path, image.to_png()).unwrap();
         }
     }

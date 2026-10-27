@@ -162,7 +162,7 @@ fn rejects_newer_versions_and_other_formats() {
     assert!(matches!(load(&serde_json::to_vec(&v).unwrap()), Err(redrob_vector_format::FormatError::TooNew(_))));
     v["version"] = json!(redrob_vector_format::VERSION);
     v["format"] = json!("other");
-    assert!(matches!(load(&serde_json::to_vec(&v).unwrap()), Err(redrob_vector_format::FormatError::NotVectorcraft(_))));
+    assert!(matches!(load(&serde_json::to_vec(&v).unwrap()), Err(redrob_vector_format::FormatError::NotVector(_))));
     v["format"] = json!("vectorcraft");
     v["images"] = json!({"x": {"mime": "image/png", "data": "not base64!"}});
     assert!(matches!(load(&serde_json::to_vec(&v).unwrap()), Err(redrob_vector_format::FormatError::BadImage(_))));

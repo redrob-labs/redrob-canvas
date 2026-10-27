@@ -33,7 +33,7 @@ pub struct Opening {
 pub fn available() -> bool {
     !(cfg!(target_arch = "wasm32")
         || cfg!(test)
-        || std::env::var_os("REDROB_VECTOR_SYNC_OPEN").or_else(|| std::env::var_os("VECTORCRAFT_SYNC_OPEN")).is_some()) // legacy: the upstream variable is read when ours is unset
+        || std::env::var_os("REDROB_VECTOR_SYNC_OPEN").is_some())
 }
 
 /// Decode `bytes`, the file at `path`, read its linked files and lay out its type on a thread of its
@@ -47,7 +47,7 @@ pub fn start(app: &mut VectorApp, path: &str, bytes: Vec<u8>) -> Result<Value, V
     let update_links = app.session.prefs.update_links == "automatically";
     // The automation roots in force here are in force there.
     let scope = ScopeHandle::capture();
-    let spawned = std::thread::Builder::new().name("vectorcraft-open".into()).spawn(move || {
+    let spawned = std::thread::Builder::new().name("vector-open".into()).spawn(move || {
         let r = scope
             .run(|| {
                 redrob_vector_engine::guard::catch_panic(|| {

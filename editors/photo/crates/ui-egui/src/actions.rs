@@ -1407,7 +1407,7 @@ mod tests {
     /// changed on disk.
     fn record_save_on_a_play_on_b(ext: &str, layered: bool) -> (Value, bool, bool) {
         use crate::file_dialog::FileDialogAnswer::SaveTo;
-        let dir = std::env::temp_dir().join(format!("photocraft-rec-save-{ext}-{layered}-{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("photo-rec-save-{ext}-{layered}-{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let path = |n: &str| dir.join(format!("{n}.{ext}")).to_string_lossy().into_owned();
         let (a, b) = (path("a"), path("b"));

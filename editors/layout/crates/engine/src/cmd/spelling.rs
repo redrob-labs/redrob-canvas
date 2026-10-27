@@ -238,7 +238,7 @@ mod tests {
         }
         assert!(!known(d, &[], "typograpy"));
         assert!(suggest(d, "typograpy").contains(&"typography".to_string()));
-        assert!(known(d, &["designcraft".into()], "designcraft"));
+        assert!(known(d, &["layout".into()], "layout"));
     }
 
     #[test]

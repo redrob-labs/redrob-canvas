@@ -64,6 +64,7 @@ pub fn save(doc: &Document) -> Result<Vec<u8>, FormatError> {
         z.start_file("mimetype", stored).map_err(io)?;
         z.write_all(MIME.as_bytes()).map_err(|e| FormatError::Io(e.to_string()))?;
         z.start_file("meta.json", deflate).map_err(io)?;
+        // legacy: the document format id saved files carry; kept so they keep opening
         let meta = json!({"format": "designcraft", "version": VERSION, "generator": concat!("Redrob Canvas ", env!("CARGO_PKG_VERSION"))});
         z.write_all(meta.to_string().as_bytes()).map_err(|e| FormatError::Io(e.to_string()))?;
         z.start_file("document.json", deflate).map_err(io)?;

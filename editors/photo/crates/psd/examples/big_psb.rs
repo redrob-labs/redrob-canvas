@@ -47,7 +47,7 @@ pub fn sample(x: u32, y: u32, c: u32, rle: bool) -> u8 {
 
 fn main() -> io::Result<()> {
     let args: Vec<String> = std::env::args().skip(1).collect();
-    let out = args.first().map_or_else(|| std::env::temp_dir().join("photocraft-big-psb"), std::path::PathBuf::from);
+    let out = args.first().map_or_else(|| std::env::temp_dir().join("photo-big-psb"), std::path::PathBuf::from);
     std::fs::create_dir_all(&out)?;
     let wanted = args.get(1..).unwrap_or(&[]);
     for case in CASES.iter().filter(|c| wanted.is_empty() || wanted.iter().any(|w| w == c.name)) {

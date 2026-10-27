@@ -3,7 +3,7 @@ name = "redrob-layout-fonts"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-description = "DesignCraft fonts: font database (bundled OFL + system), metrics, glyph outlines, shaping"
+description = "Layout fonts: font database (bundled OFL + system), metrics, glyph outlines, shaping"
 
 [lints]
 workspace = true

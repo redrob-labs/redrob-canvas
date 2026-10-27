@@ -6307,7 +6307,7 @@ mod compact_visual_regressions {
                     );
                     harness.input_mut().max_texture_side = Some(8192);
                     harness.run_steps(4);
-                    let stem = format!("photocraft-compact-{}-{width}-{height}-{scale}x", kind.id());
+                    let stem = format!("photo-compact-{}-{width}-{height}-{scale}x", kind.id());
                     harness.render().unwrap().save(directory.join(format!("{stem}.png"))).unwrap();
                     let mut regions = serde_json::Map::new();
                     for id in ["options_bar", "toolbar"] {
