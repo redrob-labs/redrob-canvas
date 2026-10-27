@@ -25,7 +25,7 @@ The same recipe for every entry; `<name>` is the directory under `crafts/` and `
 commit you are moving to:
 
 ```bash
-git subtree pull --prefix crafts/<name> https://github.com/storytold/<name>.git <sha> --squash
+git subtree pull --prefix editors/<name> https://github.com/storytold/<name>.git <sha> --squash
 python3 tools/merge_workspaces.py
 python3 tools/rebrand_crafts.py   # user-visible strings and the embedded app icon read Redrob Canvas
 ```
@@ -40,7 +40,7 @@ runs the two commands above for you.
 
 Copyright (c) 2026 ArtCraft Team and the PhotoCraft contributors. MIT OR Apache-2.0.
 
-Vendored at `crafts/photocraft`, pinned at `ad96df566b587ebc056644c9e2bf621ddba39a92` of
+Vendored at `editors/photo`, pinned at `ad96df566b587ebc056644c9e2bf621ddba39a92` of
 <https://github.com/storytold/photocraft>. The raster editor: layers, masks, adjustment layers,
 brushes, selections, colour management, PSD/PSB and ORA/KRA codecs, RAW decoding. Redrob Canvas
 builds its `crates/*` only; upstream's `apps/`, `xtask` and web shell are excluded from the
@@ -50,7 +50,7 @@ workspace by `tools/merge_workspaces.py`.
 
 Copyright (c) 2026 ArtCraft Team and the VectorCraft contributors. MIT OR Apache-2.0.
 
-Vendored at `crafts/vectorcraft`, pinned at `b12a52f7249e0aa73f030587e05ed9ce0c73ab67` of
+Vendored at `editors/vector`, pinned at `b12a52f7249e0aa73f030587e05ed9ce0c73ab67` of
 <https://github.com/storytold/vectorcraft>. The vector editor: paths, booleans, text on paths,
 gradients, SVG/AI/EPS/PDF/DXF import and export, WebAssembly plug-ins. Same `crates/*`-only rule.
 
@@ -58,7 +58,7 @@ gradients, SVG/AI/EPS/PDF/DXF import and export, WebAssembly plug-ins. Same `cra
 
 Copyright (c) 2026 ArtCraft Team and the DesignCraft contributors. MIT OR Apache-2.0.
 
-Vendored at `crafts/designcraft`, pinned at `a930276fd7462f3d9abd2fbb38544c94c0c911c8` of
+Vendored at `editors/layout`, pinned at `a930276fd7462f3d9abd2fbb38544c94c0c911c8` of
 <https://github.com/storytold/designcraft>. The page-layout editor: master pages, text frames and
 threading, hyphenation, IDML/PDF/PPTX/EPUB. Same `crates/*`-only rule.
 
@@ -66,7 +66,7 @@ threading, hyphenation, IDML/PDF/PPTX/EPUB. Same `crates/*`-only rule.
 
 Copyright (c) 2026 ArtCraft Team and the craft-libs contributors. MIT OR Apache-2.0.
 
-Vendored at `crafts/craft-libs`, pinned at `8f5a2831614e632f91ad367f7af2a6e5b61b9529` of
+Vendored at `editors/shared`, pinned at `8f5a2831614e632f91ad367f7af2a6e5b61b9529` of
 <https://github.com/storytold/craft-libs>. The shared libraries the three editors have in common:
 docking and panel UI, colour management, printing, and the patched `krilla` / `hayro` PDF writer
 and reader under `vendor/`, which the root `Cargo.toml` patches in by path. Its NOTICE records the
@@ -74,7 +74,7 @@ PdfCraft, FilmCraft and EffectCraft revisions parts of it were extracted from.
 
 ## Brand assets are not open source
 
-Each editor ships its brand under `crafts/<name>/docs/brand/` (`artcraft-logo*.svg`,
+Each editor ships its brand under `editors/<name>/docs/brand/` (`artcraft-logo*.svg`,
 `artcraft-mark*.svg` and their PNGs) with its own `LICENSE-brand.txt`. The ArtCraft name, wordmark
 and logos are trademarks of the ArtCraft Team. They are **not** covered by MIT or Apache-2.0, they
 are kept in the tree only because the subtree carries them, and Redrob Canvas does not display,

@@ -24,15 +24,15 @@ extension at launch is 0.7 work; until it lands, open the mode first and use its
 The upstream docs and READMEs are not in this tree (`tools/prune_upstream.py` removes them after
 every pull); the tables below are the code.
 
-- Photo: `crafts/photocraft/crates/codecs/README.md` (the capability matrix per format and bit
-  depth) and the `OPENABLE` list in `crafts/photocraft/crates/engine/src/file_cmds.rs`; the
+- Photo: `editors/photo/crates/codecs/README.md` (the capability matrix per format and bit
+  depth) and the `OPENABLE` list in `editors/photo/crates/engine/src/file_cmds.rs`; the
   upstream project's docs on ORA, KRA, PDN and PSD are at
   [storytold/photocraft](https://github.com/storytold/photocraft) under `docs/`.
 - Vector: `FORMATS`, `OPEN_EXTS` and `PLACE_EXTS` in
-  `crafts/vectorcraft/crates/engine/src/cmd/fileio/mod.rs` (SVG, PDF and `.ai` with PDF/X, EPS,
+  `editors/vector/crates/engine/src/cmd/fileio/mod.rs` (SVG, PDF and `.ai` with PDF/X, EPS,
   DXF, EMF/WMF, Export for Screens, Print, Package).
-- Layout: `opens_as_document` in `crafts/designcraft/crates/ui-egui/src/lib.rs` and the `file.*`
-  commands of `crafts/designcraft/crates/engine` (IDML in and out, PDF/X-4 and PDF/A-2b, editable
+- Layout: `opens_as_document` in `editors/layout/crates/ui-egui/src/lib.rs` and the `file.*`
+  commands of `editors/layout/crates/engine` (IDML in and out, PDF/X-4 and PDF/A-2b, editable
   PPTX, EPUB).
 
 ## Loss policy

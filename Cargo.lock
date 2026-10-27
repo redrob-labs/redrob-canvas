@@ -5424,14 +5424,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "redrob-craft-atomic"
+name = "redrob-canvas-atomic"
 version = "0.13.2"
 dependencies = [
  "rustix 1.1.5",
 ]
 
 [[package]]
-name = "redrob-craft-cms"
+name = "redrob-canvas-cms"
 version = "0.13.2"
 dependencies = [
  "moxcms",
@@ -5439,7 +5439,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "redrob-craft-pdf"
+name = "redrob-canvas-pdf"
 version = "0.13.2"
 dependencies = [
  "bytemuck",
@@ -5455,7 +5455,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "redrob-craft-print"
+name = "redrob-canvas-print"
 version = "0.13.2"
 dependencies = [
  "craft-winprint-gdi",
@@ -5467,7 +5467,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "redrob-craft-quit"
+name = "redrob-canvas-quit"
 version = "0.13.2"
 dependencies = [
  "dispatch2",
@@ -5478,18 +5478,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "redrob-craft-settings"
+name = "redrob-canvas-settings"
 version = "0.13.2"
 dependencies = [
  "dirs 7.0.0",
- "redrob-craft-atomic",
+ "redrob-canvas-atomic",
  "serde",
  "tempfile",
  "toml_edit",
 ]
 
 [[package]]
-name = "redrob-craft-ui"
+name = "redrob-canvas-ui"
 version = "0.13.2"
 dependencies = [
  "egui",
@@ -5579,7 +5579,7 @@ dependencies = [
  "kurbo 0.13.1",
  "log",
  "quick-xml",
- "redrob-craft-print",
+ "redrob-canvas-print",
  "redrob-layout-color",
  "redrob-layout-compose",
  "redrob-layout-doc",
@@ -5697,7 +5697,7 @@ dependencies = [
  "krilla-svg",
  "kurbo 0.13.1",
  "log",
- "redrob-craft-pdf",
+ "redrob-canvas-pdf",
  "redrob-layout-color",
  "redrob-layout-compose",
  "redrob-layout-doc",
@@ -5771,7 +5771,7 @@ dependencies = [
  "egui",
  "egui_kittest",
  "log",
- "redrob-craft-ui",
+ "redrob-canvas-ui",
  "redrob-layout-color",
  "redrob-layout-compose",
  "redrob-layout-doc",
@@ -5908,7 +5908,7 @@ dependencies = [
  "exr",
  "flate2",
  "rayon",
- "redrob-craft-print",
+ "redrob-canvas-print",
  "redrob-photo-affinity",
  "redrob-photo-algo",
  "redrob-photo-cms",
@@ -6138,8 +6138,8 @@ dependencies = [
  "flate2",
  "log",
  "rayon",
- "redrob-craft-print",
- "redrob-craft-ui",
+ "redrob-canvas-print",
+ "redrob-canvas-ui",
  "redrob-photo-algo",
  "redrob-photo-cms",
  "redrob-photo-codecs",
@@ -6402,7 +6402,7 @@ dependencies = [
  "kurbo 0.13.1",
  "log",
  "md-5",
- "redrob-craft-pdf",
+ "redrob-canvas-pdf",
  "redrob-vector-brush",
  "redrob-vector-color",
  "redrob-vector-doc",
@@ -6570,7 +6570,7 @@ dependencies = [
  "egui_kittest",
  "image",
  "log",
- "redrob-craft-ui",
+ "redrob-canvas-ui",
  "redrob-vector-brush",
  "redrob-vector-cad",
  "redrob-vector-color",

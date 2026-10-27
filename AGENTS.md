@@ -25,9 +25,9 @@ translate GPL or LGPL source into this tree.
 1. **Never edit a file under `crafts/` by hand.** The four directories are git subtrees. A fix an
    editor needs goes upstream (the storytold repository) and comes back by
    `scripts/fetch-upstream.sh <name> <sha>`; a local edit turns the next pull into a conflict hunt and
-   is lost at the next squash. The one exception is the parked `crafts/<name>/Cargo.upstream.toml`,
+   is lost at the next squash. The one exception is the parked `editors/<name>/Cargo.upstream.toml`,
    which `tools/merge_workspaces.py` renames and which you also do not edit.
-2. **Never replace an upstream copyright notice, and never touch `crafts/*/docs/brand/`.** The upstream
+2. **Never replace an upstream copyright notice, and never touch `editors/*/docs/brand/`.** The upstream
    name and logos there are trademarks, not open source. `NOTICE` reproduces each upstream NOTICE
    verbatim beneath ours; `upstream-base.json`'s `attribution` list says which strings must stay, and
    the verify script fails when one goes missing or when anything outside `crafts/` references the
@@ -36,7 +36,7 @@ translate GPL or LGPL source into this tree.
 ## Layout
 
 - `Cargo.toml` at the root is **generated** by `tools/merge_workspaces.py` from the four
-  `crafts/*/Cargo.upstream.toml`; its header says so. Edit the script, run it, commit both. The
+  `editors/*/Cargo.upstream.toml`; its header says so. Edit the script, run it, commit both. The
   workspace members are `crates/*`, `apps/*` and each subtree's `crates/*`; the subtrees' `apps/`,
   web shells are excluded; `tools/prune_upstream.py` deletes their docs, packaging, CI and xtasks,
   and `tools/rename_crates.py` / `tools/rename_identifiers.py` give crates, extensions, URI schemes,
@@ -106,7 +106,7 @@ is out of step with a `Cargo.toml` and that is the thing to fix, not the generat
 ## Upstream pins
 
 Update a subtree with `scripts/fetch-upstream.sh <name> <sha>` on a clean tree: it runs
-`git subtree pull --prefix crafts/<name> <repo> <sha> --squash`, then `tools/merge_workspaces.py`,
+`git subtree pull --prefix editors/<name> <repo> <sha> --squash`, then `tools/merge_workspaces.py`,
 and commits the regenerated manifest. Then record the sha in `upstream-base.json`
 (`base.commit`, `lastSyncedUpstream`), `docs/upstream-sources.toml` (`commit`) and the subtree's
 section of `UPSTREAM_NOTICES.md`, run `scripts/verify-upstream.sh`, regenerate the notices if

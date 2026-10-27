@@ -1,10 +1,12 @@
 //! Redrob Canvas desktop app: photo, vector and layout editing in one window.
 //!
-//! Usage: `redrob-canvas [--mode photo|vector|layout] [--version]`
+//! Usage: `redrob-canvas [--mode photo|vector|layout] [--version]` opens the window;
+//! `redrob-canvas photo|vector|layout ARGS` runs that editor from the command line (`cli`).
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 
 mod ai;
+mod cli;
 mod handoff;
 mod i18n;
 mod routing;
@@ -67,7 +69,20 @@ pub fn parse_mode(value: &str) -> Option<Mode> {
     }
 }
 
-fn main() -> eframe::Result {
+fn main() -> std::process::ExitCode {
+    if let Some(code) = cli::dispatch() {
+        return code;
+    }
+    match window() {
+        Ok(()) => std::process::ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("redrob-canvas: {e}");
+            std::process::ExitCode::FAILURE
+        }
+    }
+}
+
+fn window() -> eframe::Result {
     trace::init();
     let mut mode = Mode::Photo;
     let mut args = std::env::args().skip(1);

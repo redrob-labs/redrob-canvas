@@ -577,19 +577,19 @@ impl ShellApp {
             .unwrap_or_default();
         match self.mode {
             Mode::Photo => {
-                // `layer.select` is the Layers panel's click (crafts/photocraft/crates/engine).
+                // `layer.select` is the Layers panel's click (editors/photo/crates/engine).
                 self.ensure_photo()
                     .run("layer.select", json!({ "layer": id }))?;
             }
             Mode::Vector => {
                 // `layer.setCurrent` makes it the layer new art goes into; `layer.highlight`
-                // is the panel row (crafts/vectorcraft/crates/engine/src/cmd/layer.rs).
+                // is the panel row (editors/vector/crates/engine/src/cmd/layer.rs).
                 let app = self.ensure_vector();
                 app.run("layer.setCurrent", json!({ "id": id }))?;
                 app.run("layer.highlight", json!({ "ids": [id], "mode": "set" }))?;
             }
             Mode::Layout => {
-                // `layer.activate` (crafts/designcraft/crates/engine/src/cmd/layout.rs).
+                // `layer.activate` (editors/layout/crates/engine/src/cmd/layout.rs).
                 self.ensure_layout()
                     .run("layer.activate", json!({ "id": id }))?;
             }
@@ -650,7 +650,7 @@ impl ShellApp {
                 let mut doc = st.doc.clone();
                 if (scale - 1.0).abs() >= f64::EPSILON {
                     // The export dialog's own route: Image Size on a copy, bicubic
-                    // (crafts/photocraft/crates/ui-egui/src/export_dialog.rs).
+                    // (editors/photo/crates/ui-egui/src/export_dialog.rs).
                     let mut session = redrob_photo_engine::Session::new();
                     session.add_document((*doc).clone(), None);
                     let (w, h) = (
@@ -684,7 +684,7 @@ impl ShellApp {
                 Ok(target)
             }
             Mode::Vector => {
-                // The editor's File > Export (crafts/vectorcraft/crates/ui-egui/src/io.rs):
+                // The editor's File > Export (editors/vector/crates/ui-egui/src/io.rs):
                 // the current artboard; `scale` is pixels per point for PNG.
                 let params = if format == "png" {
                     json!({ "scale": scale, "useArtboards": false })
@@ -707,7 +707,7 @@ impl ShellApp {
             Mode::Layout => match format.as_str() {
                 "pdf" => {
                     // `file.exportPdf` writes the file itself
-                    // (crafts/designcraft/crates/engine/src/cmd/export.rs).
+                    // (editors/layout/crates/engine/src/cmd/export.rs).
                     let r = self
                         .ensure_layout()
                         .run("file.exportPdf", json!({ "path": target }))?;
@@ -721,7 +721,7 @@ impl ShellApp {
                         return Err("the document has no pages".into());
                     }
                     // The page as the engine renders it for an EPUB cover
-                    // (crafts/designcraft/crates/render/src/lib.rs `render_page`).
+                    // (editors/layout/crates/render/src/lib.rs `render_page`).
                     let opts = redrob_layout_render::RenderOptions {
                         paper: true,
                         printing_only: true,
@@ -755,7 +755,7 @@ impl ShellApp {
                 let app = self.ensure_photo();
                 let st = app.session.active().ok_or("open a document first")?;
                 // Only a file that holds the whole document is written in place; anything else
-                // would go through Save As (crafts/photocraft/crates/ui-egui/src/menus.rs).
+                // would go through Save As (editors/photo/crates/ui-egui/src/menus.rs).
                 if !redrob_photo_engine::file_cmds::holds_at(&st.doc, &path) {
                     return Err(format!(
                         "{path} cannot hold this document's layers; \

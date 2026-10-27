@@ -31,5 +31,5 @@ python3 -m unittest discover -s tools/tests -p "test_*.py"
       `python3 tools/generate_distribution_artifacts.py --generate` was run and
       `THIRD_PARTY_NOTICES.md` is committed.
 - [ ] No upstream copyright notice was replaced; `NOTICE` still reproduces each
-      upstream NOTICE verbatim. Nothing references `crafts/*/docs/brand/`.
+      upstream NOTICE verbatim. Nothing references `editors/*/docs/brand/`.
 - [ ] No hex colour literal in `apps/redrob-canvas/src` outside a marked document colour.

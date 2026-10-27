@@ -179,7 +179,7 @@ impl<'a> PhotoBridge<'a> {
 
 /// `redrob_ai::Mask` from photocraft's selection surface (a grayscale coverage surface, 255 =
 /// selected) read over the document bounds. `Surface::convert` is
-/// crafts/photocraft/crates/raster/src/lib.rs L930, `to_interleaved` L728.
+/// editors/photo/crates/raster/src/lib.rs L930, `to_interleaved` L728.
 pub fn mask_from_selection(
     selection: &redrob_photo_raster::Surface,
     bounds: redrob_photo_geom::Rect,
@@ -194,7 +194,7 @@ pub fn mask_from_selection(
 }
 
 /// photocraft's selection surface from a document-sized `redrob_ai::Mask`
-/// (`Surface::from_interleaved`, crafts/photocraft/crates/raster/src/lib.rs L704).
+/// (`Surface::from_interleaved`, editors/photo/crates/raster/src/lib.rs L704).
 pub fn selection_from_mask(mask: &Mask) -> redrob_photo_raster::Surface {
     let rect = redrob_photo_geom::Rect::new(0, 0, mask.width as i32, mask.height as i32);
     redrob_photo_raster::Surface::from_interleaved(
@@ -211,7 +211,7 @@ impl ModeBridge for PhotoBridge<'_> {
 
     fn snapshot(&mut self) -> Option<Rgba8Image> {
         let st = self.session.active()?;
-        // `flatten(&Document) -> Buffer` (crafts/photocraft/crates/compose/src/lib.rs L323),
+        // `flatten(&Document) -> Buffer` (editors/photo/crates/compose/src/lib.rs L323),
         // `Buffer::to_rgba8()` (L61) gives redrob_photo_raster::Rgba8Image { width, height, pixels }.
         let img = redrob_photo_compose::flatten(&st.doc).to_rgba8();
         Rgba8Image::new(img.width, img.height, img.pixels).ok()
@@ -219,7 +219,7 @@ impl ModeBridge for PhotoBridge<'_> {
 
     fn selection_mask(&self) -> Option<Mask> {
         let st = self.session.active()?;
-        // `Document::selection: Option<Surface>` (crafts/photocraft/crates/doc/src/lib.rs L873).
+        // `Document::selection: Option<Surface>` (editors/photo/crates/doc/src/lib.rs L873).
         let selection = st.doc.selection.as_ref()?;
         mask_from_selection(selection, st.doc.bounds())
     }
@@ -244,7 +244,7 @@ impl ModeBridge for PhotoBridge<'_> {
                 let mut surface =
                     redrob_photo_raster::Surface::from_interleaved(rgba8, rect, &img.data);
                 // New raster layers take the document's format
-                // (`Document::pixel_format`, crafts/photocraft/crates/doc/src/lib.rs ~L1000).
+                // (`Document::pixel_format`, editors/photo/crates/doc/src/lib.rs ~L1000).
                 let want = doc.pixel_format();
                 if want != rgba8 {
                     surface = surface.convert(want);
@@ -294,7 +294,7 @@ impl ModeBridge for PhotoBridge<'_> {
             return Err(BridgeError::Failed("nothing to expand".into()));
         }
         let (w, h) = (st.doc.size.width, st.doc.size.height);
-        // `image.canvasSize` takes one of nine anchors (crafts/photocraft/crates/engine/src/
+        // `image.canvasSize` takes one of nine anchors (editors/photo/crates/engine/src/
         // image_cmds.rs L346): grow right/bottom anchored top-left, then left/top anchored
         // bottom-right. Transparent extension, so the AI result layer covers the new border.
         if expand.right + expand.bottom > 0 {
@@ -354,14 +354,14 @@ impl ModeBridge for PhotoBridge<'_> {
 // Vector (vectorcraft)
 // ---------------------------------------------------------------------------------------------
 
-/// The Vector editor's document through `VectorcraftApp` (its session and the active view's
+/// The Vector editor's document through `VectorApp` (its session and the active view's
 /// artboard).
 pub struct VectorBridge<'a> {
-    pub app: &'a mut redrob_vector_ui_egui::VectorcraftApp,
+    pub app: &'a mut redrob_vector_ui_egui::VectorApp,
 }
 
 impl<'a> VectorBridge<'a> {
-    pub fn new(app: &'a mut redrob_vector_ui_egui::VectorcraftApp) -> Self {
+    pub fn new(app: &'a mut redrob_vector_ui_egui::VectorApp) -> Self {
         Self { app }
     }
 
@@ -387,7 +387,7 @@ impl ModeBridge for VectorBridge<'_> {
         let rect = self.artboard_rect()?;
         let st = self.app.session.active()?;
         // `Renderer::render_region(doc, region, scale, white) -> Rendered` (premultiplied), then
-        // `Rendered::to_straight()` (crafts/vectorcraft/crates/render/src/lib.rs L782, L272).
+        // `Rendered::to_straight()` (editors/vector/crates/render/src/lib.rs L782, L272).
         let mut renderer = redrob_vector_render::Renderer::new();
         let rendered = renderer.render_region(&st.doc, rect, 1.0, false);
         Rgba8Image::new(rendered.width, rendered.height, rendered.to_straight()).ok()
@@ -413,9 +413,9 @@ impl ModeBridge for VectorBridge<'_> {
             .session
             .edit("AI image", move |doc, sel| {
                 // `Document::images: BTreeMap<String, ImageBlob>` + `ImageBlob::new(mime, bytes)`
-                // (crafts/vectorcraft/crates/doc/src/{lib.rs L607, links.rs L104}); an image node
+                // (editors/vector/crates/doc/src/{lib.rs L607, links.rs L104}); an image node
                 // is `NodeKind::Image(Box<ImageObject>)` (node.rs L382), as the engine's own
-                // tests build it (crafts/vectorcraft/crates/engine/src/tests_build.rs L660).
+                // tests build it (editors/vector/crates/engine/src/tests_build.rs L660).
                 doc.images.insert(
                     key.clone(),
                     redrob_vector_doc::ImageBlob::new("image/png", png),
@@ -482,7 +482,7 @@ impl<'a> LayoutBridge<'a> {
     }
 
     /// The absolute index of the page under the view centre (`canvas::current_page`,
-    /// crafts/designcraft/crates/ui-egui/src/canvas.rs L168), else the first page.
+    /// editors/layout/crates/ui-egui/src/canvas.rs L168), else the first page.
     fn current_page(&self) -> Option<usize> {
         let st = self.app.session.active()?;
         if st.doc.page_count() == 0 {
@@ -491,7 +491,7 @@ impl<'a> LayoutBridge<'a> {
         Some(redrob_layout_ui_egui::canvas::current_page(self.app).unwrap_or(0))
     }
 
-    /// The page's bounds in points (`Page::bounds`, crafts/designcraft/crates/doc/src/page.rs
+    /// The page's bounds in points (`Page::bounds`, editors/layout/crates/doc/src/page.rs
     /// L229) and the index of its spread.
     fn page_rect(&self) -> Option<(redrob_layout_geom::Rect, usize)> {
         let abs = self.current_page()?;
@@ -502,7 +502,7 @@ impl<'a> LayoutBridge<'a> {
     }
 
     /// The current page's content box (inside its margins; `Page::margin_rect`,
-    /// crafts/designcraft/crates/doc/src/page.rs L240) in points and the index of its spread:
+    /// editors/layout/crates/doc/src/page.rs L240) in points and the index of its spread:
     /// where a hand-off places its graphic.
     pub fn content_box(&self) -> Option<(redrob_layout_geom::Rect, usize)> {
         let abs = self.current_page()?;
@@ -522,8 +522,8 @@ impl ModeBridge for LayoutBridge<'_> {
         let abs = self.current_page()?;
         let st = self.app.session.active()?;
         // `Renderer::render_page(doc, cache, abs, scale, bleed, opts) -> Option<Rendered>`
-        // (crafts/designcraft/crates/render/src/lib.rs L404); `session.cache: Arc<Cache>`
-        // (crafts/designcraft/crates/engine/src/lib.rs L276).
+        // (editors/layout/crates/render/src/lib.rs L404); `session.cache: Arc<Cache>`
+        // (editors/layout/crates/engine/src/lib.rs L276).
         let opts = redrob_layout_render::RenderOptions {
             paper: true,
             printing_only: true,
@@ -547,7 +547,7 @@ impl ModeBridge for LayoutBridge<'_> {
             .to_png()
             .map_err(|e| BridgeError::Failed(e.to_string()))?;
         // `file.place` takes `base64` + `name` + `spread` + `x`/`y`/`width` in points
-        // (crafts/designcraft/crates/engine/src/cmd/file.rs L296, L366-L420): the asset is added
+        // (editors/layout/crates/engine/src/cmd/file.rs L296, L366-L420): the asset is added
         // with `Document::add_asset`, the frame holds `Content::Graphic` and goes in with
         // `insert_item`. At 1 px = 1 pt the snapshot and the page line up.
         let base64 = redrob_ai::pixels::data_url(&png)

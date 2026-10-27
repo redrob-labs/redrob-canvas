@@ -10,12 +10,12 @@ upstream code, vendored whole; the shell owns the window and the seams between t
  | top bar: "Redrob Canvas"  [Photo] [Vector] [Layout]       right slot  |
  +-----------------------------------------------------------------------+
  | active mode's ui()                                                    |
- |   Photo  = redrob_photo_ui_egui::PhotocraftApp   (crafts/photocraft)    |
- |   Vector = redrob_vector_ui_egui::VectorcraftApp (crafts/vectorcraft)   |
- |   Layout = redrob_layout_ui_egui::DesignApp      (crafts/designcraft)   |
+ |   Photo  = redrob_photo_ui_egui::PhotoApp   (editors/photo)    |
+ |   Vector = redrob_vector_ui_egui::VectorApp (editors/vector)   |
+ |   Layout = redrob_layout_ui_egui::DesignApp      (editors/layout)   |
  +-----------------------------------------------------------------------+
    services: config dir, prefs, persistence       crates/redrob-agent  (Redrob Code daemon)
-   crafts/craft-libs: docking, CMS, print, PDF    crates/redrob-ai     (IOPaint, vectorize)
+   editors/shared: docking, CMS, print, PDF    crates/redrob-ai     (IOPaint, vectorize)
 ```
 
 ## The shell (`apps/redrob-canvas`)
@@ -38,14 +38,14 @@ What the shell deliberately does not do yet: run the editors' MCP/control server
 binary has one; a TODO names the path), and open a file into a mode by extension (`docs/formats.md`
 says how that routing will work).
 
-## The editors (`crafts/*`)
+## The editors (`editors/*`)
 
 Four git subtrees, each squash-merged at a pinned upstream commit (`UPSTREAM.md`). Only their
 `crates/*` are workspace members; their `apps/` and web shells are excluded by
 `tools/merge_workspaces.py`, which generates the root `Cargo.toml` from the four parked
 `Cargo.upstream.toml` files: dependencies unioned, craft-libs git dependencies turned into path
 dependencies on the subtree, and the `krilla` / `hayro` patches pointed at
-`crafts/craft-libs/vendor/`. The result is one cargo workspace, one lock file, one
+`editors/shared/vendor/`. The result is one cargo workspace, one lock file, one
 `THIRD_PARTY_NOTICES.md`.
 
 Nothing in Redrob Canvas edits a file under `crafts/` directly; a change an editor needs goes

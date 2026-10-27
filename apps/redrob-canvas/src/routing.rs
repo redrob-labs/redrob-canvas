@@ -11,7 +11,7 @@ use crate::shell::Mode;
 
 /// Extensions that open in Photo mode: the native document and the project's own, layered
 /// interchange, plain rasters, HDR, camera raw. The engine's own batch list is
-/// crafts/photocraft/crates/engine/src/file_cmds.rs L121 (`OPENABLE`), without SVG (editable in
+/// editors/photo/crates/engine/src/file_cmds.rs L121 (`OPENABLE`), without SVG (editable in
 /// Vector) and the Affinity family it takes as previews.
 pub const PHOTO_EXTENSIONS: &[&str] = &[
     "psd", "psb", "rphoto", "ora", "kra", "krz", "pdn", "tif", "tiff", "png", "jpg", "jpeg",
@@ -23,7 +23,7 @@ pub const PHOTO_EXTENSIONS: &[&str] = &[
 
 /// Extensions that open in Vector mode: SVG, Illustrator, PostScript, PDF, CAD and the Windows
 /// metafiles, plus the native document (`redrob_vector_ui_egui::io::open_path`,
-/// crafts/vectorcraft/crates/ui-egui/src/io.rs L218).
+/// editors/vector/crates/ui-egui/src/io.rs L218).
 pub const VECTOR_EXTENSIONS: &[&str] = &[
     "svg",
     "svgz",
@@ -40,7 +40,7 @@ pub const VECTOR_EXTENSIONS: &[&str] = &[
 ];
 
 /// Extensions that open in Layout mode. The layouts themselves open as documents
-/// (`redrob_layout_ui_egui::opens_as_document`, crafts/designcraft/crates/ui-egui/src/lib.rs
+/// (`redrob_layout_ui_egui::opens_as_document`, editors/layout/crates/ui-egui/src/lib.rs
 /// L1452); word-processing and spreadsheet files are placed into frames by `file.place`
 /// (`DesignApp::open_dropped`, L1140).
 pub const LAYOUT_EXTENSIONS: &[&str] = &[

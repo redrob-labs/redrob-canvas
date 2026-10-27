@@ -96,7 +96,7 @@ cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked --profile ci
 ```
 
 There is no Qt, CMake or Node anywhere in the build. The root `Cargo.toml` is **generated** by
-`tools/merge_workspaces.py` from the four subtrees' parked manifests (`crafts/*/Cargo.upstream.toml`);
+`tools/merge_workspaces.py` from the four subtrees' parked manifests (`editors/*/Cargo.upstream.toml`);
 edit the script, not the file.
 
 ## Project structure
@@ -105,10 +105,10 @@ edit the script, not the file.
 apps/redrob-canvas/     The shell: window, mode switch, services, agent panel (egui / eframe)
 crates/redrob-agent/    Redrob Code client: streaming chat completions, tool loop, approvals
 crates/redrob-ai/       AI tools layer (IOPaint engine, vectorize); in progress
-crafts/photocraft/      storytold/photocraft  (subtree)  Photo mode
-crafts/vectorcraft/     storytold/vectorcraft (subtree)  Vector mode
-crafts/designcraft/     storytold/designcraft (subtree)  Layout mode
-crafts/craft-libs/      storytold/craft-libs  (subtree)  shared UI, CMS, print, PDF crates
+editors/photo/      storytold/photocraft  (subtree)  Photo mode
+editors/vector/     storytold/vectorcraft (subtree)  Vector mode
+editors/layout/     storytold/designcraft (subtree)  Layout mode
+editors/shared/      storytold/craft-libs  (subtree)  shared UI, CMS, print, PDF crates
 installer/              macOS disk image and Windows setup
 tools/                  Workspace generator, notice generator, design-system guard, release packaging
 docs/                   Architecture, formats, licensing, pinned upstreams
@@ -123,7 +123,7 @@ squash commits and against GitHub. Redrob Canvas adds the shell, the agent and t
 not fork any editor's internals, so upstream improvements arrive by merge.
 
 The four vendored editors are MIT OR Apache-2.0 and keep their authors' copyright: their licence and
-NOTICE files stay intact under `crafts/<name>/` and are reproduced in [NOTICE](NOTICE) and
+NOTICE files stay intact under `editors/<name>/` and are reproduced in [NOTICE](NOTICE) and
 [COPYRIGHT](COPYRIGHT). Their original names and logos are trademarks of their authors, not open
 source, and are not used or shipped here (their `docs/` are removed from the tree after every pull).
 

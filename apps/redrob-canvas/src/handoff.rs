@@ -87,9 +87,9 @@ impl Handoff {
 }
 
 /// The appearance a traced path paints with: its colour as a fill, or as a stroke of the traced
-/// width when the preset made strokes (`TracedPath::stroke`, crafts/vectorcraft/crates/trace/
+/// width when the preset made strokes (`TracedPath::stroke`, editors/vector/crates/trace/
 /// src/lib.rs L452). `Appearance::basic(fill, stroke, width)` is
-/// crafts/vectorcraft/crates/doc/src/appearance.rs L751.
+/// editors/vector/crates/doc/src/appearance.rs L751.
 pub fn appearance_for(path: &TracedPath) -> Appearance {
     let [r, g, b] = path.color;
     let color = Paint::solid(Color::rgb8(r, g, b));
@@ -100,9 +100,9 @@ pub fn appearance_for(path: &TracedPath) -> Appearance {
 }
 
 /// Builds one path node per traced path (`Node::path(id, PathData, Appearance)`,
-/// crafts/vectorcraft/crates/doc/src/node.rs L864), moved by `origin`, inside a group named
+/// editors/vector/crates/doc/src/node.rs L864), moved by `origin`, inside a group named
 /// [`GROUP_NAME`], and inserts the group at the top of `layer` (`Document::insert`,
-/// crafts/vectorcraft/crates/doc/src/lib.rs L1002). Returns the group's id and the path ids,
+/// editors/vector/crates/doc/src/lib.rs L1002). Returns the group's id and the path ids,
 /// bottom-most first, in the trace's paint order.
 pub fn trace_to_nodes(
     doc: &mut Document,
@@ -136,9 +136,9 @@ pub fn deliver_trace(
     let count = result.paths.len();
     let app = shell.vector_app();
     if app.session.active().is_none() {
-        // `file.new {width, height}` (crafts/vectorcraft/crates/engine/src/cmd/docinfo.rs L388
+        // `file.new {width, height}` (editors/vector/crates/engine/src/cmd/docinfo.rs L388
         // uses it this way); `sync_views` aligns the views with the documents
-        // (crafts/vectorcraft/crates/ui-egui/src/lib.rs L570).
+        // (editors/vector/crates/ui-egui/src/lib.rs L570).
         app.run(
             "file.new",
             serde_json::json!({ "width": f64::from(size.0), "height": f64::from(size.1) }),
@@ -241,10 +241,10 @@ pub fn raster_to_layout(shell: &mut ShellApp) -> Result<String, String> {
 }
 
 /// The Vector document's active artboard as an SVG string (`redrob_vector_svg::export`,
-/// crafts/vectorcraft/crates/svg/src/lib.rs L321; `ExportOptions::artboard` sets the viewBox,
+/// editors/vector/crates/svg/src/lib.rs L321; `ExportOptions::artboard` sets the viewBox,
 /// L186), with the document's title and the artboard's size in points. `None` with no document.
 pub fn vector_svg(
-    app: &redrob_vector_ui_egui::VectorcraftApp,
+    app: &redrob_vector_ui_egui::VectorApp,
 ) -> Option<(String, String, (f64, f64))> {
     let st = app.session.active()?;
     let index = app
@@ -264,7 +264,7 @@ pub fn vector_svg(
 
 /// Vector artboard -> SVG -> Layout asset on the current page. SVG assets are kept as SVG and
 /// rasterised by resvg when drawn (`redrob_layout_images::is_svg`,
-/// crafts/designcraft/crates/images/src/lib.rs L27; `redrob_layout_render::natural_size` reads the
+/// editors/layout/crates/images/src/lib.rs L27; `redrob_layout_render::natural_size` reads the
 /// SVG's own size, crates/render/src/lib.rs L1149).
 pub fn vector_to_layout(shell: &mut ShellApp) -> Result<String, String> {
     let (title, svg, natural) =
@@ -281,7 +281,7 @@ pub fn vector_to_layout(shell: &mut ShellApp) -> Result<String, String> {
 /// Puts `bytes` (a PNG or an SVG named `file`) on the Layout page as a graphic frame at the
 /// page's content box, `natural` points wide unless the box is narrower (the height follows).
 /// With no Layout document open, a page of the graphic's size and no margins is created first
-/// (`file.new {width, height, margins, title}`, crafts/designcraft/crates/engine/src/cmd/file.rs
+/// (`file.new {width, height, margins, title}`, editors/layout/crates/engine/src/cmd/file.rs
 /// L120). The placement is `file.place {base64, name, spread, x, y, width}` (L292): the asset
 /// goes in with `Document::add_asset`, the frame holds `Content::Graphic` and lands with
 /// `insert_item` (L381, L414, L422).
@@ -311,7 +311,7 @@ fn place_in_layout(
         .content_box()
         .ok_or_else(|| "the Layout document has no page".to_owned())?;
     let width = natural.0.min(content.width()).max(1.0);
-    // `redrob_vector_svg::base64_encode` (crafts/vectorcraft/crates/svg/src/lib.rs L546): the
+    // `redrob_vector_svg::base64_encode` (editors/vector/crates/svg/src/lib.rs L546): the
     // standard alphabet with padding, which `file.place`'s decoder reads.
     let params = json!({
         "base64": redrob_vector_svg::base64_encode(bytes),
@@ -325,7 +325,7 @@ fn place_in_layout(
 }
 
 /// A new Photo document holding `image` as its one raster layer named `name`
-/// (`Document::new(name, size, mode, depth)`, crafts/photocraft/crates/doc/src/lib.rs L947;
+/// (`Document::new(name, size, mode, depth)`, editors/photo/crates/doc/src/lib.rs L947;
 /// `Layer::new` L672; `Document::insert_above(None, layer)` L1168 appends at the top).
 pub fn photo_document_from(name: &str, image: &Rgba8Image) -> redrob_photo_doc::Document {
     let size = redrob_photo_geom::Size::new(image.width, image.height);
@@ -349,8 +349,8 @@ pub fn photo_document_from(name: &str, image: &Rgba8Image) -> redrob_photo_doc::
 
 /// Puts `image` into Photo mode: as a layer named `name` at the origin of the open document, or
 /// as a new document named `name` when none is open (`Session::add_document`,
-/// crafts/photocraft/crates/engine/src/lib.rs L556, then `PhotocraftApp::sync_views`,
-/// crafts/photocraft/crates/ui-egui/src/lib.rs L1182, as the editor's own imports do, L1348).
+/// editors/photo/crates/engine/src/lib.rs L556, then `PhotoApp::sync_views`,
+/// editors/photo/crates/ui-egui/src/lib.rs L1182, as the editor's own imports do, L1348).
 pub fn deliver_pixels_to_photo(
     shell: &mut ShellApp,
     name: &str,

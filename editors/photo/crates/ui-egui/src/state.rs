@@ -1,0 +1,2103 @@
+//! UI state as plain data, so the control channel (and later MCP) can read and drive every
+//! aspect of the interface: tools, zoom, panels, dialogs and windows.
+
+use serde::{Deserialize, Serialize};
+
+/// Shared selection and capture for a point curve; document parameters remain with the host.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct PointCurveState {
+    pub selected: Option<usize>,
+    /// Captured point (None while removed outside), grab offset, and re-entry eligibility.
+    pub drag: Option<PointCurveDrag>,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct PointCurveDrag {
+    pub index: Option<usize>,
+    pub offset: [f32; 2],
+    pub removed: bool,
+}
+
+/// Curves editor memory (egui temp data): the edited channel and the point gesture.
+#[derive(Clone, Copy, Debug, Default)]
+pub struct CurvesEditorState {
+    pub channel: usize,
+    pub gesture: PointCurveState,
+}
+
+/// Camera Raw scope preferences are view state, never filter parameters or document history.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CameraRawScopeState {
+    pub shadows: bool,
+    pub highlights: bool,
+    pub lab: bool,
+    pub sampler_tool: bool,
+    pub samplers: Vec<[f32; 2]>,
+    pub vectorscope: bool,
+    pub selected_region: bool,
+    pub red_right: bool,
+    pub hide_skin_line: bool,
+    pub floating: bool,
+    pub floating_rect: Option<[f32; 4]>,
+}
+
+/// Camera Raw navigation, separate from filter settings. Reset for each opened image.
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct CameraRawPreviewState {
+    /// None fits the image; Some is physical display pixels per source pixel.
+    pub zoom: Option<f32>,
+    pub center: [f32; 2],
+    pub hand: bool,
+}
+
+impl Default for CameraRawPreviewState {
+    fn default() -> Self {
+        Self { zoom: None, center: [0.5, 0.5], hand: false }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum Tool {
+    Move,
+    Artboard,
+    RectMarquee,
+    EllipseMarquee,
+    /// Selects one pixel row across the whole canvas at the clicked y (Photoshop's flyout only:
+    /// no key, not in the ⇧M cycle).
+    SingleRowMarquee,
+    /// Selects one pixel column down the whole canvas at the clicked x.
+    SingleColumnMarquee,
+    Lasso,
+    PolygonLasso,
+    MagneticLasso,
+    MagicWand,
+    Crop,
+    PerspectiveCrop,
+    Eyedropper,
+    ColorSampler,
+    Ruler,
+    Note,
+    Count,
+    Brush,
+    Pencil,
+    MixerBrush,
+    ColorReplacement,
+    Eraser,
+    BackgroundEraser,
+    MagicEraser,
+    Gradient,
+    PaintBucket,
+    Type,
+    VerticalType,
+    /// Horizontal Type Mask: types a selection in the shape of the glyphs, no type layer.
+    HorizontalTypeMask,
+    VerticalTypeMask,
+    Hand,
+    RotateView,
+    Zoom,
+    Remove,
+    SpotHealing,
+    Healing,
+    Patch,
+    ContentAwareMove,
+    RedEye,
+    CloneStamp,
+    PatternStamp,
+    HistoryBrush,
+    Blur,
+    Sharpen,
+    Smudge,
+    Dodge,
+    Burn,
+    Sponge,
+    QuickSelection,
+    ObjectSelection,
+    Pen,
+    FreeformPen,
+    CurvaturePen,
+    AddAnchorPoint,
+    DeleteAnchorPoint,
+    /// Converts an anchor between smooth and corner, and pulls handles out of a corner
+    /// (Photoshop's Convert Point tool; also the Pen's ⌥ mode, `direct_select.rs`).
+    ConvertPoint,
+    PathSelection,
+    DirectSelection,
+    Rectangle,
+    EllipseShape,
+    Triangle,
+    Polygon,
+    Line,
+    CustomShape,
+    Slice,
+    SliceSelect,
+    Frame,
+    /// Painting assistants: place, move and delete rulers, vanishing points and perspective
+    /// grids that brush strokes snap to (`assistant_ui`).
+    Assistant,
+    /// Straight Line: drags a line painted with the brush (Shift constrains the angle, Alt moves
+    /// the line while drawing); the Brush's Line mode as a tool of its own.
+    StraightLine,
+    /// Multibrush: paints several copies of each stroke (mirror, rotation, snowflake, translate,
+    /// copy translate, interval grid) around a draggable centre (`multibrush_ui`).
+    Multibrush,
+    /// Dynamic brush: mass and drag physics smooth the stroke like a weight on a string.
+    DynamicBrush,
+    /// Enclose and Fill: draw an enclosing shape and fill the regions inside it by rule
+    /// (`fill_tool_ui`).
+    EncloseFill,
+    /// Colorize Mask: key strokes of colour propagated into a line-art layer's regions
+    /// (`colorize_ui`).
+    ColorizeMask,
+    /// Reference Images: place floating reference pictures over the canvas (`reference_ui`).
+    ReferenceImages,
+}
+
+impl Tool {
+    pub const ALL: [Tool; 74] = [
+        Tool::Move,
+        Tool::Artboard,
+        Tool::RectMarquee,
+        Tool::EllipseMarquee,
+        Tool::SingleRowMarquee,
+        Tool::SingleColumnMarquee,
+        Tool::Lasso,
+        Tool::PolygonLasso,
+        Tool::MagneticLasso,
+        Tool::MagicWand,
+        Tool::Crop,
+        Tool::PerspectiveCrop,
+        Tool::Eyedropper,
+        Tool::ColorSampler,
+        Tool::Ruler,
+        Tool::Note,
+        Tool::Count,
+        Tool::Brush,
+        Tool::Pencil,
+        Tool::MixerBrush,
+        Tool::ColorReplacement,
+        Tool::Eraser,
+        Tool::BackgroundEraser,
+        Tool::MagicEraser,
+        Tool::Gradient,
+        Tool::PaintBucket,
+        Tool::Type,
+        Tool::VerticalType,
+        Tool::HorizontalTypeMask,
+        Tool::VerticalTypeMask,
+        Tool::Hand,
+        Tool::RotateView,
+        Tool::Zoom,
+        Tool::Remove,
+        Tool::SpotHealing,
+        Tool::Healing,
+        Tool::Patch,
+        Tool::ContentAwareMove,
+        Tool::RedEye,
+        Tool::CloneStamp,
+        Tool::PatternStamp,
+        Tool::HistoryBrush,
+        Tool::Blur,
+        Tool::Sharpen,
+        Tool::Smudge,
+        Tool::Dodge,
+        Tool::Burn,
+        Tool::Sponge,
+        Tool::QuickSelection,
+        Tool::ObjectSelection,
+        Tool::Pen,
+        Tool::FreeformPen,
+        Tool::CurvaturePen,
+        Tool::AddAnchorPoint,
+        Tool::DeleteAnchorPoint,
+        Tool::ConvertPoint,
+        Tool::PathSelection,
+        Tool::DirectSelection,
+        Tool::Rectangle,
+        Tool::EllipseShape,
+        Tool::Triangle,
+        Tool::Polygon,
+        Tool::Line,
+        Tool::CustomShape,
+        Tool::Slice,
+        Tool::SliceSelect,
+        Tool::Frame,
+        Tool::Assistant,
+        Tool::StraightLine,
+        Tool::Multibrush,
+        Tool::DynamicBrush,
+        Tool::EncloseFill,
+        Tool::ColorizeMask,
+        Tool::ReferenceImages,
+    ];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Tool::Move => "Move Tool",
+            Tool::Artboard => "Artboard Tool",
+            Tool::RectMarquee => "Rectangular Marquee Tool",
+            Tool::EllipseMarquee => "Elliptical Marquee Tool",
+            Tool::SingleRowMarquee => "Single Row Marquee Tool",
+            Tool::SingleColumnMarquee => "Single Column Marquee Tool",
+            Tool::Brush => "Brush Tool",
+            Tool::Pencil => "Pencil Tool",
+            Tool::MixerBrush => "Mixer Brush Tool",
+            Tool::ColorReplacement => "Color Replacement Tool",
+            Tool::Eraser => "Eraser Tool",
+            Tool::BackgroundEraser => "Background Eraser Tool",
+            Tool::MagicEraser => "Magic Eraser Tool",
+            Tool::Eyedropper => "Eyedropper Tool",
+            Tool::ColorSampler => "Color Sampler Tool",
+            Tool::Ruler => "Ruler Tool",
+            Tool::Note => "Note Tool",
+            Tool::Count => "Count Tool",
+            Tool::Lasso => "Lasso Tool",
+            Tool::PolygonLasso => "Polygonal Lasso Tool",
+            Tool::MagneticLasso => "Magnetic Lasso Tool",
+            Tool::MagicWand => "Magic Wand Tool",
+            Tool::Crop => "Crop Tool",
+            Tool::PerspectiveCrop => "Perspective Crop Tool",
+            Tool::Slice => "Slice Tool",
+            Tool::SliceSelect => "Slice Select Tool",
+            Tool::Frame => "Frame Tool",
+            Tool::Assistant => "Assistant Tool",
+            Tool::StraightLine => "Straight Line Tool",
+            Tool::Multibrush => "Multibrush Tool",
+            Tool::DynamicBrush => "Dynamic Brush Tool",
+            Tool::EncloseFill => "Enclose and Fill Tool",
+            Tool::ColorizeMask => "Colorize Mask Tool",
+            Tool::ReferenceImages => "Reference Images Tool",
+            Tool::Gradient => "Gradient Tool",
+            Tool::PaintBucket => "Paint Bucket Tool",
+            Tool::Type => "Horizontal Type Tool",
+            Tool::VerticalType => "Vertical Type Tool",
+            Tool::HorizontalTypeMask => "Horizontal Type Mask Tool",
+            Tool::VerticalTypeMask => "Vertical Type Mask Tool",
+            Tool::Hand => "Hand Tool",
+            Tool::RotateView => "Rotate View Tool",
+            Tool::Zoom => "Zoom Tool",
+            Tool::Remove => "Remove Tool",
+            Tool::SpotHealing => "Spot Healing Brush Tool",
+            Tool::Healing => "Healing Brush Tool",
+            Tool::Patch => "Patch Tool",
+            Tool::ContentAwareMove => "Content-Aware Move Tool",
+            Tool::RedEye => "Red Eye Tool",
+            Tool::CloneStamp => "Clone Stamp Tool",
+            Tool::PatternStamp => "Pattern Stamp Tool",
+            Tool::HistoryBrush => "History Brush Tool",
+            Tool::Blur => "Blur Tool",
+            Tool::Sharpen => "Sharpen Tool",
+            Tool::Smudge => "Smudge Tool",
+            Tool::Dodge => "Dodge Tool",
+            Tool::Burn => "Burn Tool",
+            Tool::Sponge => "Sponge Tool",
+            Tool::QuickSelection => "Quick Selection Tool",
+            Tool::ObjectSelection => "Object Selection Tool",
+            Tool::Pen => "Pen Tool",
+            Tool::FreeformPen => "Freeform Pen Tool",
+            Tool::CurvaturePen => "Curvature Pen Tool",
+            Tool::AddAnchorPoint => "Add Anchor Point Tool",
+            Tool::DeleteAnchorPoint => "Delete Anchor Point Tool",
+            Tool::ConvertPoint => "Convert Point Tool",
+            Tool::PathSelection => "Path Selection Tool",
+            Tool::DirectSelection => "Direct Selection Tool",
+            Tool::Rectangle => "Rectangle Tool",
+            Tool::EllipseShape => "Ellipse Tool",
+            Tool::Triangle => "Triangle Tool",
+            Tool::Polygon => "Polygon Tool",
+            Tool::Line => "Line Tool",
+            Tool::CustomShape => "Custom Shape Tool",
+        }
+    }
+    pub fn is_type(self) -> bool {
+        matches!(self, Self::Type | Self::VerticalType | Self::HorizontalTypeMask | Self::VerticalTypeMask)
+    }
+    /// The Type Mask tools: their text becomes a selection on commit.
+    pub fn is_type_mask(self) -> bool {
+        matches!(self, Self::HorizontalTypeMask | Self::VerticalTypeMask)
+    }
+    /// Type tools that lay text out vertically.
+    pub fn is_vertical_type(self) -> bool {
+        matches!(self, Self::VerticalType | Self::VerticalTypeMask)
+    }
+
+    /// Retouching and painting tools that stroke with the brush (share the brush cursor and chip).
+    pub fn is_brushlike(self) -> bool {
+        matches!(
+            self,
+            Tool::Brush
+                | Tool::Pencil
+                | Tool::MixerBrush
+                | Tool::ColorReplacement
+                | Tool::Eraser
+                | Tool::BackgroundEraser
+                | Tool::Remove
+                | Tool::SpotHealing
+                | Tool::Healing
+                | Tool::CloneStamp
+                | Tool::PatternStamp
+                | Tool::HistoryBrush
+                | Tool::Blur
+                | Tool::Sharpen
+                | Tool::Smudge
+                | Tool::Dodge
+                | Tool::Burn
+                | Tool::Sponge
+                | Tool::StraightLine
+                | Tool::Multibrush
+                | Tool::DynamicBrush
+        )
+    }
+    /// Photoshop default single-key shortcut (`'\0'` = none, e.g. the Blur group).
+    pub fn key(self) -> char {
+        match self {
+            Tool::Move | Tool::Artboard => 'V',
+            Tool::RectMarquee | Tool::EllipseMarquee => 'M',
+            Tool::Brush | Tool::Pencil | Tool::MixerBrush | Tool::ColorReplacement => 'B',
+            Tool::Eraser | Tool::BackgroundEraser | Tool::MagicEraser => 'E',
+            Tool::Eyedropper | Tool::ColorSampler | Tool::Ruler | Tool::Note | Tool::Count | Tool::Assistant => 'I',
+            // The reference tools' own keys: no single-key default.
+            Tool::StraightLine | Tool::Multibrush | Tool::DynamicBrush | Tool::EncloseFill | Tool::ColorizeMask | Tool::ReferenceImages => '\0',
+            Tool::Lasso | Tool::PolygonLasso | Tool::MagneticLasso => 'L',
+            Tool::MagicWand => 'W',
+            Tool::Crop | Tool::PerspectiveCrop | Tool::Slice | Tool::SliceSelect => 'C',
+            Tool::Frame => 'K',
+            Tool::Gradient | Tool::PaintBucket => 'G',
+            Tool::Type | Tool::VerticalType | Tool::HorizontalTypeMask | Tool::VerticalTypeMask => 'T',
+            Tool::Hand => 'H',
+            Tool::RotateView => 'R',
+            Tool::Zoom => 'Z',
+            Tool::Remove | Tool::SpotHealing | Tool::Healing | Tool::Patch | Tool::ContentAwareMove | Tool::RedEye => 'J',
+            Tool::CloneStamp | Tool::PatternStamp => 'S',
+            Tool::HistoryBrush => 'Y',
+            Tool::Blur | Tool::Sharpen | Tool::Smudge => '\0',
+            // In the Marquee flyout, but M cycles only the Rectangular and Elliptical Marquee.
+            Tool::SingleRowMarquee | Tool::SingleColumnMarquee => '\0',
+            Tool::Dodge | Tool::Burn | Tool::Sponge => 'O',
+            Tool::QuickSelection | Tool::ObjectSelection => 'W',
+            Tool::Pen | Tool::FreeformPen | Tool::CurvaturePen | Tool::AddAnchorPoint | Tool::DeleteAnchorPoint | Tool::ConvertPoint => 'P',
+            Tool::PathSelection | Tool::DirectSelection => 'A',
+            Tool::Rectangle | Tool::EllipseShape | Tool::Triangle | Tool::Polygon | Tool::Line | Tool::CustomShape => 'U',
+        }
+    }
+    /// Glyph drawn in the toolbar (vector icons come later).
+    pub fn glyph(self) -> &'static str {
+        match self {
+            Tool::Move => "✥",
+            Tool::RectMarquee => "⬚",
+            Tool::EllipseMarquee => "◌",
+            Tool::Brush => "🖌",
+            Tool::MixerBrush => "🖌",
+            Tool::Eraser => "⌫",
+            Tool::Eyedropper => "💧",
+            Tool::ColorSampler => "◎",
+            Tool::Lasso | Tool::PolygonLasso | Tool::MagneticLasso => "L",
+            Tool::MagicWand => "W",
+            Tool::Crop => "C",
+            Tool::Gradient | Tool::PaintBucket => "G",
+            Tool::Type | Tool::VerticalType | Tool::HorizontalTypeMask | Tool::VerticalTypeMask => "T",
+            Tool::Hand => "✋",
+            Tool::RotateView => "🧭",
+            Tool::Zoom => "🔍",
+            _ => "•",
+        }
+    }
+    pub fn from_name(s: &str) -> Option<Tool> {
+        let n = s.to_ascii_lowercase().replace([' ', '_', '-'], "");
+        Tool::ALL.into_iter().find(|t| {
+            let a = format!("{t:?}").to_ascii_lowercase();
+            n == a || n == a.replace("marquee", "") || n == t.label().to_ascii_lowercase().replace(' ', "")
+        })
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Panels {
+    pub layers: bool,
+    pub history: bool,
+    pub properties: bool,
+    pub color: bool,
+    pub navigator: bool,
+    pub toolbar: bool,
+    pub options_bar: bool,
+    pub status_bar: bool,
+    /// Window › Brush Settings (F5): floating, like Photoshop's.
+    #[serde(default)]
+    pub brush_settings: bool,
+    /// Window › Brushes: dockable panel, like Photoshop's.
+    #[serde(default)]
+    pub brushes: bool,
+    /// Window › Character / Paragraph: the Character | Paragraph dock group (#150).
+    #[serde(default)]
+    pub character: bool,
+    /// The toolbar's header chevron: two columns even when one fits (#1197).
+    #[serde(default)]
+    pub toolbar_double: bool,
+    /// The right-hand panel dock. ⇧Tab hides and shows it, as in Photoshop (#1313).
+    #[serde(default = "yes")]
+    pub dock: bool,
+    /// What Tab hid (toolbar, options bar, dock), so a second Tab brings back just those.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub hidden_by_tab: Option<[bool; 3]>,
+    /// The right dock's icon rail. An app that embeds Redrob Canvas's UI can hide it for a simpler view.
+    #[serde(default = "yes")]
+    pub rail: bool,
+    /// The title bar with the in-window menus. An app that embeds Redrob Canvas's UI and draws its own
+    /// bar can hide it; the caption buttons of a custom title bar go with it.
+    #[serde(default = "yes")]
+    pub menu_bar: bool,
+    /// The Gradient tool's options-bar swatch opened the Gradient Editor window (`gradient_ui`).
+    /// Photoshop opens its Gradient Editor from that swatch; this is the same idea, drawn as a
+    /// floating window rather than a modal so the canvas stays usable while a gradient is edited.
+    #[serde(default)]
+    pub gradient_editor: bool,
+    /// Window › Touch Docker: the big-button panel for tablets (`touch_docker_ui`).
+    #[serde(default)]
+    pub touch_docker: bool,
+    /// Window › Tablet Tester (`tablet_settings`).
+    #[serde(default)]
+    pub tablet_tester: bool,
+}
+
+impl Default for Panels {
+    fn default() -> Self {
+        Self {
+            layers: true,
+            history: false,
+            properties: true,
+            color: true,
+            navigator: false,
+            toolbar: true,
+            options_bar: true,
+            status_bar: true,
+            brush_settings: false,
+            brushes: false,
+            character: false,
+            toolbar_double: false,
+            dock: true,
+            hidden_by_tab: None,
+            rail: true,
+            menu_bar: true,
+            gradient_editor: false,
+            touch_docker: false,
+            tablet_tester: false,
+        }
+    }
+}
+
+/// A modal or modeless dialog, identified by `id`, with editable fields.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Dialog {
+    pub id: u64,
+    pub kind: DialogKind,
+    /// Field values by name. Dialog widgets read and write these; so can automation.
+    pub fields: serde_json::Map<String, serde_json::Value>,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DialogKind {
+    NewDocument,
+    About,
+    /// Parameter dialog for a command (generated from its params).
+    Command,
+    Error,
+    /// Photoshop Layer Style dialog (see `layer_style.rs`).
+    LayerStyle,
+}
+
+/// Per-document view (camera) state.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct View {
+    /// Screen (device) pixels per document pixel: the user-facing zoom (`100%` is `1.0`).
+    /// Canvas geometry works in egui points and divides by `ctx.pixels_per_point`
+    /// (`PhotoApp::point_zoom`), so neither the display scale nor Interface › UI Scale
+    /// magnifies the image (#1943, #2121).
+    pub zoom: f32,
+    /// Document-space point shown at the canvas centre.
+    pub center: [f32; 2],
+    /// Recompute fit-to-screen on next frame.
+    pub fit_pending: bool,
+    /// Recompute fill-screen on next frame. Unlike fit, this may crop an edge of the document.
+    #[serde(default)]
+    pub fill_pending: bool,
+    /// Document size this view last showed; a change (Image/Canvas Size, crop) re-centres it.
+    #[serde(default)]
+    pub doc_size: [u32; 2],
+    /// Canvas camera rotation in degrees, wrapped to (−180, 180]. Turns the view, not the pixels.
+    #[serde(default)]
+    pub rotation: f32,
+}
+
+impl Default for View {
+    fn default() -> Self {
+        Self { zoom: 1.0, center: [0.0, 0.0], fit_pending: true, fill_pending: false, doc_size: [0, 0], rotation: 0.0 }
+    }
+}
+
+/// An extra OS window showing a document ("Window → Arrange → New Window for Document").
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct DocWindow {
+    pub id: u64,
+    pub document: usize,
+    pub view: View,
+    pub open: bool,
+    /// Where the window opens on screen (outer top-left, in points); `None` lets the OS place it.
+    /// A tab dragged off the tab strip opens its window where it was dropped (#3733).
+    #[serde(default)]
+    pub position: Option<[f32; 2]>,
+}
+
+/// Options-bar state for tools (Photoshop keeps these per tool).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ToolOptions {
+    pub tolerance: f32,
+    pub contiguous: bool,
+    pub anti_alias: bool,
+    pub sample_all_layers: bool,
+    /// Magic Wand / Paint Bucket / Magic Eraser: grow the region through corners too
+    /// (8-connected), and which channel the tolerance compares.
+    #[serde(default)]
+    pub wand_diagonal: bool,
+    #[serde(default = "default_wand_criterion")]
+    pub wand_criterion: String,
+    /// Paint Bucket › Fill by: similar colours (false) or the area the line art encloses (true),
+    /// with the ink threshold, the gap length that is still closed and how far under the ink the
+    /// colour goes.
+    #[serde(default)]
+    pub bucket_line_art: bool,
+    #[serde(default = "default_line_art_threshold")]
+    pub line_art_threshold: f32,
+    #[serde(default = "default_line_art_gap")]
+    pub line_art_gap: f32,
+    #[serde(default = "default_line_art_grow")]
+    pub line_art_grow: f32,
+    /// Object Selection › Object Finder: hovering highlights the object a click selects (#4087).
+    pub object_finder: bool,
+    /// Remove tool: the fill goes to a new layer above the target (Photoshop's Create a new layer).
+    pub remove_new_layer: bool,
+    /// Remove tool: each stroke is filled when released (Photoshop's default). Off, the strokes
+    /// collect as a tint on the canvas and ↩ applies them together (Esc drops them).
+    pub remove_after_each_stroke: bool,
+    pub feather: f32,
+    /// linear | radial | angle | reflected | diamond
+    pub gradient_style: String,
+    pub gradient_reverse: bool,
+    /// Gradient tool: dither to reduce 8-bit banding (Photoshop default on).
+    pub gradient_dither: bool,
+    /// Classic gradient: how the ramp continues past the drag (none | sawtooth | triangular | truncate).
+    #[serde(default = "default_gradient_repeat")]
+    pub gradient_repeat: String,
+    /// Classic gradient: % of the drag held at the start colour before the ramp begins.
+    pub gradient_offset: f32,
+    /// Brush › Color from Gradient: stroke length in pixels of one run through the gradient.
+    #[serde(default = "default_gradient_fade_length")]
+    pub gradient_fade_length: f32,
+    /// Gradient tool mode: false = "Gradient" (live: a Gradient Fill layer, editable on canvas),
+    /// true = "Classic gradient" (paints the pixels).
+    pub gradient_classic: bool,
+    /// Blend mode used by both live and classic gradient drags.
+    pub gradient_blend_mode: redrob_photo_color::BlendMode,
+    pub fill_opacity: f32,
+    /// Brush / Pencil / Eraser Line mode: a drag paints one straight stroke from the press to the
+    /// release, with the pressure recorded along the drag replayed along the line (⇧ snaps the
+    /// angle to 15° steps).
+    #[serde(default)]
+    pub brush_line_mode: bool,
+    /// Paint Bucket fill source: false = Foreground colour, true = Pattern (Patterns panel selection).
+    pub bucket_fill_pattern: bool,
+    /// Paint Bucket fill source: the background colour instead of the foreground (not with a pattern).
+    #[serde(default)]
+    pub bucket_fill_background: bool,
+    /// Paint Bucket pattern scale (%) and rotation (degrees).
+    #[serde(default = "hundred")]
+    pub bucket_pattern_scale: f32,
+    #[serde(default)]
+    pub bucket_pattern_angle: f32,
+    /// Paint Bucket: grow the filled area outward by this many pixels (Spread).
+    #[serde(default)]
+    pub bucket_spread: f32,
+    /// Paint Bucket: close gaps in the boundary up to this many pixels (plain fills; Line Art has
+    /// its own `line_art_gap`).
+    #[serde(default)]
+    pub bucket_close_gap: f32,
+    /// Paint Bucket: fill until the boundary colour (`bucket_boundary_color`) instead of over
+    /// similar colours.
+    #[serde(default)]
+    pub bucket_use_boundary: bool,
+    #[serde(default)]
+    pub bucket_boundary_color: [f32; 3],
+    /// Type tool: family, style name, size (pt), anti-aliasing and paragraph alignment.
+    pub type_font: String,
+    pub type_style: String,
+    pub type_size: f32,
+    pub type_aa: String,
+    pub type_align: String,
+    /// Clone Stamp / Healing Brush.
+    pub clone_aligned: bool,
+    /// Clone Stamp › Perspective: clone along a four-corner perspective plane (`paint.perspectiveClone`).
+    pub clone_perspective: bool,
+    /// Pattern Stamp: lock the tile origin in document space across strokes.
+    pub pattern_stamp_aligned: bool,
+    /// Pattern Stamp: jitter each dab's phase (seeded, replayable).
+    pub pattern_stamp_impressionist: bool,
+    /// Pattern Stamp scale %, 1..1000 (100 = the tile's native size).
+    pub pattern_stamp_scale: f32,
+    /// Pattern Stamp rotation in degrees (counter-clockwise).
+    pub pattern_stamp_angle: f32,
+    /// current | currentAndBelow | all
+    pub clone_sample: String,
+    /// Spot Healing: contentAware | createTexture | proximityMatch
+    pub spot_type: String,
+    /// Patch: source (repair the selection) | destination (repair where it is dragged).
+    pub patch_mode: String,
+    /// Patch: Content-Aware instead of Normal, with its Structure 1..7 and Color 0..10.
+    pub patch_content_aware: bool,
+    pub patch_structure: f32,
+    pub patch_color: f32,
+    /// Content-Aware Move: move | extend, Structure 1..7, Color 0..10.
+    pub cam_mode: String,
+    pub cam_structure: f32,
+    pub cam_color: f32,
+    /// Content-Aware Move: Transform On Drop (a transform box on the dropped patch).
+    pub cam_transform_on_drop: bool,
+    /// Dodge/Burn: shadows | midtones | highlights, exposure %, protect tones.
+    pub tone_range: String,
+    pub exposure: f32,
+    pub protect_tones: bool,
+    /// Sponge: desaturate | saturate, vibrance.
+    pub sponge_mode: String,
+    pub vibrance: bool,
+    /// Blur/Sharpen/Smudge strength %, Sharpen protect detail, Smudge finger painting.
+    pub strength: f32,
+    pub protect_detail: bool,
+    pub finger_painting: bool,
+    /// Quick Selection enhance edge.
+    pub enhance_edge: bool,
+    /// Pen: "path" (work path) or "shape" (shape layer).
+    pub vector_mode: String,
+    /// Shape tools: fill with the foreground colour, stroke width (0 = none), rectangle corner
+    /// radius, polygon sides, line weight.
+    pub shape_fill: bool,
+    pub stroke_width: f32,
+    #[serde(default)]
+    pub shape_stroke: crate::shape_stroke_ui::StrokeOptions,
+    pub corner_radius: f32,
+    pub polygon_sides: u32,
+    pub line_weight: f32,
+    /// Freeform Pen › Curve Fit: how far (px) the fitted path may stray from the pointer trace.
+    #[serde(default = "default_curve_fit")]
+    pub curve_fit: f32,
+    /// Pen › Auto Add/Delete: a Pen click on a segment of the active path adds an anchor there,
+    /// on one of its anchors deletes it (#4144).
+    #[serde(default = "yes")]
+    pub pen_auto_add_delete: bool,
+    /// Marquee options bar: "normal" | "fixedRatio" | "fixedSize", with the ratio or size.
+    #[serde(default = "default_marquee_style")]
+    pub marquee_style: String,
+    #[serde(default = "one")]
+    pub marquee_width: f32,
+    #[serde(default = "one")]
+    pub marquee_height: f32,
+    /// Move tool: Auto-Select (with "layer" or "group" target) and Show Transform Controls.
+    /// Auto-Select is on with the "group" target by default, as in current Photoshop;
+    /// ⌘/Ctrl-click inverts it.
+    #[serde(default = "yes")]
+    pub move_auto_select: bool,
+    #[serde(default = "default_move_target")]
+    pub move_target: String,
+    #[serde(default)]
+    pub move_show_transform: bool,
+    /// Crop options bar: aspect ratio ("" = Ratio/unconstrained, "w:h", or "original") and
+    /// Delete Cropped Pixels.
+    #[serde(default)]
+    pub crop_ratio: String,
+    /// In-progress custom crop ratio fields. Kept separately because entering one side before the
+    /// other must survive a frame while the ratio itself remains unconstrained.
+    #[serde(default)]
+    pub crop_custom_ratio_width: f32,
+    #[serde(default)]
+    pub crop_custom_ratio_height: f32,
+    #[serde(default = "yes")]
+    pub crop_delete: bool,
+    /// Crop options bar › Fill: false = Background (Default), true = Content-Aware Fill (the area a
+    /// rotated or extending crop uncovers is filled from its surroundings, #3823).
+    #[serde(default)]
+    pub crop_content_aware: bool,
+    /// Crop W x H x Resolution (`crop_ratio` = "whr", #2443): width and height as typed lengths
+    /// with their unit ("4 in", "1024 px"; empty = unset), the resolution ("" = the document's)
+    /// and its unit ("px/in" or "px/cm"). See `crop_size`.
+    #[serde(default)]
+    pub crop_width: String,
+    #[serde(default)]
+    pub crop_height: String,
+    #[serde(default)]
+    pub crop_resolution: String,
+    #[serde(default = "default_crop_resolution_unit")]
+    pub crop_resolution_unit: String,
+    /// Perspective Crop's Show Grid (`perspective_crop_ui`); it shares W, H and the resolution above.
+    #[serde(default = "yes")]
+    pub perspective_crop_grid: bool,
+    /// Crop overlay (#1919): the guide in the crop box, when it shows and its orientation
+    /// (Photoshop's defaults: Rule of Thirds, Auto Show Overlay). See `crop_overlay`.
+    #[serde(default)]
+    pub crop_overlay: crate::crop_overlay::CropOverlay,
+    #[serde(default)]
+    pub crop_overlay_show: crate::crop_overlay::OverlayShow,
+    #[serde(default)]
+    pub crop_overlay_orientation: u8,
+    /// Crop gear menu (#1919): Show Cropped Area and the crop shield. See `crop_shield`.
+    #[serde(default)]
+    pub crop_shield: crate::crop_shield::CropShield,
+    /// Magic Eraser opacity % (tolerance, anti-alias, contiguous and sample-all are shared with the
+    /// Magic Wand and Paint Bucket).
+    pub magic_eraser_opacity: f32,
+    /// Background Eraser: sampling (continuous | once | backgroundSwatch), limits (discontiguous |
+    /// contiguous | findEdges), tolerance % and Protect Foreground Color.
+    pub bg_sampling: String,
+    pub bg_limits: String,
+    pub bg_tolerance: f32,
+    pub bg_protect_fg: bool,
+    /// Color Replacement: mode (hue | saturation | color | luminosity), sampling (continuous |
+    /// once | backgroundSwatch), limits (discontiguous | contiguous | findEdges), tolerance % and
+    /// anti-alias, as `paint.colorReplacement` takes them.
+    pub cr_mode: String,
+    pub cr_sampling: String,
+    pub cr_limits: String,
+    pub cr_tolerance: f32,
+    pub cr_anti_alias: bool,
+    /// Zoom tool › Scrubby Zoom: dragging left/right zooms continuously (else a zoom rectangle).
+    #[serde(default = "yes")]
+    pub zoom_scrubby: bool,
+    /// Pencil › Auto Erase: a stroke that starts on the foreground colour paints the background colour.
+    #[serde(default)]
+    pub pencil_auto_erase: bool,
+    /// Brush › Mode: Clear, which erases with the Brush (Photoshop's painting-only mode, #3439).
+    /// Not a blend mode, so it is kept beside the brush's `mode` rather than in it.
+    #[serde(default)]
+    pub brush_clear: bool,
+    /// Pencil › Mode: Clear (see `brush_clear`).
+    #[serde(default)]
+    pub pencil_clear: bool,
+    /// Eraser › Mode: `brush` (soft, anti-aliased) or `pencil` (hard, aliased pixels, through
+    /// `paint.pencil`), as in Photoshop's options bar (#2662).
+    #[serde(default = "default_eraser_mode")]
+    pub eraser_mode: String,
+    /// Eraser › Anti-erase: the stroke restores erased pixels (raises alpha back) instead of
+    /// removing them.
+    #[serde(default)]
+    pub anti_erase: bool,
+    /// Brush tool engine: `brush` (the brush tip), `ink` (the calligraphic nib, `paint.ink`) or
+    /// `mypaint` (MyPaint-style presets, `paint.mypaint`). See `paint_engines_ui`.
+    #[serde(default = "default_brush_engine")]
+    pub brush_engine: String,
+    /// Ink nib: shape (circle | square | diamond), angle in degrees, aspect 1..10, and the
+    /// sensitivities (0..1) of size to pressure, angle to tilt, and size to speed.
+    #[serde(default = "default_ink_shape")]
+    pub ink_shape: String,
+    #[serde(default)]
+    pub ink_angle: f32,
+    #[serde(default = "default_one")]
+    pub ink_aspect: f32,
+    #[serde(default = "default_one")]
+    pub ink_sens_size: f32,
+    #[serde(default = "default_ink_sens_tilt")]
+    pub ink_sens_tilt: f32,
+    #[serde(default = "default_ink_sens_speed")]
+    pub ink_sens_speed: f32,
+    /// MyPaint engine: preset name, radius (log offset -3..3), opaque multiplier 0..2 and
+    /// erase-with-brush.
+    #[serde(default = "default_mypaint_preset")]
+    pub mypaint_preset: String,
+    #[serde(default)]
+    pub mypaint_radius: f32,
+    #[serde(default = "default_one")]
+    pub mypaint_opaque: f32,
+    #[serde(default)]
+    pub mypaint_erase: bool,
+    /// Magnetic Lasso: detection width (px, 1..256), edge contrast (%, 1..100), how often it
+    /// fastens points by itself (0..100), and whether pen pressure narrows the width.
+    pub magnetic_width: f32,
+    pub magnetic_contrast: f32,
+    pub magnetic_frequency: f32,
+    pub magnetic_pressure: bool,
+    /// Lasso › Free select: clicks place polygon vertices and drags draw freehand in one outline
+    /// that stays open and editable until it is closed (`lasso_ui`).
+    #[serde(default)]
+    pub lasso_free_select: bool,
+    /// Red Eye: pupil search size (1–100) and how far corrected pixels darken (0–100).
+    #[serde(default = "fifty")]
+    pub red_eye_pupil_size: f32,
+    #[serde(default = "fifty")]
+    pub red_eye_darken: f32,
+    /// Eyedropper › Sample Size: 1 = Point Sample, else the side of the averaged square (3, 5,
+    /// 11, 31, 51, 101; `redrob_photo_engine::sample_cmds::SAMPLE_SIZES`). Shared, as in Photoshop,
+    /// with the ⌥-click eyedropper of the painting tools, the dialog eyedroppers and the Info panel.
+    #[serde(default = "one_u32")]
+    pub eyedropper_size: u32,
+    /// Eyedropper › Sample: current | currentAndBelow | all | allNoAdjustments |
+    /// currentAndBelowNoAdjustments (`document.sampleColor`'s `sampleLayer`).
+    #[serde(default = "default_eyedropper_sample")]
+    pub eyedropper_sample: String,
+    /// Eyedropper › Show Sampling Ring.
+    #[serde(default = "yes")]
+    pub eyedropper_ring: bool,
+    /// Eyedropper › Blend: 0..1 share of the sampled colour mixed into the current colour
+    /// (1 = replace it, the classic behaviour).
+    #[serde(default = "one_f32")]
+    pub eyedropper_blend: f32,
+    /// Eyedropper › Add to Swatches: every click also adds the sampled colour to the Swatches panel.
+    #[serde(default)]
+    pub eyedropper_add_swatch: bool,
+    /// Filter dialogs › Split View (PH-FLT-002): on, and the divider's position (a fraction of the
+    /// image) and orientation, as the last filter dialog left them.
+    #[serde(default)]
+    pub filter_split: bool,
+    #[serde(default = "half")]
+    pub filter_split_pos: f32,
+    #[serde(default)]
+    pub filter_split_horizontal: bool,
+    /// The Brush's engine: the `engine` object `paint.engineStroke` takes (`{"kind": "pixel"}` is
+    /// the tip-stamping default; see `brush_engines_ui`).
+    #[serde(default = "crate::brush_engines_ui::default_engine")]
+    pub engine_settings: serde_json::Value,
+    /// Painting tools › Snap to Assistants magnetism: how far (document px) a stroke may stray
+    /// from an assistant and still be pulled onto it; 1000 = always (`assistant_ui`).
+    #[serde(default = "thousand")]
+    pub assistant_magnetism: f32,
+    /// Eraser › snap to the painting assistants too (off by default, as in the reference).
+    #[serde(default)]
+    pub eraser_snaps_assistants: bool,
+    /// Paint Bucket › Fill mode: contiguous | similar | selection (empty: from `contiguous`).
+    #[serde(default)]
+    pub bucket_fill_mode: String,
+    /// Paint Bucket › Reference: current | all | labels (empty: from `sample_all_layers`), and
+    /// the colour label ids with `labels`.
+    #[serde(default)]
+    pub bucket_reference: String,
+    #[serde(default)]
+    pub bucket_labels: Vec<String>,
+    /// Paint Bucket › Feather (px) and the Spread stops.
+    #[serde(default)]
+    pub bucket_feather: f32,
+    #[serde(default)]
+    pub bucket_grow_stop_darkest: bool,
+    #[serde(default)]
+    pub bucket_grow_stop_opaque: bool,
+    /// Paint Bucket › Drag fill: dragging fills every region passed over (only similar colours
+    /// with `bucket_drag_similar`).
+    #[serde(default)]
+    pub bucket_drag_fill: bool,
+    #[serde(default)]
+    pub bucket_drag_similar: bool,
+    /// Enclose and Fill › shape (rectangle | ellipse | lasso), rule (all | color | transparent |
+    /// surroundedBy) with its colour, and the exclusions.
+    #[serde(default)]
+    pub enclose_shape: String,
+    #[serde(default)]
+    pub enclose_rule: String,
+    #[serde(default)]
+    pub enclose_rule_color: [f32; 3],
+    #[serde(default)]
+    pub enclose_exclude_transparent: bool,
+    #[serde(default)]
+    pub enclose_exclude_color_on: bool,
+    #[serde(default)]
+    pub enclose_exclude_color: [f32; 3],
+    /// The painting symmetry mirrors every tool's output (fills, gradients, retouching), not only
+    /// the brush strokes (`mirror_tools_ui`).
+    #[serde(default = "yes")]
+    pub mirror_all_tools: bool,
+    /// Dynamic Brush › mass and drag (0..1) (`dyna_ui`).
+    #[serde(default = "half")]
+    pub dyna_mass: f32,
+    #[serde(default = "dyna_drag_default")]
+    pub dyna_drag: f32,
+    /// Pencil › Pixel smoothing: one-pixel lines without L corners (`pixel_smoothing`).
+    #[serde(default)]
+    pub pixel_smoothing: bool,
+    /// Multibrush › mode (rotational | snowflake | translate | copyTranslate | interval) and its
+    /// settings (`multibrush_ui`).
+    #[serde(default)]
+    pub multibrush_mode: String,
+    #[serde(default = "six")]
+    pub multibrush_count: f32,
+    #[serde(default = "hundred")]
+    pub multibrush_radius: f32,
+    #[serde(default = "hundred")]
+    pub multibrush_x: f32,
+    #[serde(default = "hundred")]
+    pub multibrush_y: f32,
+    #[serde(default = "three")]
+    pub multibrush_columns: f32,
+    #[serde(default = "three")]
+    pub multibrush_rows: f32,
+    /// Lasso › Foreground Select: the outline is a rough outline round the subject, later drags
+    /// mark foreground (or background) and the matting engine grows the mask
+    /// (`foreground_select_ui`).
+    #[serde(default)]
+    pub foreground_select: bool,
+    /// Foreground Select › stroke width of the marks, px.
+    #[serde(default = "twenty")]
+    pub fg_stroke_width: f32,
+    /// Foreground Select › the next marks are background strokes (else foreground).
+    #[serde(default)]
+    pub fg_mark_background: bool,
+    /// Foreground Select › preview overlay colour: red | green | blue.
+    #[serde(default = "default_fg_preview_color")]
+    pub fg_preview_color: String,
+    /// Foreground Select › preview in grayscale instead of the colour overlay.
+    #[serde(default)]
+    pub fg_preview_gray: bool,
+    /// Foreground Select › matting engine: graphCut (full) | fast (reduced budget).
+    #[serde(default = "default_fg_engine")]
+    pub fg_engine: String,
+}
+
+fn dyna_drag_default() -> f32 {
+    0.15
+}
+
+fn six() -> f32 {
+    6.0
+}
+
+fn three() -> f32 {
+    3.0
+}
+
+fn thousand() -> f32 {
+    1000.0
+}
+
+fn twenty() -> f32 {
+    20.0
+}
+
+fn default_fg_preview_color() -> String {
+    "red".into()
+}
+
+fn default_fg_engine() -> String {
+    "graphCut".into()
+}
+
+fn one_f32() -> f32 {
+    1.0
+}
+
+fn half() -> f32 {
+    0.5
+}
+
+fn yes() -> bool {
+    true
+}
+
+fn default_crop_resolution_unit() -> String {
+    crate::crop_size::PX_PER_IN.into()
+}
+
+fn default_move_target() -> String {
+    "group".into()
+}
+
+fn default_curve_fit() -> f32 {
+    2.0
+}
+
+fn default_line_art_threshold() -> f32 {
+    0.92
+}
+
+fn hundred() -> f32 {
+    100.0
+}
+
+fn default_line_art_gap() -> f32 {
+    16.0
+}
+
+fn default_line_art_grow() -> f32 {
+    2.0
+}
+
+fn default_wand_criterion() -> String {
+    "composite".into()
+}
+
+fn default_gradient_repeat() -> String {
+    "none".into()
+}
+
+fn default_gradient_fade_length() -> f32 {
+    100.0
+}
+
+fn default_brush_engine() -> String {
+    "brush".into()
+}
+
+fn default_ink_shape() -> String {
+    "circle".into()
+}
+
+fn default_one() -> f32 {
+    1.0
+}
+
+fn default_ink_sens_tilt() -> f32 {
+    0.4
+}
+
+fn default_ink_sens_speed() -> f32 {
+    0.8
+}
+
+fn default_mypaint_preset() -> String {
+    "Soft Round".into()
+}
+
+fn default_eraser_mode() -> String {
+    "brush".into()
+}
+
+fn default_marquee_style() -> String {
+    "normal".into()
+}
+
+fn one() -> f32 {
+    1.0
+}
+
+fn fifty() -> f32 {
+    50.0
+}
+
+/// The session brush starts out as the Brush's (the tool the app opens with).
+fn default_brush_tool() -> Tool {
+    Tool::Brush
+}
+
+fn default_layer_filter_mode() -> redrob_photo_color::BlendMode {
+    redrob_photo_color::BlendMode::Normal
+}
+
+fn default_blend_favourites() -> Vec<redrob_photo_color::BlendMode> {
+    crate::blend_menu_ui::DEFAULT_FAVOURITES.to_vec()
+}
+
+fn one_u32() -> u32 {
+    1
+}
+
+fn default_eyedropper_sample() -> String {
+    "all".into()
+}
+
+impl Default for ToolOptions {
+    fn default() -> Self {
+        Self {
+            tolerance: 32.0,
+            contiguous: true,
+            anti_alias: true,
+            sample_all_layers: false,
+            wand_diagonal: false,
+            wand_criterion: default_wand_criterion(),
+            bucket_line_art: false,
+            line_art_threshold: default_line_art_threshold(),
+            line_art_gap: default_line_art_gap(),
+            line_art_grow: default_line_art_grow(),
+            object_finder: true,
+            remove_new_layer: false,
+            remove_after_each_stroke: true,
+            feather: 0.0,
+            gradient_style: "linear".into(),
+            gradient_reverse: false,
+            gradient_dither: true,
+            gradient_repeat: default_gradient_repeat(),
+            gradient_offset: 0.0,
+            gradient_fade_length: default_gradient_fade_length(),
+            gradient_classic: false,
+            gradient_blend_mode: redrob_photo_color::BlendMode::Normal,
+            fill_opacity: 100.0,
+            brush_line_mode: false,
+            bucket_fill_pattern: false,
+            bucket_fill_background: false,
+            bucket_pattern_scale: 100.0,
+            bucket_pattern_angle: 0.0,
+            bucket_spread: 0.0,
+            bucket_close_gap: 0.0,
+            bucket_use_boundary: false,
+            bucket_boundary_color: [0.0, 0.0, 0.0],
+            type_font: "Inter".into(),
+            type_style: "Regular".into(),
+            type_size: 48.0,
+            type_aa: "sharp".into(),
+            type_align: "left".into(),
+            clone_aligned: true,
+            clone_perspective: false,
+            pattern_stamp_aligned: true,
+            pattern_stamp_impressionist: false,
+            pattern_stamp_scale: 100.0,
+            pattern_stamp_angle: 0.0,
+            clone_sample: "current".into(),
+            spot_type: "contentAware".into(),
+            patch_mode: "source".into(),
+            patch_content_aware: false,
+            patch_structure: 4.0,
+            patch_color: 0.0,
+            cam_mode: "move".into(),
+            cam_structure: 4.0,
+            cam_color: 0.0,
+            cam_transform_on_drop: false,
+            tone_range: "midtones".into(),
+            exposure: 50.0,
+            protect_tones: true,
+            sponge_mode: "desaturate".into(),
+            vibrance: true,
+            strength: 50.0,
+            protect_detail: true,
+            finger_painting: false,
+            enhance_edge: false,
+            vector_mode: "path".into(),
+            shape_fill: true,
+            stroke_width: 0.0,
+            shape_stroke: Default::default(),
+            corner_radius: 0.0,
+            polygon_sides: 5,
+            line_weight: 3.0,
+            curve_fit: default_curve_fit(),
+            pen_auto_add_delete: true,
+            marquee_style: default_marquee_style(),
+            marquee_width: 1.0,
+            marquee_height: 1.0,
+            move_auto_select: true,
+            move_target: default_move_target(),
+            move_show_transform: false,
+            crop_ratio: String::new(),
+            crop_custom_ratio_width: 0.0,
+            crop_custom_ratio_height: 0.0,
+            crop_delete: true,
+            crop_content_aware: false,
+            crop_width: String::new(),
+            crop_height: String::new(),
+            crop_resolution: String::new(),
+            crop_resolution_unit: default_crop_resolution_unit(),
+            perspective_crop_grid: true,
+            crop_overlay: Default::default(),
+            crop_overlay_show: Default::default(),
+            crop_overlay_orientation: 0,
+            crop_shield: Default::default(),
+            magic_eraser_opacity: 100.0,
+            bg_sampling: "continuous".into(),
+            bg_limits: "contiguous".into(),
+            bg_tolerance: 50.0,
+            bg_protect_fg: false,
+            cr_mode: "color".into(),
+            cr_sampling: "continuous".into(),
+            cr_limits: "contiguous".into(),
+            cr_tolerance: 30.0,
+            cr_anti_alias: true,
+            zoom_scrubby: true,
+            pencil_auto_erase: false,
+            brush_clear: false,
+            pencil_clear: false,
+            eraser_mode: default_eraser_mode(),
+            anti_erase: false,
+            brush_engine: default_brush_engine(),
+            ink_shape: default_ink_shape(),
+            ink_angle: 0.0,
+            ink_aspect: 1.0,
+            ink_sens_size: 1.0,
+            ink_sens_tilt: default_ink_sens_tilt(),
+            ink_sens_speed: default_ink_sens_speed(),
+            mypaint_preset: default_mypaint_preset(),
+            mypaint_radius: 0.0,
+            mypaint_opaque: 1.0,
+            mypaint_erase: false,
+            magnetic_width: 10.0,
+            magnetic_contrast: 10.0,
+            magnetic_frequency: 57.0,
+            magnetic_pressure: false,
+            lasso_free_select: false,
+            red_eye_pupil_size: 50.0,
+            red_eye_darken: 50.0,
+            eyedropper_size: 1,
+            eyedropper_sample: default_eyedropper_sample(),
+            eyedropper_ring: true,
+            eyedropper_blend: 1.0,
+            eyedropper_add_swatch: false,
+            filter_split: false,
+            filter_split_pos: 0.5,
+            filter_split_horizontal: false,
+            engine_settings: crate::brush_engines_ui::default_engine(),
+            foreground_select: false,
+            fg_stroke_width: 20.0,
+            fg_mark_background: false,
+            fg_preview_color: default_fg_preview_color(),
+            fg_preview_gray: false,
+            fg_engine: default_fg_engine(),
+            assistant_magnetism: 1000.0,
+            eraser_snaps_assistants: false,
+            bucket_fill_mode: String::new(),
+            bucket_reference: String::new(),
+            bucket_labels: Vec::new(),
+            bucket_feather: 0.0,
+            bucket_grow_stop_darkest: false,
+            bucket_grow_stop_opaque: false,
+            bucket_drag_fill: false,
+            bucket_drag_similar: false,
+            enclose_shape: String::new(),
+            enclose_rule: String::new(),
+            enclose_rule_color: [0.0, 0.0, 0.0],
+            enclose_exclude_transparent: false,
+            enclose_exclude_color_on: false,
+            enclose_exclude_color: [1.0, 1.0, 1.0],
+            mirror_all_tools: true,
+            dyna_mass: 0.5,
+            dyna_drag: 0.15,
+            pixel_smoothing: false,
+            multibrush_mode: String::new(),
+            multibrush_count: 6.0,
+            multibrush_radius: 100.0,
+            multibrush_x: 100.0,
+            multibrush_y: 100.0,
+            multibrush_columns: 3.0,
+            multibrush_rows: 3.0,
+        }
+    }
+}
+
+/// Edit › Transform's mode: what a handle drag does with no modifier keys held.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransformMode {
+    /// Free Transform and Scale: handles scale, drag outside rotates.
+    #[default]
+    Free,
+    /// Edit › Transform › Rotate: handle drags rotate about the reference point (#3941).
+    Rotate,
+    /// Edge and corner handles skew: each moves along one axis.
+    Skew,
+    /// Corner handles move freely, one at a time; nothing else moves them (no rotating, no
+    /// edges) and nothing snaps.
+    Distort,
+    /// Corner handles move in pairs, mirrored (one-point perspective).
+    Perspective,
+}
+
+impl TransformMode {
+    /// The mode an `edit.transform.*` / `edit.freeTransform` menu id starts.
+    pub fn for_command(id: &str) -> Self {
+        match id {
+            "edit.transform.rotate" => Self::Rotate,
+            "edit.transform.skew" => Self::Skew,
+            "edit.transform.distort" => Self::Distort,
+            "edit.transform.perspective" => Self::Perspective,
+            _ => Self::Free,
+        }
+    }
+}
+
+/// Which way the transform tools read the box: Normal moves the frame's corners to the handles;
+/// Corrective ("backward") treats the handles as the distortion to undo and applies the inverse,
+/// so fitting the box to a leaning edge straightens it.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransformDirection {
+    #[default]
+    Normal,
+    Corrective,
+}
+
+impl TransformDirection {
+    /// `edit.transform`'s `direction` parameter.
+    pub fn param(self) -> &'static str {
+        match self {
+            TransformDirection::Normal => "normal",
+            TransformDirection::Corrective => "corrective",
+        }
+    }
+}
+
+/// What the transform tools do with pixels pushed past the canvas (`edit.transform`'s `clipping`).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransformClipping {
+    /// The layer keeps everything; the canvas stays.
+    #[default]
+    Adjust,
+    /// The canvas stays and the layer is cut to it.
+    Clip,
+    /// The canvas shrinks to the largest upright rectangle the result covers.
+    Crop,
+    /// [`TransformClipping::Crop`] keeping the canvas's proportions.
+    CropAspect,
+}
+
+impl TransformClipping {
+    pub const ALL: [TransformClipping; 4] = [TransformClipping::Adjust, TransformClipping::Clip, TransformClipping::Crop, TransformClipping::CropAspect];
+
+    /// `edit.transform`'s `clipping` parameter.
+    pub fn param(self) -> &'static str {
+        match self {
+            TransformClipping::Adjust => "adjust",
+            TransformClipping::Clip => "clip",
+            TransformClipping::Crop => "crop",
+            TransformClipping::CropAspect => "cropAspect",
+        }
+    }
+
+    pub fn parse(s: &str) -> Self {
+        Self::ALL.into_iter().find(|c| c.param() == s).unwrap_or_default()
+    }
+}
+
+/// The guide overlay drawn through the transform box while it is open (ui only).
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TransformGuides {
+    #[default]
+    None,
+    CenterLines,
+    RuleOfThirds,
+    GoldenSections,
+    Diagonals,
+    /// An n × n grid; `n` is [`TransformOptions::grid_lines`].
+    Grid,
+}
+
+impl TransformGuides {
+    pub const ALL: [TransformGuides; 6] = [
+        TransformGuides::None,
+        TransformGuides::CenterLines,
+        TransformGuides::RuleOfThirds,
+        TransformGuides::GoldenSections,
+        TransformGuides::Diagonals,
+        TransformGuides::Grid,
+    ];
+
+    pub fn key(self) -> &'static str {
+        match self {
+            TransformGuides::None => "none",
+            TransformGuides::CenterLines => "centerLines",
+            TransformGuides::RuleOfThirds => "ruleOfThirds",
+            TransformGuides::GoldenSections => "goldenSections",
+            TransformGuides::Diagonals => "diagonals",
+            TransformGuides::Grid => "grid",
+        }
+    }
+
+    pub fn parse(s: &str) -> Self {
+        Self::ALL.into_iter().find(|g| g.key() == s).unwrap_or_default()
+    }
+}
+
+/// The transform tools' shared options bar settings, kept across sessions: direction, clipping and
+/// the guide overlay. Interpolation lives on the session ([`TransformSession::interpolation`]) and
+/// starts from the preference each time.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TransformOptions {
+    #[serde(default)]
+    pub direction: TransformDirection,
+    #[serde(default)]
+    pub clipping: TransformClipping,
+    #[serde(default)]
+    pub guides: TransformGuides,
+    /// Lines per side of the [`TransformGuides::Grid`] overlay.
+    #[serde(default = "default_transform_grid_lines")]
+    pub grid_lines: u32,
+}
+
+fn default_transform_grid_lines() -> u32 {
+    8
+}
+
+impl Default for TransformOptions {
+    fn default() -> Self {
+        Self::DEFAULT
+    }
+}
+
+impl TransformOptions {
+    pub const DEFAULT: TransformOptions =
+        TransformOptions { direction: TransformDirection::Normal, clipping: TransformClipping::Adjust, guides: TransformGuides::None, grid_lines: 8 };
+}
+
+/// Free Transform in progress: the source frame `rect` and where its corners currently are.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TransformSession {
+    pub session: u64,
+    pub layer: u64,
+    pub rect: [f64; 4],
+    /// Corners clockwise from top-left (document px).
+    pub quad: [[f64; 2]; 4],
+    /// Reference point (rotation / ⌥-scale centre).
+    pub pivot: [f64; 2],
+    pub interpolation: String,
+    /// Warp mode (Edit › Transform › Warp): the warp being edited over `rect`, in document px.
+    #[serde(default)]
+    pub warp: Option<redrob_photo_geom::warp::Warp>,
+    /// Select › Transform Selection: the box transforms the selection outline, not pixels.
+    #[serde(default)]
+    pub selection: bool,
+    /// `edit.transform`'s `"target"` when the box moves an unlinked layer mask, an alpha channel or
+    /// the Quick Mask by itself (`None`: the layer, with its linked masks).
+    #[serde(default)]
+    pub target: Option<serde_json::Value>,
+    /// Free Transform Path: `path.transform`'s `name` (and `layer`) when the box moves a
+    /// path's anchors and handles instead of pixels.
+    #[serde(default)]
+    pub path: Option<serde_json::Value>,
+    /// The layer was made for this session (⌥⌘T's copy, #352; a file dropped on the canvas), so
+    /// Cancel takes it back and OK folds it into one history step with the transform.
+    #[serde(default)]
+    pub made: Option<MadeLayer>,
+    /// Edit › Transform › Rotate / Skew / Distort / Perspective (`Free` for Free Transform and Scale).
+    #[serde(default)]
+    pub mode: TransformMode,
+    /// Edit › Content-Aware Scale (#3096): the box only scales and moves, and OK runs
+    /// `edit.contentAwareScale` with these options instead of `edit.transform`.
+    #[serde(default)]
+    pub content_aware: Option<ContentAwareOptions>,
+    /// The options bar's V (vertical skew, degrees) last typed. Any box can be read as scale,
+    /// skew and rotation with any vertical skew, so the bar keeps showing the typed one.
+    #[serde(default)]
+    pub skew_v: f64,
+}
+
+/// Content-Aware Scale's options bar: Amount, Protect and Protect Skin Tones.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ContentAwareOptions {
+    /// How much is content-aware, 0..100 % (the rest is a plain resample).
+    pub amount: f32,
+    /// The alpha channel whose white areas keep their shape (`None`: no protection).
+    #[serde(default)]
+    pub protect: Option<String>,
+    #[serde(default)]
+    pub protect_skin_tones: bool,
+}
+
+impl Default for ContentAwareOptions {
+    fn default() -> Self {
+        Self { amount: 100.0, protect: None, protect_skin_tones: false }
+    }
+}
+
+/// Why a Free Transform session's layer was made for it.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum MadeLayer {
+    /// Free Transform on a copy (⌥⌘T): OK makes the copy and the transform one Free Transform step.
+    Copy,
+    /// A file dropped on the canvas: OK makes the place and the transform one Place Embedded step.
+    Place,
+}
+
+/// In-progress inline type editing (Type tool). Offsets are character indices.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TextEdit {
+    pub layer: u64,
+    pub caret: usize,
+    pub anchor: usize,
+    /// History coalescing key: the whole editing session is one "Edit Type Layer" step.
+    pub session: String,
+    /// The layer was created by this session (its name follows the text; empty on commit = delete).
+    pub created: bool,
+    /// A Type Mask tool session: the layer is temporary and commits as a selection.
+    #[serde(default)]
+    pub mask: bool,
+    #[serde(skip)]
+    pub dragging: bool,
+    /// Paragraph-box handle being dragged (0-3 corners from top-left clockwise, 4-7 top/right/bottom/left edges).
+    #[serde(skip)]
+    pub resize: Option<u8>,
+    /// IME composition in progress: (start, length) in characters. The preedit text lives in the
+    /// layer so it lays out like typed text; each IME update replaces it.
+    #[serde(skip)]
+    pub preedit: Option<(usize, usize)>,
+}
+
+/// Temporary Type-tool drag. The document is unchanged until release; this frame is view state.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct TypeTransform {
+    pub document: u64,
+    pub revision: u64,
+    pub original: redrob_photo_geom::Affine,
+    pub frame: TransformSession,
+    pub(crate) gesture: crate::transform_tool::Gesture,
+}
+
+/// Content-Aware Move with Transform On Drop: the box on the dropped patch. The document is
+/// unchanged until it is committed; this is view state.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct CamTransform {
+    pub document: u64,
+    pub revision: u64,
+    /// How far the selection was dragged; the box's `rect` is the selection's bounds there.
+    pub offset: [i32; 2],
+    pub frame: TransformSession,
+    #[serde(skip)]
+    pub(crate) gesture: Option<crate::transform_tool::Gesture>,
+}
+
+/// View-menu overlays.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Extras {
+    pub rulers: bool,
+    pub grid: bool,
+    pub guides: bool,
+    pub snap: bool,
+    pub lock_guides: bool,
+}
+
+impl Default for Extras {
+    fn default() -> Self {
+        Self { rulers: false, grid: false, guides: true, snap: true, lock_guides: false }
+    }
+}
+
+/// Selected tab per dock card.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct DockTabs {
+    pub properties: usize,
+    pub color: usize,
+    pub layers: usize,
+    /// Navigator | Histogram | Info.
+    pub navigator: usize,
+    /// History | Actions.
+    pub history: usize,
+    /// Character | Paragraph.
+    pub character: usize,
+    /// Brushes presets.
+    pub brushes: usize,
+}
+
+/// Color panel state.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct ColorPanelState {
+    /// The panel edits the background colour (its chip was clicked), not the foreground.
+    pub background: bool,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct UiState {
+    pub tool: Tool,
+    /// The last tool used in each shortcut group (the tools sharing a key, [`Tool::key`]), at most
+    /// one per group: the group's key brings it back, as in Photoshop (#2608).
+    #[serde(default)]
+    pub group_tools: Vec<Tool>,
+    /// A tool letter still held (spring-loaded tool, #2672): the tool to give back on release.
+    /// Exposed to automation, never restored from settings.
+    #[serde(default, skip_deserializing)]
+    pub spring: Option<crate::spring_tools::Spring>,
+    /// Recently opened file paths, most-recent first (File › Open Recent). Capped; de-duplicated.
+    #[serde(default)]
+    pub recent_files: Vec<String>,
+    /// Inline type editing session, if any.
+    #[serde(default)]
+    pub text_edit: Option<TextEdit>,
+    /// Tool to restore when an inline type edit session commits or cancels (e.g. Move tool, #1132).
+    #[serde(skip)]
+    pub text_edit_return_tool: Option<Tool>,
+    /// Ctrl/Cmd Type-tool gesture, exposed to automation but never restored as a held pointer.
+    #[serde(default, skip_deserializing)]
+    pub type_transform: Option<TypeTransform>,
+    /// Reference point for the current type editing session (document coordinates).
+    #[serde(skip)]
+    pub type_transform_pivot: Option<[f64; 2]>,
+    /// Content-Aware Move's Transform On Drop box, waiting for ↩ / Esc.
+    #[serde(default, skip_deserializing)]
+    pub cam_transform: Option<CamTransform>,
+    /// Free Transform session, if any.
+    #[serde(default)]
+    pub transform: Option<TransformSession>,
+    /// The options bar's Maintain Aspect Ratio link is off: W/H change on their own, and handle
+    /// drags stretch freely (⇧ keeps the proportions), as in Photoshop (#4174).
+    #[serde(default)]
+    pub transform_unlinked: bool,
+    /// The transform tools' Direction, Clipping and Guides options (#PH-TRF-014).
+    #[serde(default)]
+    pub transform_options: TransformOptions,
+    /// Temporary symmetry-axis editing, exposed to automation but never restored from settings.
+    #[serde(default, skip_deserializing)]
+    pub symmetry_transform: Option<crate::symmetry_ui::Transform>,
+    /// The rotational multibrush centre being dragged on the canvas (its preview position);
+    /// committed with `paint.setMultibrush` on release.
+    #[serde(skip)]
+    pub multibrush_drag: Option<[f64; 2]>,
+    /// Foreground colours painted with, most recent first (`color_history`).
+    #[serde(default)]
+    pub color_history: Vec<[f32; 4]>,
+    /// The pop-up palette's screen centre while it is open (`popup_palette`); never restored.
+    #[serde(default, skip_deserializing)]
+    pub popup_palette: Option<[f32; 2]>,
+    /// The preset tag the pop-up palette's ring shows (empty: every preset).
+    #[serde(default)]
+    pub popup_tag: String,
+    /// The Properties panel's armed Levels/Curves eyedropper on an adjustment layer (`layer_picker`),
+    /// exposed to automation but never restored from settings.
+    #[serde(default, skip_deserializing)]
+    pub layer_picker: Option<crate::layer_picker::LayerPicker>,
+    /// Clone Stamp / Healing source point (⌥-click) and the aligned offset once a stroke started.
+    #[serde(default)]
+    pub clone_source: Option<[f64; 2]>,
+    /// Clone Stamp › Perspective: the plane's corners clicked so far (four define it).
+    #[serde(default, skip)]
+    pub perspective_corners: Vec<[f64; 2]>,
+    #[serde(default)]
+    pub clone_offset: Option<[f64; 2]>,
+    /// Pattern Stamp aligned origin in document pixels, kept across strokes.
+    #[serde(default)]
+    pub pattern_stamp_phase: Option<[f32; 2]>,
+    /// Painting targets the active layer's mask instead of its pixels.
+    #[serde(default)]
+    pub mask_target: bool,
+    /// The active layer's vector mask is targeted (its Layers thumbnail is bracketed): the path
+    /// tools edit it (#196). Never set together with `mask_target`.
+    #[serde(default)]
+    pub vector_mask_target: bool,
+    /// The adjustment or fill layer (id) whose own settings Properties shows although its mask
+    /// is targeted: set when that layer is created, as in Photoshop (#3369). Targeting the mask
+    /// thumbnail, the layer's pixels or another layer clears it.
+    #[serde(default)]
+    pub properties_layer: Option<u64>,
+    /// Brush Preset picker opened by a right-click on the canvas or the options-bar brush chip:
+    /// its screen position (points).
+    #[serde(default)]
+    pub brush_picker: Option<[f32; 2]>,
+    /// The Brush Preset picker's preset list: search, collapsed groups, view, a rename in progress.
+    #[serde(default = "crate::brush_picker::list_state")]
+    pub brush_picker_list: crate::brush_panel::BrushesPanelState,
+    /// The Brush Preset picker's content size, once its corner grip was dragged
+    /// ([`crate::brush_picker::DEFAULT_SIZE`] before that).
+    #[serde(default)]
+    pub brush_picker_size: Option<[f32; 2]>,
+    /// Layers under the pointer, listed by a right-click on the canvas with the Move tool or
+    /// ⌘/Ctrl+right-click with any tool (`layer_pick_ui`, #307).
+    #[serde(default)]
+    pub layer_menu: Option<crate::layer_pick_ui::LayerMenu>,
+    /// Selection-tool context menu opened by a plain canvas right-click.
+    #[serde(default)]
+    pub canvas_tool_menu: Option<crate::canvas_tool_menu::CanvasToolMenu>,
+    /// The guide a Move-tool click selected (`guide_select`): drawn blue, Delete removes it.
+    #[serde(default)]
+    pub selected_guide: Option<crate::guide_select::SelectedGuide>,
+    /// The brush is a per-tool option (the Brush, the Eraser and every retouching tool each keep
+    /// their own size, hardness, tip and dynamics, as in Photoshop): the tool whose brush the
+    /// session brush holds, and the other tools' saved brushes.
+    #[serde(default = "default_brush_tool")]
+    pub brush_tool: Tool,
+    #[serde(default)]
+    pub tool_brushes: Vec<(Tool, redrob_photo_engine::paint::BrushSettings)>,
+    /// Pen path under construction.
+    #[serde(default)]
+    pub pen: Option<crate::vector_ui::PenPath>,
+    #[serde(default)]
+    pub stroke_editor: Option<crate::shape_stroke_ui::StrokeEditor>,
+    /// Direct Selection tool: selected anchors and the drag in progress (#790).
+    #[serde(default)]
+    pub direct_selection: crate::direct_select::DirectSelection,
+    /// A live rectangle's corner radius widget being dragged (TOOL-214-12).
+    #[serde(skip)]
+    pub corner_radius: Option<crate::corner_radius::Drag>,
+    /// Selected row in the Paths panel ("work" or a saved path name).
+    #[serde(default)]
+    pub selected_path: Option<String>,
+    /// Paths panel › Paste Path from SVG asked the OS for its text; the next paste event is taken.
+    #[serde(default, skip)]
+    pub svg_paste_pending: bool,
+    /// Filter › Operation…: the operation chosen last time (preselected).
+    #[serde(default)]
+    pub last_operation: Option<String>,
+    /// Layers panel kind filter ("pixel", "adjustment", "type", "shape", "smart"); empty = all.
+    #[serde(default)]
+    pub layer_filter: Vec<String>,
+    /// Layers panel filter type (#5048): kind (above), name or blend mode.
+    #[serde(default)]
+    pub layer_filter_by: crate::layer_filter_ui::FilterBy,
+    /// Layers panel name filter: part of a layer name, ignoring case; empty = all.
+    #[serde(default)]
+    pub layer_filter_name: String,
+    /// Layers panel blend-mode filter.
+    #[serde(default = "default_layer_filter_mode")]
+    pub layer_filter_mode: redrob_photo_color::BlendMode,
+    /// Layers panel: the blend modes starred as favourites (grouped blend menu).
+    #[serde(default = "default_blend_favourites")]
+    pub blend_favourites: Vec<redrob_photo_color::BlendMode>,
+    /// Layers panel: colour-label filter (empty = all) and the display settings of the rows.
+    #[serde(default)]
+    pub layer_filter_labels: Vec<String>,
+    #[serde(default)]
+    pub layer_display: crate::layer_filter_ui::LayerDisplay,
+    /// Animation docker state (keyframe table, onion skin, curves, storyboard, recorder).
+    #[serde(default)]
+    pub animation: crate::animation_ui::AnimationUi,
+    /// Actions panel: which row is selected and which are expanded. The list lives on the session.
+    #[serde(default)]
+    pub actions: crate::actions::ActionsUi,
+    /// Layer Comps panel: the selected comp (by comp id).
+    #[serde(default)]
+    pub layer_comp_selected: Option<u32>,
+    /// Preset panels (Gradients, Patterns, Styles, Shapes, Tool Presets, Clone Source).
+    #[serde(default)]
+    pub presets_ui: crate::preset_panels::PresetUi,
+    /// Character/Paragraph Styles, Glyphs and Check Spelling (see `type_panels_ui`).
+    #[serde(default)]
+    pub type_panels: crate::type_panels_ui::TypePanelsUi,
+    /// Ruler/Count/Note tools, Measurement Log and Notes panels (see `analysis_ui`).
+    #[serde(default)]
+    pub analysis: crate::analysis_ui::AnalysisUi,
+    /// Procedure Browser, Dashboard, Device Status, Selection Editor, MyPaint Brushes and the
+    /// metadata dialogs (see `extra_panels`).
+    #[serde(default)]
+    pub extra: crate::extra_panels::ExtraPanels,
+    /// Assistant tool and the stroke snapping to painting assistants (see `assistant_ui`).
+    #[serde(default)]
+    pub assistants: crate::assistant_ui::AssistantUi,
+    /// Multibrush tool: the copies' centre (Ctrl-click; the canvas centre when `None`) and the
+    /// copy-translate offsets (`multibrush_ui`).
+    #[serde(default)]
+    pub multibrush_center: Option<[f64; 2]>,
+    #[serde(default)]
+    pub multibrush_offsets: Vec<[f64; 2]>,
+    pub timeline: crate::timeline_ui::TimelineUi,
+    /// Window › Buffers panel (named buffers, see `buffers_ui`).
+    #[serde(default)]
+    pub buffers: crate::buffers_ui::BuffersUi,
+    /// Slice and Slice Select tools (see `slice_ui`).
+    #[serde(default)]
+    pub slices: crate::slice_ui::SliceUi,
+    /// Frame tool (see `frame_tool`).
+    #[serde(default)]
+    pub frame_tool: crate::frame_tool::FrameToolUi,
+    /// Artboard tool (see `artboard_tool`).
+    pub artboard_tool: crate::artboard_tool::ArtboardToolUi,
+    /// Modifier Keys panel, custom pixel aspect ratios, workspace dialogs (see `workspace_ui`).
+    #[serde(default)]
+    pub shell: crate::workspace_ui::ShellUi,
+    /// View extras: rulers (⌘R), grid (⌘'), guides (⌘;), snapping (⇧⌘;), locked guides (⌥⌘;).
+    #[serde(default)]
+    pub extras: Extras,
+    /// View / Window / Type preferences: screen mode, Extras, Show and Snap To, flip, arrangement.
+    #[serde(default)]
+    pub view: crate::view_cmds::ViewOptions,
+    pub panels: Panels,
+    /// Views per open document (index-aligned with the session's documents).
+    pub views: Vec<View>,
+    pub dialogs: Vec<Dialog>,
+    pub windows: Vec<DocWindow>,
+    pub theme: crate::theme::ThemeKind,
+    pub workspace: String,
+    pub palette_open: bool,
+    pub dock_tabs: DockTabs,
+    /// Right-dock group order, heights and collapsed groups (see `dock`).
+    #[serde(default)]
+    pub dock: crate::dock::DockLayout,
+    /// Authoritative custom panel membership and placement; legacy fields are compatibility projections.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub docking: Option<redrob_canvas_ui::docking::Layout<String>>,
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub docking_hidden: std::collections::BTreeMap<String, redrob_canvas_ui::docking::Location<String>>,
+    /// Invalidates in-flight gestures when a workspace is replaced.
+    #[serde(skip)]
+    pub docking_generation: u64,
+    /// Panels belonging to explicitly collapsed custom tab groups.
+    #[serde(default)]
+    pub docking_collapsed: Vec<String>,
+    /// One-frame focus/raise request from an explicit panel reveal.
+    #[serde(skip)]
+    pub docking_reveal: Option<String>,
+    /// Which chip the Color panel edits.
+    #[serde(default)]
+    pub color_panel: ColorPanelState,
+    /// Brush Settings: selected section (0 = Brush Tip Shape) and tab (0 settings, 1 Brushes).
+    #[serde(default)]
+    pub brush_section: usize,
+    #[serde(default)]
+    pub brush_tab: usize,
+    /// Brushes panel: collapsed groups and the search filter.
+    #[serde(default)]
+    pub brushes_panel: crate::brush_panel::BrushesPanelState,
+    /// Marquee options-bar mode: 0 new, 1 add, 2 subtract, 3 intersect (modifier keys override).
+    #[serde(default)]
+    pub selection_mode: u8,
+    #[serde(default)]
+    pub tool_options: ToolOptions,
+    /// In-progress polygonal lasso vertices (document coordinates).
+    #[serde(default)]
+    pub polygon: Vec<[f64; 2]>,
+    /// The selection mode the polygonal lasso started in ("replace", "add", ...), set by the
+    /// modifiers held at its first click.
+    #[serde(default)]
+    pub polygon_mode: String,
+    /// The document the polygon is drawn on (set at its first click): another document becoming
+    /// active drops it (`canvas::polygon_cancel_stale`).
+    #[serde(default)]
+    pub polygon_doc: Option<redrob_photo_doc::DocId>,
+    /// Magnetic Lasso border in progress (`magnetic_lasso_ui`).
+    #[serde(default)]
+    pub magnetic: crate::magnetic_lasso_ui::MagneticLasso,
+    /// Crop tool rectangle being edited [x0, y0, x1, y1] (document coordinates).
+    #[serde(default)]
+    pub crop_rect: Option<[f64; 4]>,
+    /// The crop frame's turn in degrees, clockwise on screen about its centre (`crop_rect` is the
+    /// frame before the turn); 0 when upright. Committing passes it as `image.crop`'s `angle`.
+    #[serde(default)]
+    pub crop_angle: f64,
+    /// Perspective Crop quad being edited: TL, TR, BR, BL (document coordinates).
+    #[serde(default)]
+    pub perspective_crop: Option<[[f64; 2]; 4]>,
+    pub next_id: u64,
+    /// Last status message (errors from commands, hints).
+    pub status: String,
+    /// The status message is an error (shown in the warning colour).
+    #[serde(default)]
+    pub status_error: bool,
+    /// Non-blocking notices (import/export warnings, files that couldn't open), newest last.
+    #[serde(default)]
+    pub notices: Vec<crate::notices::Notice>,
+    /// Pending GPU fallback warning, visible to automation.
+    #[serde(default)]
+    pub gpu_fallback_notice: Option<String>,
+    /// A keyboard shortcut set found at first launch, waiting for Import / Don't Import.
+    #[serde(default)]
+    pub kys_offer: Option<crate::kys_import::Offer>,
+    /// Documents (ids) whose slow full refresh on the CPU compositor has had its notice.
+    #[serde(default)]
+    pub slow_refresh_noticed: Vec<u64>,
+    /// Status bar info field, Home screen (see `chrome_ui`).
+    #[serde(default)]
+    pub chrome: crate::chrome_ui::ChromeState,
+    #[serde(default)]
+    pub camera_raw_scope: CameraRawScopeState,
+    #[serde(default)]
+    pub camera_raw_preview: CameraRawPreviewState,
+    /// The Color panel's selectors (advanced, artistic, wide gamut, specific, mixer), shade strip,
+    /// common colours and gamut masks (`color_selectors`).
+    #[serde(default)]
+    pub color_selectors: crate::color_selectors::ColorSelectorSettings,
+    /// Window › Search Actions: the open search field (see `action_search`).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub action_search: Option<crate::action_search::ActionSearch>,
+}
+
+impl Default for UiState {
+    fn default() -> Self {
+        Self {
+            tool: Tool::Brush,
+            group_tools: Vec::new(),
+            spring: None,
+            recent_files: Vec::new(),
+            text_edit: None,
+            text_edit_return_tool: None,
+            type_transform: None,
+            type_transform_pivot: None,
+            cam_transform: None,
+            transform: None,
+            transform_unlinked: false,
+            transform_options: TransformOptions::DEFAULT,
+            symmetry_transform: None,
+            multibrush_drag: None,
+            color_history: Vec::new(),
+            popup_palette: None,
+            popup_tag: String::new(),
+            layer_picker: None,
+            mask_target: false,
+            vector_mask_target: false,
+            properties_layer: None,
+            brush_picker: None,
+            brush_picker_list: crate::brush_picker::list_state(),
+            brush_picker_size: None,
+            layer_menu: None,
+            canvas_tool_menu: None,
+            selected_guide: None,
+            brush_tool: Tool::Brush,
+            tool_brushes: Vec::new(),
+            clone_source: None,
+            perspective_corners: Vec::new(),
+            clone_offset: None,
+            pattern_stamp_phase: None,
+            extras: Extras::default(),
+            view: Default::default(),
+            actions: Default::default(),
+            layer_comp_selected: None,
+            presets_ui: Default::default(),
+            type_panels: Default::default(),
+            analysis: Default::default(),
+            extra: Default::default(),
+            assistants: Default::default(),
+            multibrush_center: None,
+            multibrush_offsets: Vec::new(),
+            timeline: Default::default(),
+            buffers: Default::default(),
+            slices: Default::default(),
+            frame_tool: Default::default(),
+            artboard_tool: Default::default(),
+            shell: Default::default(),
+            layer_filter: Vec::new(),
+            layer_filter_by: Default::default(),
+            layer_filter_name: String::new(),
+            layer_filter_mode: default_layer_filter_mode(),
+            blend_favourites: default_blend_favourites(),
+            layer_filter_labels: Vec::new(),
+            layer_display: Default::default(),
+            animation: Default::default(),
+            pen: None,
+            stroke_editor: None,
+            direct_selection: Default::default(),
+            corner_radius: None,
+            selected_path: None,
+            svg_paste_pending: false,
+            last_operation: None,
+            panels: Panels::default(),
+            views: Vec::new(),
+            dialogs: Vec::new(),
+            windows: Vec::new(),
+            theme: crate::theme::ThemeKind::ProMedium,
+            workspace: "Essentials".into(),
+            palette_open: false,
+            dock_tabs: DockTabs::default(),
+            dock: Default::default(),
+            docking: None,
+            docking_hidden: Default::default(),
+            docking_generation: 0,
+            docking_collapsed: Vec::new(),
+            docking_reveal: None,
+            color_panel: Default::default(),
+            brush_section: 0,
+            brush_tab: 0,
+            brushes_panel: Default::default(),
+            selection_mode: 0,
+            tool_options: ToolOptions::default(),
+            polygon: Vec::new(),
+            polygon_mode: String::new(),
+            polygon_doc: None,
+            magnetic: Default::default(),
+            crop_rect: None,
+            crop_angle: 0.0,
+            perspective_crop: None,
+            next_id: 1,
+            status: String::new(),
+            status_error: false,
+            notices: Vec::new(),
+            gpu_fallback_notice: None,
+            kys_offer: None,
+            slow_refresh_noticed: Vec::new(),
+            chrome: Default::default(),
+            camera_raw_scope: Default::default(),
+            camera_raw_preview: Default::default(),
+            color_selectors: Default::default(),
+            action_search: None,
+        }
+    }
+}
+
+impl UiState {
+    /// Records the current tool as the last one used in its shortcut group.
+    pub fn remember_group_tool(&mut self) {
+        let tool = self.tool;
+        if !self.group_tools.contains(&tool) {
+            self.group_tools.retain(|t| t.key() != tool.key());
+            self.group_tools.push(tool);
+        }
+    }
+
+    /// The last tool used in the shortcut group of `key`, if any.
+    pub fn group_tool(&self, key: char) -> Option<Tool> {
+        self.group_tools.iter().copied().find(|t| t.key() == key)
+    }
+
+    pub fn alloc_id(&mut self) -> u64 {
+        let id = self.next_id;
+        self.next_id += 1;
+        id
+    }
+
+    pub fn open_dialog(&mut self, kind: DialogKind, fields: serde_json::Map<String, serde_json::Value>) -> u64 {
+        let id = self.alloc_id();
+        self.dialogs.push(Dialog { id, kind, fields });
+        id
+    }
+
+    pub fn dialog_mut(&mut self, id: u64) -> Option<&mut Dialog> {
+        self.dialogs.iter_mut().find(|d| d.id == id)
+    }
+
+    pub fn close_dialog(&mut self, id: u64) -> Option<Dialog> {
+        let i = self.dialogs.iter().position(|d| d.id == id)?;
+        Some(self.dialogs.remove(i))
+    }
+
+    pub fn new_document_fields() -> serde_json::Map<String, serde_json::Value> {
+        let v = serde_json::json!({"name": "Untitled-1", "width": 1920, "height": 1080, "mode": "rgb", "depth": 8, "background": "white"});
+        v.as_object().cloned().unwrap_or_default()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn tool_names_parse() {
+        assert_eq!(Tool::from_name("brush"), Some(Tool::Brush));
+        assert_eq!(Tool::from_name("Rect"), Some(Tool::RectMarquee));
+        assert_eq!(Tool::from_name("RectMarquee"), Some(Tool::RectMarquee));
+        assert_eq!(Tool::from_name("Eraser Tool"), Some(Tool::Eraser));
+        assert_eq!(Tool::from_name("mixerBrush"), Some(Tool::MixerBrush));
+        assert_eq!(Tool::from_name("Mixer Brush Tool"), Some(Tool::MixerBrush));
+        assert_eq!(Tool::from_name("colorReplacement"), Some(Tool::ColorReplacement));
+        assert_eq!(Tool::from_name("Color Replacement Tool"), Some(Tool::ColorReplacement));
+        assert_eq!(Tool::from_name("redEye"), Some(Tool::RedEye));
+        assert_eq!(Tool::from_name("Red Eye Tool"), Some(Tool::RedEye));
+        assert_eq!(Tool::RedEye.key(), 'J');
+        assert!(!Tool::RedEye.is_brushlike());
+        assert_eq!(Tool::from_name("patternStamp"), Some(Tool::PatternStamp));
+        assert_eq!(Tool::from_name("Pattern Stamp Tool"), Some(Tool::PatternStamp));
+        assert_eq!(Tool::ALL.len(), 74);
+        assert_eq!(Tool::from_name("Vertical Type Mask Tool"), Some(Tool::VerticalTypeMask));
+        assert_eq!(Tool::from_name("addAnchorPoint"), Some(Tool::AddAnchorPoint));
+        assert_eq!(Tool::from_name("Delete Anchor Point Tool"), Some(Tool::DeleteAnchorPoint));
+        assert_eq!(Tool::DeleteAnchorPoint.key(), 'P');
+        assert_eq!(Tool::from_name("convertPoint"), Some(Tool::ConvertPoint));
+        assert_eq!(Tool::from_name("Convert Point Tool"), Some(Tool::ConvertPoint));
+        assert_eq!(Tool::ConvertPoint.key(), 'P', "it shares the Pen's key");
+        assert!(!Tool::ConvertPoint.is_brushlike());
+        assert_eq!(Tool::from_name("Remove Tool"), Some(Tool::Remove));
+        assert_eq!(Tool::Remove.key(), 'J');
+        assert!(Tool::Remove.is_brushlike());
+        assert_eq!(Tool::from_name("RotateView"), Some(Tool::RotateView));
+        assert_eq!(Tool::from_name("Rotate View Tool"), Some(Tool::RotateView));
+        assert_eq!(Tool::RotateView.key(), 'R');
+        assert_eq!(Tool::from_name("nope"), None);
+    }
+
+    #[test]
+    fn dialogs_open_and_close() {
+        let mut s = UiState::default();
+        let a = s.open_dialog(DialogKind::About, Default::default());
+        let b = s.open_dialog(DialogKind::NewDocument, UiState::new_document_fields());
+        assert_ne!(a, b);
+        assert_eq!(s.dialog_mut(b).unwrap().fields["width"], 1920);
+        assert!(s.close_dialog(a).is_some());
+        assert_eq!(s.dialogs.len(), 1);
+    }
+
+    #[test]
+    fn ui_state_serializes() {
+        let s = UiState::default();
+        let v = serde_json::to_value(&s).unwrap();
+        assert_eq!(v["tool"], "Brush");
+        let back: UiState = serde_json::from_value(v).unwrap();
+        assert_eq!(back, s);
+    }
+}

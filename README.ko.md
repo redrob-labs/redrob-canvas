@@ -95,7 +95,7 @@ cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked --profile ci
 ```
 
 빌드 어디에도 Qt, CMake, Node는 없습니다. 루트 `Cargo.toml`은 `tools/merge_workspaces.py`가 네 subtree의
-보관된 매니페스트(`crafts/*/Cargo.upstream.toml`)에서 **생성**합니다. 파일이 아니라 스크립트를 고치세요.
+보관된 매니페스트(`editors/*/Cargo.upstream.toml`)에서 **생성**합니다. 파일이 아니라 스크립트를 고치세요.
 
 ## 프로젝트 구조
 
@@ -103,10 +103,10 @@ cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked --profile ci
 apps/redrob-canvas/     셸: 창, 모드 전환, 서비스, 에이전트 패널 (egui / eframe)
 crates/redrob-agent/    Redrob Code 클라이언트: 스트리밍 채팅, 도구 루프, 승인
 crates/redrob-ai/       AI 도구 층 (IOPaint 엔진, 벡터화); 진행 중
-crafts/photocraft/      storytold/photocraft  (subtree)  Photo 모드
-crafts/vectorcraft/     storytold/vectorcraft (subtree)  Vector 모드
-crafts/designcraft/     storytold/designcraft (subtree)  Layout 모드
-crafts/craft-libs/      storytold/craft-libs  (subtree)  공유 UI, 색 관리, 인쇄, PDF 크레이트
+editors/photo/      storytold/photocraft  (subtree)  Photo 모드
+editors/vector/     storytold/vectorcraft (subtree)  Vector 모드
+editors/layout/     storytold/designcraft (subtree)  Layout 모드
+editors/shared/      storytold/craft-libs  (subtree)  공유 UI, 색 관리, 인쇄, PDF 크레이트
 installer/              macOS 디스크 이미지와 Windows 설치 파일
 tools/                  워크스페이스 생성기, 고지 생성기, 디자인 시스템 가드, 릴리스 패키징
 docs/                   아키텍처, 포맷, 라이선스, 고정된 상류 목록
@@ -120,7 +120,7 @@ docs/                   아키텍처, 포맷, 라이선스, 고정된 상류 목
 AI 층입니다. 편집기 내부를 포크하지 않으므로 상류의 개선은 머지로 들어옵니다.
 
 네 편집기는 MIT OR Apache-2.0 이고 원저작자의 저작권 표기를 그대로 지킵니다. 각 편집기의 라이선스 파일과
-NOTICE는 `crafts/<name>/` 아래 그대로 있고 [NOTICE](NOTICE)와 [COPYRIGHT](COPYRIGHT)에 원문대로 실려 있습니다.
+NOTICE는 `editors/<name>/` 아래 그대로 있고 [NOTICE](NOTICE)와 [COPYRIGHT](COPYRIGHT)에 원문대로 실려 있습니다.
 원래 이름과 로고는 원저작자의 상표이며 오픈 소스가 아니고, 여기서는 쓰지도 싣지도 않습니다(각 subtree의 `docs/`는 pull 뒤마다 트리에서 제거됩니다).
 
 ## 로드맵

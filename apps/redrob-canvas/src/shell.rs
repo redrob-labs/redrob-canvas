@@ -12,8 +12,8 @@ use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
 
 use redrob_layout_ui_egui::DesignApp;
-use redrob_photo_ui_egui::PhotocraftApp;
-use redrob_vector_ui_egui::VectorcraftApp;
+use redrob_photo_ui_egui::PhotoApp;
+use redrob_vector_ui_egui::VectorApp;
 use serde_json::{Value, json};
 
 use crate::ai::bridge::{Capabilities, LayoutBridge, ModeBridge, PhotoBridge, VectorBridge};
@@ -216,8 +216,8 @@ pub struct ShellApp {
     extra_fonts: Vec<egui::FontDefinitions>,
     /// [`Self::setup_context`] ran: the fonts hold every editor's families from the first frame.
     context_ready: bool,
-    photo: Option<PhotocraftApp>,
-    vector: Option<VectorcraftApp>,
+    photo: Option<PhotoApp>,
+    vector: Option<VectorApp>,
     layout: Option<DesignApp>,
     /// The window's wgpu state, handed to the Photo editor's GPU canvas when it is created.
     wgpu: Option<eframe::egui_wgpu::RenderState>,
@@ -483,7 +483,7 @@ impl ShellApp {
             .clone();
         redrob_photo_ui_egui::i18n::sync_context(ctx, &language);
         let extra = self.extra_fonts.clone();
-        PhotocraftApp::setup_context_with_fonts(ctx, theme, |fonts| {
+        PhotoApp::setup_context_with_fonts(ctx, theme, |fonts| {
             for defs in &extra {
                 merge_extra_fonts(fonts, defs);
             }
@@ -775,12 +775,12 @@ impl ShellApp {
     }
 
     /// The Vector editor (created on demand): where a trace hand-off lands.
-    pub fn vector_app(&mut self) -> &mut VectorcraftApp {
+    pub fn vector_app(&mut self) -> &mut VectorApp {
         self.ensure_vector()
     }
 
     /// The Photo editor (created on demand): where a rasterising hand-off lands.
-    pub fn photo_app(&mut self) -> &mut PhotocraftApp {
+    pub fn photo_app(&mut self) -> &mut PhotoApp {
         self.ensure_photo()
     }
 
@@ -848,10 +848,10 @@ impl ShellApp {
     }
 
     /// Each editor's own open path, so the file is named, remembered in Open Recent and imported
-    /// exactly as it would be from that editor's File menu: `PhotocraftApp::open_path`
-    /// (crafts/photocraft/crates/ui-egui/src/file_open.rs L103; a background job when the editor
-    /// runs them), `redrob_vector_ui_egui::io::open_path` (crafts/vectorcraft/crates/ui-egui/src/
-    /// io.rs L218) and `DesignApp::open_dropped` (crafts/designcraft/crates/ui-egui/src/lib.rs
+    /// exactly as it would be from that editor's File menu: `PhotoApp::open_path`
+    /// (editors/photo/crates/ui-egui/src/file_open.rs L103; a background job when the editor
+    /// runs them), `redrob_vector_ui_egui::io::open_path` (editors/vector/crates/ui-egui/src/
+    /// io.rs L218) and `DesignApp::open_dropped` (editors/layout/crates/ui-egui/src/lib.rs
     /// L1140: layouts open, text and graphics are placed).
     fn editor_open(&mut self, mode: Mode, path: &Path) -> Result<(), String> {
         let path = path.to_string_lossy().to_string();
@@ -901,8 +901,8 @@ impl ShellApp {
     }
 
     /// The active mode's document name and whether it has unsaved changes, read from the
-    /// editor's session (`DocState::is_dirty`: crafts/photocraft/crates/engine/src/lib.rs L291,
-    /// crafts/vectorcraft/crates/engine/src/lib.rs L419, crafts/designcraft/crates/engine/src/
+    /// editor's session (`DocState::is_dirty`: editors/photo/crates/engine/src/lib.rs L291,
+    /// editors/vector/crates/engine/src/lib.rs L419, editors/layout/crates/engine/src/
     /// lib.rs L155; `DocState::title` vectorcraft L479, designcraft L158).
     pub fn active_document(&self) -> Option<(String, bool)> {
         match self.mode {
@@ -1340,7 +1340,7 @@ impl ShellApp {
         }
     }
 
-    fn ensure_photo(&mut self) -> &mut PhotocraftApp {
+    fn ensure_photo(&mut self) -> &mut PhotoApp {
         if self.photo.is_none() {
             self.created.push(Mode::Photo);
         }
@@ -1349,8 +1349,8 @@ impl ShellApp {
             .get_or_insert_with(|| timed("build Photo", || Self::build_photo(wgpu)))
     }
 
-    fn build_photo(wgpu: Option<eframe::egui_wgpu::RenderState>) -> PhotocraftApp {
-        let mut app = PhotocraftApp::new(
+    fn build_photo(wgpu: Option<eframe::egui_wgpu::RenderState>) -> PhotoApp {
+        let mut app = PhotoApp::new(
             redrob_photo_engine::Session::new(),
             services::photo::services(),
         );
@@ -1373,7 +1373,7 @@ impl ShellApp {
         app
     }
 
-    fn ensure_vector(&mut self) -> &mut VectorcraftApp {
+    fn ensure_vector(&mut self) -> &mut VectorApp {
         if self.vector.is_none() {
             self.created.push(Mode::Vector);
         }
@@ -1395,9 +1395,9 @@ impl ShellApp {
         self.adopted.push(mode);
     }
 
-    fn build_vector() -> VectorcraftApp {
+    fn build_vector() -> VectorApp {
         services::vector::install_fonts();
-        let mut app = VectorcraftApp::new(
+        let mut app = VectorApp::new(
             redrob_vector_engine::Session::new(),
             services::vector::services(),
         );

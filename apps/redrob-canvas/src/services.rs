@@ -1,17 +1,17 @@
 //! Where Redrob Canvas keeps its per-user data, and the platform services each hosted editor
 //! needs, ported (minimally) from the three upstream desktop binaries:
 //!
-//! - `crafts/photocraft/apps/photocraft/src/{app_dirs,services}.rs`
-//! - `crafts/vectorcraft/apps/vectorcraft/src/{main,prefs_dir}.rs`
-//! - `crafts/designcraft/apps/designcraft/src/{main,profile}.rs`
+//! - `editors/photo/apps/photocraft/src/{app_dirs,services}.rs`
+//! - `editors/vector/apps/vectorcraft/src/{main,prefs_dir}.rs`
+//! - `editors/layout/apps/designcraft/src/{main,profile}.rs`
 //!
 //! One config directory for the whole app (see [`config_dir`]); each editor gets a folder of its
 //! own under it (`photo/`, `vector/`, `layout/`) so their `ui.json` / `preferences.json` and
 //! recovery stores never collide.
 //!
 //! TODO(control server): the upstream control / MCP servers
-//! (`crafts/*/apps/*/src/control_server.rs`, `PhotocraftApp::with_control`,
-//! `VectorcraftApp::with_control`, `DesignApp::with_control`) are not started by the shell yet.
+//! (`editors/*/apps/*/src/control_server.rs`, `PhotoApp::with_control`,
+//! `VectorApp::with_control`, `DesignApp::with_control`) are not started by the shell yet.
 
 use std::cell::RefCell;
 use std::ffi::OsString;
@@ -494,7 +494,7 @@ pub mod photo {
 
 pub mod vector {
     use super::*;
-    use redrob_vector_ui_egui::{FilePick, Services, VectorcraftApp};
+    use redrob_vector_ui_egui::{FilePick, Services, VectorApp};
 
     pub fn prefs_path() -> Option<PathBuf> {
         editor_dir(Editor::Vector).map(|d| d.join("ui.json"))
@@ -608,7 +608,7 @@ pub mod vector {
     }
 
     /// User swatch / graphic style / object libraries and Data Recovery next to the preferences.
-    pub fn attach_dirs(app: &mut VectorcraftApp) {
+    pub fn attach_dirs(app: &mut VectorApp) {
         app.session
             .swatch_libraries
             .set_user_dir(sibling("Swatches"));
@@ -628,7 +628,7 @@ pub mod vector {
         }
     }
 
-    pub fn load_prefs(app: &mut VectorcraftApp) {
+    pub fn load_prefs(app: &mut VectorApp) {
         if !prefs_enabled() {
             return;
         }
@@ -640,7 +640,7 @@ pub mod vector {
         redrob_vector_ui_egui::prefs_dialog::restore(app);
     }
 
-    pub fn save_prefs(app: &VectorcraftApp) {
+    pub fn save_prefs(app: &VectorApp) {
         if !prefs_enabled() {
             return;
         }

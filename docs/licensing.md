@@ -22,7 +22,7 @@ Every upstream in `docs/upstream-sources.toml` declares a `kind`:
 The four `code` sources are the four vendored editors from
 [storytold](https://github.com/storytold), each MIT OR Apache-2.0, Copyright (c) 2026 the upstream authors
 and their contributors. Their `LICENSE-MIT`, `LICENSE-APACHE` and `NOTICE` files stay intact under
-`crafts/<name>/`; their NOTICE texts are reproduced verbatim in `NOTICE`; and `COPYRIGHT` names them
+`editors/<name>/`; their NOTICE texts are reproduced verbatim in `NOTICE`; and `COPYRIGHT` names them
 beside us. The pins live in `upstream-base.json` and `docs/upstream-sources.toml`, which the script
 checks against each other and against the subtree squash commits in `git log`. See `UPSTREAM.md`.
 
@@ -33,7 +33,7 @@ are enforced here rather than described:
   `attribution` list says which strings `NOTICE`, `COPYRIGHT`, `LICENSE-MIT` and `LICENSE-APACHE`
   must keep, and the script fails when one goes missing.
 - **Never use anything under a prefix upstream licenses separately.** The upstream name, wordmark and
-  logos under `crafts/*/docs/brand/` are trademarks of the the upstream authors, not open source. They stay
+  logos under `editors/*/docs/brand/` are trademarks of the the upstream authors, not open source. They stay
   in the tree only because the subtree carries them; nothing outside `crafts/` may reference them,
   and the script greps for that. Redrob Canvas's mark comes from the Redrob design system
   (`DESIGN_SYSTEM_PIN.json`).
@@ -56,7 +56,7 @@ Other licensing facts worth knowing:
   SCOWL, hyphenation patterns, Adobe CMaps, the FOGRA39 data, the Foxit standard-14 substitutes) are
   listed with their licences in the upstream NOTICE texts reproduced in `NOTICE`, with per-file
   hashes in each editor's `ATTRIBUTION.md` or `ASSETS.md`.
-- `crafts/craft-libs/vendor/` holds patched copies of `krilla` and `hayro` (MIT OR Apache-2.0) that
+- `editors/shared/vendor/` holds patched copies of `krilla` and `hayro` (MIT OR Apache-2.0) that
   the root `Cargo.toml` patches in by path; their upstream licence files are retained there.
 - The Redrob Code engine is not bundled. The agent speaks to the one shared daemon on the machine
   through `redrob-engine-client`, pinned by tag in `Cargo.toml`.

@@ -71,7 +71,7 @@ jobs:
           fi
           rust=false
           if [ "$heavy" = true ]; then
-            paths=('*.rs' '*.toml' Cargo.lock '*.wgsl' '*.ttf' '*.tsv' '*.ftl' '*.json' 'crafts/*/assets/*' .github/workflows/ci.yml)
+            paths=('*.rs' '*.toml' Cargo.lock '*.wgsl' '*.ttf' '*.tsv' '*.ftl' '*.json' 'editors/*/assets/*' .github/workflows/ci.yml)
             # A diff whose only Rust-input lines are `version = "x.y.z"`, a build profile's
             # `codegen-units` / `lto`, or `# ` comments changes no code clippy sees.
             if git diff --quiet HEAD^1 HEAD -- "${paths[@]}"; then
