@@ -1,0 +1,17 @@
+[package]
+name = "redrob-vector-brush"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Vector brushes: calligraphic, scatter, art, pattern and bristle brush definitions and stroke geometry"
+
+[lints]
+workspace = true
+
+[dependencies]
+redrob-vector-geom = { workspace = true }
+redrob-vector-color = { workspace = true }
+redrob-vector-doc = { workspace = true }
+kurbo = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }

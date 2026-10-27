@@ -4,7 +4,7 @@ Stage 1-A 산출물. 기계용 원본은 `docs/gap/tasks.toml` 이고 이 표는
 판정(verdict)은 Stage 2 가 `works | slow | broken | missing` 중 하나로 채운다.
 `canvas_entry` 는 코드에 그 명령/메뉴 문자열이 있다는 뜻일 뿐, 동작한다는 뜻이 아니다. 없으면 `unknown`.
 
-경로 접두: E = `crafts/photocraft/crates/engine/src`, U = `crafts/photocraft/crates/ui-egui/src`
+경로 접두: E = `editors/photo/crates/engine/src`, U = `editors/photo/crates/ui-egui/src`
 
 ## 영역별 개수
 
@@ -599,7 +599,7 @@ Stage 1-A 산출물. 기계용 원본은 `docs/gap/tasks.toml` 이고 이 표는
   3. SVG 로 다시 저장한다
 - pass: 열린 패스 개수가 원본 <path> 수와 같고, 저장된 SVG 의 해당 앵커 좌표만 20±0.5 변하며 다른 path d 는 원본과 일치한다.
 - Photoshop: (Illustrator) File › Open(.svg) → Direct Selection(A) → File › Save As SVG.
-- canvas_entry: vectorcraft file.open svg / path.reshape (crafts/vectorcraft/crates/engine/src/cmd/fileio/svg.rs, cmd/path.rs; crates/svg)
+- canvas_entry: vector file.open svg / path.reshape (editors/vector/crates/engine/src/cmd/fileio/svg.rs, cmd/path.rs; crates/svg)
 - verdict: `works|slow|broken|missing` (Stage 2)
 
 ### VC-02 — Pathfinder Unite 로 겹친 도형 합치기
@@ -611,7 +611,7 @@ Stage 1-A 산출물. 기계용 원본은 `docs/gap/tasks.toml` 이고 이 표는
   3. 결과 패스의 앵커 수를 확인한다
 - pass: 결과가 단일 패스이고 면적이 두 원본 면적의 합 − 교집합과 1% 이내로 같다.
 - Photoshop: (Illustrator) Window › Pathfinder › Unite.
-- canvas_entry: object.pathfinder.unite (crafts/vectorcraft/crates/engine/src/cmd/pathops.rs; crates/pathops)
+- canvas_entry: object.pathfinder.unite (editors/vector/crates/engine/src/cmd/pathops.rs; crates/pathops)
 - verdict: `works|slow|broken|missing` (Stage 2)
 
 ## layout (1)
@@ -625,7 +625,7 @@ Stage 1-A 산출물. 기계용 원본은 `docs/gap/tasks.toml` 이고 이 표는
   3. File › Export PDF (PDF/X-4)
 - pass: 페이지 크기 297x420mm±0.5mm, 폰트 전부 임베드, PDF/X 식별자 포함, 수정한 글자가 PDF 텍스트 추출에 나타난다.
 - Photoshop: (InDesign) File › Open(.idml) → File › Export › Adobe PDF(Print) PDF/X-4.
-- canvas_entry: designcraft file.open idml / export pdf (crafts/designcraft/crates/idml/src/import.rs, crates/pdf/src/{export,pdfx}.rs, engine/src/cmd/export.rs)
+- canvas_entry: layout file.open idml / export pdf (editors/layout/crates/idml/src/import.rs, crates/pdf/src/{export,pdfx}.rs, engine/src/cmd/export.rs)
 - verdict: `works|slow|broken|missing` (Stage 2)
 
 ## ai (2)

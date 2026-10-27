@@ -1,8 +1,8 @@
 # Architecture
 
 Redrob Canvas is one desktop process: an egui/eframe shell that hosts three complete editors as
-modes, plus two cross-mode layers (the agent and the AI tools) that are Redrob's own. The editors are
-upstream code, vendored whole; the shell owns the window and the seams between them.
+modes, plus two cross-mode layers (the agent and the AI tools). The editors live under `editors/`;
+the shell owns the window and the seams between them.
 
 ```text
  apps/redrob-canvas  (eframe window, ai.redrob.canvas)
@@ -10,23 +10,24 @@ upstream code, vendored whole; the shell owns the window and the seams between t
  | top bar: "Redrob Canvas"  [Photo] [Vector] [Layout]       right slot  |
  +-----------------------------------------------------------------------+
  | active mode's ui()                                                    |
- |   Photo  = redrob_photo_ui_egui::PhotocraftApp   (crafts/photocraft)    |
- |   Vector = redrob_vector_ui_egui::VectorcraftApp (crafts/vectorcraft)   |
- |   Layout = redrob_layout_ui_egui::DesignApp      (crafts/designcraft)   |
+ |   Photo  = redrob_photo_ui_egui::PhotoApp    (editors/photo)          |
+ |   Vector = redrob_vector_ui_egui::VectorApp  (editors/vector)         |
+ |   Layout = redrob_layout_ui_egui::DesignApp  (editors/layout)         |
  +-----------------------------------------------------------------------+
    services: config dir, prefs, persistence       crates/redrob-agent  (Redrob Code daemon)
-   crafts/craft-libs: docking, CMS, print, PDF    crates/redrob-ai     (IOPaint, vectorize)
+   editors/shared: docking, CMS, print, PDF    crates/redrob-ai     (IOPaint, vectorize)
 ```
 
 ## The shell (`apps/redrob-canvas`)
 
-`main.rs` parses `--mode photo|vector|layout` and `--version`, builds the eframe `NativeOptions`
+`main.rs` hands `redrob-canvas photo|vector|layout ARGS` to the command line (`cli/`: convert,
+info, batch runs and an MCP server per editor, headless), otherwise parses `--mode photo|vector|layout` and `--version`, builds the eframe `NativeOptions`
 (1440 x 900, minimum 760 x 480, wgpu renderer, `persistence_path` under the config directory) and
 runs `ShellApp`. `shell.rs` holds the `Mode` enum, the three lazily created editors and the top bar;
 `services.rs` is the one place the config directory is resolved
 (`~/Library/Application Support/Redrob Canvas`, `%APPDATA%\Redrob Canvas`,
 `$XDG_CONFIG_HOME/redrob-canvas`), with each editor given a folder inside it so their own
-preferences and presets live where their upstream code expects.
+preferences and presets live where their code expects.
 
 Each editor is constructed on first switch (`Session::new()` plus the ported `Services`) and kept
 alive, so switching modes preserves open documents. Only the active mode receives input and paints;
@@ -34,23 +35,18 @@ the Photo editor additionally gets `logic()` and `raw_input_hook()` forwarded an
 handed to `set_wgpu`, as its own binary does. The editors draw their own side panels inside the `Ui`
 the shell gives them; the shell does not reach into their document models.
 
-What the shell deliberately does not do yet: run the editors' MCP/control servers (each upstream
-binary has one; a TODO names the path), and open a file into a mode by extension (`docs/formats.md`
+What the shell deliberately does not do yet: run the editors' control servers inside the window
+(the command line's `mcp` runs headless), and open a file into a mode by extension (`docs/formats.md`
 says how that routing will work).
 
-## The editors (`crafts/*`)
+## The editors (`editors/*`)
 
-Four git subtrees, each squash-merged at a pinned upstream commit (`UPSTREAM.md`). Only their
-`crates/*` are workspace members; their `apps/` and web shells are excluded by
-`tools/merge_workspaces.py`, which generates the root `Cargo.toml` from the four parked
-`Cargo.upstream.toml` files: dependencies unioned, craft-libs git dependencies turned into path
-dependencies on the subtree, and the `krilla` / `hayro` patches pointed at
-`crafts/craft-libs/vendor/`. The result is one cargo workspace, one lock file, one
+Three editors and their shared libraries, under `editors/photo`, `editors/vector`, `editors/layout`
+and `editors/shared`. They started as four MIT OR Apache-2.0 projects (`SOURCE_ORIGINS.md`) and are no
+longer synced with them: they are developed here like the rest of the tree. Their `crates/*` are
+workspace members of the one root `Cargo.toml`, with the `krilla` / `hayro` patches pointed at
+`editors/shared/vendor/`. The result is one cargo workspace, one lock file, one
 `THIRD_PARTY_NOTICES.md`.
-
-Nothing in Redrob Canvas edits a file under `crafts/` directly; a change an editor needs goes
-upstream, and arrives back by `git subtree pull`. That is what keeps each pull a three-way merge
-instead of a conflict hunt.
 
 ## The agent (`crates/redrob-agent`)
 

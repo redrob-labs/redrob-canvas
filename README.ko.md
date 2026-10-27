@@ -11,8 +11,8 @@
 가로지르는 AI 도구 층과 문서를 옆에서 함께 편집하는 에이전트가 있습니다.
 
 데스크톱 애플리케이션 하나(`apps/redrob-canvas`, Rust와 egui)에 세 모드가 있고, 각 모드는
-편집기 하나를 통째로 담습니다 (출처와 라이선스: UPSTREAM.md, NOTICE). 네 저장소를
-`crafts/` 아래 git subtree로 가져와 소스에서 빌드합니다.
+편집기 하나를 통째로 담습니다. 편집기는 `editors/` 아래에 있고 소스에서 빌드합니다
+(코드 출처: SOURCE_ORIGINS.md, NOTICE).
 
 | 모드 | 종류 | 용도 |
 | --- | --- | --- |
@@ -22,8 +22,11 @@
 
 셸은 창, 모드 전환(`Ctrl+1` / `Ctrl+2` / `Ctrl+3`, 또는 `--mode photo|vector|layout`), 하나의 설정
 디렉터리(`ai.redrob.canvas`), 그리고 에이전트를 맡습니다. 모드를 바꿔도 각 편집기에 열려 있던 문서는
-그대로 남습니다. 세 편집기가 공유하는 도킹, 색 관리, 인쇄 코드는 네 번째 subtree인
-[craft-libs](https://github.com/storytold/craft-libs)입니다.
+그대로 남습니다. 세 편집기가 공유하는 도킹, 색 관리, 인쇄 코드는
+`editors/shared`에 있습니다.
+
+같은 실행 파일이 명령줄로도 동작합니다. `redrob-canvas photo|vector|layout ARGS`는 창을 열지 않고
+변환, 정보 보기, 명령 묶음 실행, stdio MCP 서버를 합니다(`redrob-canvas photo --help`).
 
 ## AI 도구와 에이전트
 
@@ -66,7 +69,7 @@
 | Vector | `.rvector`, SVG, SVGZ, AI(PDF 호환), EPS, PDF, DXF, EMF/WMF, 래스터 이미지, PSD/PSB(병합 이미지) | `.rvector`, SVG, PDF(PDF/X 포함), AI, EPS, DXF, PNG, JPEG, WebP, PSD, 인쇄, 패키지 |
 | Layout | `.rlayout`, IDML, 배치 자산으로서의 이미지·PDF·벡터 | `.rlayout`, PDF(PDF/X-4, PDF/A-2b), IDML, PPTX, EPUB, PNG |
 
-셸이 파일을 어느 모드로 보내는지, 각 편집기의 포맷 표가 코드 어디에 있는지, 어떤 upstream 확장자
+셸이 파일을 어느 모드로 보내는지, 각 편집기의 포맷 표가 코드 어디에 있는지, 어떤 옛 확장자
 (`.pcraft`, `.vectorcraft`, `.designcraft`)가 여전히 열리는지는 `docs/formats.md`에 있습니다.
 
 ## 빌드
@@ -84,8 +87,6 @@ target/release/redrob-canvas
 크레이트만 `--profile ci`로 도는 `rust` 잡)가 돌리는 순서대로:
 
 ```bash
-scripts/verify-upstream.sh
-python3 scripts/check_upstream_ids.py
 cargo fetch --locked && python3 tools/generate_distribution_artifacts.py --check
 python3 tools/check_design_system.py
 python3 -m unittest discover -s tools/tests -p "test_*.py"
@@ -94,8 +95,8 @@ cargo clippy -p redrob-canvas -p redrob-ai -p redrob-agent --all-targets --locke
 cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked --profile ci
 ```
 
-빌드 어디에도 Qt, CMake, Node는 없습니다. 루트 `Cargo.toml`은 `tools/merge_workspaces.py`가 네 subtree의
-보관된 매니페스트(`crafts/*/Cargo.upstream.toml`)에서 **생성**합니다. 파일이 아니라 스크립트를 고치세요.
+빌드 어디에도 Qt, CMake, Node는 없습니다. 루트 `Cargo.toml`은 셸, 편집기, 공유 라이브러리를
+모두 담는 워크스페이스 매니페스트 하나입니다.
 
 ## 프로젝트 구조
 
@@ -103,25 +104,22 @@ cargo test -p redrob-canvas -p redrob-ai -p redrob-agent --locked --profile ci
 apps/redrob-canvas/     셸: 창, 모드 전환, 서비스, 에이전트 패널 (egui / eframe)
 crates/redrob-agent/    Redrob Code 클라이언트: 스트리밍 채팅, 도구 루프, 승인
 crates/redrob-ai/       AI 도구 층 (IOPaint 엔진, 벡터화); 진행 중
-crafts/photocraft/      storytold/photocraft  (subtree)  Photo 모드
-crafts/vectorcraft/     storytold/vectorcraft (subtree)  Vector 모드
-crafts/designcraft/     storytold/designcraft (subtree)  Layout 모드
-crafts/craft-libs/      storytold/craft-libs  (subtree)  공유 UI, 색 관리, 인쇄, PDF 크레이트
+editors/photo/          Photo 모드
+editors/vector/         Vector 모드
+editors/layout/         Layout 모드
+editors/shared/         공유 UI, 색 관리, 인쇄, PDF 크레이트
 installer/              macOS 디스크 이미지와 Windows 설치 파일
 tools/                  워크스페이스 생성기, 고지 생성기, 디자인 시스템 가드, 릴리스 패키징
-docs/                   아키텍처, 포맷, 라이선스, 고정된 상류 목록
+docs/                   아키텍처, 포맷, 라이선스
 ```
 
-## 상류
+## 편집기의 출처
 
-네 편집기는 git subtree로 가져오고 `git subtree pull --squash`로 갱신합니다. 핀은 `upstream-base.json`과
-`docs/upstream-sources.toml`에, 절차는 [UPSTREAM.md](UPSTREAM.md)에 있고, `scripts/verify-upstream.sh`가
-두 핀 파일을 서로, subtree squash 커밋과, GitHub과 대조합니다. 레드롭 캔버스가 더하는 것은 셸, 에이전트,
-AI 층입니다. 편집기 내부를 포크하지 않으므로 상류의 개선은 머지로 들어옵니다.
-
-네 편집기는 MIT OR Apache-2.0 이고 원저작자의 저작권 표기를 그대로 지킵니다. 각 편집기의 라이선스 파일과
-NOTICE는 `crafts/<name>/` 아래 그대로 있고 [NOTICE](NOTICE)와 [COPYRIGHT](COPYRIGHT)에 원문대로 실려 있습니다.
-원래 이름과 로고는 원저작자의 상표이며 오픈 소스가 아니고, 여기서는 쓰지도 싣지도 않습니다(각 subtree의 `docs/`는 pull 뒤마다 트리에서 제거됩니다).
+편집기는 MIT OR Apache-2.0 프로젝트 네 개에서 출발했고, 지금은 그쪽과 동기화하지 않고 여기서 직접
+개발합니다. 원저작자의 저작권 표기는 그대로 지킵니다. 각 편집기의 라이선스 파일과 NOTICE는
+`editors/<name>/` 아래 그대로 있고 [NOTICE](NOTICE)와 [COPYRIGHT](COPYRIGHT)에 원문대로 실려 있으며,
+출처와 커밋은 [SOURCE_ORIGINS.md](SOURCE_ORIGINS.md)에 있습니다. 원래 이름과 로고는 원저작자의 상표이며
+오픈 소스가 아니고, 여기서는 쓰지도 싣지도 않습니다.
 
 ## 로드맵
 
@@ -161,6 +159,6 @@ Redrob Launcher는 Windows에서 `-portable.zip`을, macOS에서 `.dmg`를, Linu
 ## 라이선스
 
 MIT 또는 Apache-2.0 중 선택: [LICENSE-MIT](LICENSE-MIT), [LICENSE-APACHE](LICENSE-APACHE),
-[COPYRIGHT](COPYRIGHT). 제3자 귀속은 [NOTICE](NOTICE), [UPSTREAM_NOTICES.md](UPSTREAM_NOTICES.md),
+[COPYRIGHT](COPYRIGHT). 제3자 귀속은 [NOTICE](NOTICE), [SOURCE_ORIGINS.md](SOURCE_ORIGINS.md),
 생성되는 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)에, 정책은 [docs/licensing.md](docs/licensing.md)에
 있습니다.

@@ -1,0 +1,621 @@
+//! Headless Layout.
+//!
+//! ```text
+//! redrob-canvas layout run [--in FILE.rlayout|FILE.idml | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--export OUT.png|.jpg|.pdf|.rlayout|.idml|.epub|.pptx] [--pdf-options JSON] [--all-pages DIR]
+//! redrob-canvas layout run [--in FILE.rlayout|FILE.idml | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--pdf-options JSON] [--export OUT.png|.jpg|.pdf|.rlayout|.idml|.epub] [--all-pages DIR]
+//!                                      # --page, --scale and --pdf-options apply to the exports that follow them
+//! redrob-canvas layout commands [FILTER]   # list commands (JSON), optionally only ids/labels/menus containing FILTER
+//! redrob-canvas layout describe ID          # one command: label, menu, shortcut, parameters
+//! redrob-canvas layout script [FILE|-] [--in FILE | --sample] [--connect PORT] [--save OUT] [--export OUT] [--keep-going]
+//!                                      # run a command script (crates/engine/src/script.rs): `$N.path` references
+//! redrob-canvas layout app [--port PORT] COMMAND [JSON]   # run a command in the running app (not available yet: the Redrob Canvas window opens no control port)
+//! redrob-canvas layout app [--port PORT] --method METHOD [JSON]   # any control-channel method (ui.screenshot, ui.render, …)
+//! redrob-canvas layout mcp [--connect PORT] [--sample] [--automation-read-root DIR] [--automation-write-root DIR]
+//!                                      # MCP server over stdio (docs/mcp.md); the roots confine the files it reads and writes
+//! redrob-canvas layout perf [--pages N] [--frames N] [--chars N] [--images N] [--runs N] [--strict]  # budgets on a synthetic stress document
+//! redrob-canvas layout bench FILE [--runs N]  # the same measurements on one document
+//! redrob-canvas layout validate-pdf FILE.pdf    # run the built-in PDF/X-4 conformance checks
+//! redrob-canvas layout links                   # website, releases, GitHub and issues links
+//! redrob-canvas layout --version               # print the version
+//! ```
+#![deny(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::panic,
+    clippy::unimplemented,
+    clippy::todo,
+    clippy::unreachable
+)]
+use std::process::ExitCode;
+
+/// `println!` that ends the program quietly when stdout is closed (`redrob-canvas layout commands |
+/// head`) instead of panicking with "failed printing to stdout: Broken pipe (os error 32)".
+macro_rules! outln {
+    ($($arg:tt)*) => {{
+        use std::io::Write as _;
+        if let Err(e) = writeln!(std::io::stdout(), $($arg)*) {
+            $crate::cli::layout::stdout_failed(e);
+        }
+    }};
+}
+
+mod automation_args;
+mod perf;
+
+use redrob_layout_engine::Session;
+use serde_json::{Value, json};
+
+/// The usage block. Shared by `--help` (stdout, success) and an unknown command (stderr, failure).
+const USAGE: &str = "usage: redrob-canvas layout run [--in FILE | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--pdf-options JSON] [--export OUT] [--all-pages DIR]\n         (--page, --scale and --pdf-options apply to the exports that follow them)\n       redrob-canvas layout commands [FILTER]\n       redrob-canvas layout describe COMMAND\n       redrob-canvas layout script [FILE|-] [--in FILE | --sample] [--connect PORT] [--save OUT] [--export OUT] [--keep-going]\n       redrob-canvas layout app [--port PORT] COMMAND [JSON] | --method METHOD [JSON]\n       redrob-canvas layout mcp [--connect PORT] [--sample] [--automation-read-root DIR] [--automation-write-root DIR]\n         the two roots confine every file the agent's commands read (open, placed images, data sources, libraries) and\n         write (save, export, package) to those folders, links followed. A root left out grants none of its access.\n         They run the in-process server, so they conflict with --connect (a running app is not confined by them).\n       redrob-canvas layout perf [--pages N] [--runs N] [--strict]\n       redrob-canvas layout bench FILE [--runs N]\n       redrob-canvas layout links\n       redrob-canvas layout --version";
+
+/// `script --help`: the script syntax, otherwise only in `describe script.run` and docs/agents.md.
+const SCRIPT_HELP: &str = r#"usage: redrob-canvas layout script [FILE|-] [--in FILE | --sample] [--connect PORT] [--save OUT] [--export OUT] [--keep-going]
+
+Runs a command script from FILE (stdin when FILE is `-` or missing), headless or, with
+--connect PORT, in the running app (not available yet: the Redrob Canvas window opens no control port).
+
+Script text, one step per line:
+  command.id {"param": 1}     also `command.id={json}`, or `command.id` alone
+  {"command": "command.id", "params": {...}}   JSON lines, or a JSON array of them
+  # comment, // comment       skipped, like blank lines
+  UTF-8 with or without a byte order mark; LF or CRLF line endings.
+
+References to earlier results (in string parameters):
+  "$N.path"     the value at `path` in the result of step N. N is the 0-based step index:
+                comments and blank lines are not steps. `$last` is the previous step.
+                Paths go through result fields and array indices: "$1.story", "$3.ids.0".
+  "${N.path}"   inside a longer string, replaced by the value's text: "Frame ${0.id}".
+  Any other string starting with `$` stays as written ("$1-$2", "$5 off").
+  "$$"          a literal `$` anywhere: "$$1" passes `$1` (a GREP group), "$${0.id}" passes `${0.id}`.
+
+Text parameters: "\n" starts a new paragraph, "\u2028" is a forced line break, "\t" a tab.
+Most commands ignore parameters they do not know instead of rejecting them: check names
+with `redrob-canvas layout describe COMMAND`.
+
+Options:
+  --in FILE / --sample   open a document (.rlayout or .idml) or the sample first
+  --save OUT             save as .rlayout after the script succeeds
+  --export OUT           export after the script succeeds (.pdf, .idml, .epub, .png, .jpg); repeatable
+  --keep-going           run every step, recording failures as {"error": ...} results
+
+Prints {"completed": n, "results": [...]}, plus failedIndex / failedCommand / error and a
+non-zero exit when a step fails."#;
+
+/// The links line under the usage block.
+fn usage_footer() -> String {
+    format!(
+        "\nLinks: {}  ·  {}  ·  {}",
+        redrob_layout_engine::links::WEBSITE,
+        redrob_layout_engine::links::GITHUB,
+        redrob_layout_engine::links::ISSUES
+    )
+}
+
+/// stdout went away. A reader that stopped early (a closed pipe) ends the program quietly, as
+/// ripgrep does; any other write error is reported.
+fn stdout_failed(e: std::io::Error) -> ! {
+    if e.kind() == std::io::ErrorKind::BrokenPipe {
+        std::process::exit(0);
+    }
+    eprintln!("redrob-canvas layout: can't write to stdout: {e}");
+    std::process::exit(1);
+}
+
+/// `redrob-canvas layout ARGS`: `args` are the arguments after `layout`.
+pub fn main(args: Vec<String>) -> ExitCode {
+    match args.first().map(String::as_str) {
+        Some("--version" | "-V" | "version") => {
+            outln!("redrob-canvas layout {}", env!("CARGO_PKG_VERSION"));
+            ExitCode::SUCCESS
+        }
+        Some("run") => report(run(&args[1..])),
+        Some("commands") => {
+            let s = Session::new();
+            let filter = args.get(1).map(|f| f.to_lowercase());
+            let list: Vec<Value> = serde_json::to_value(s.commands())
+                .ok()
+                .and_then(|v| v.as_array().cloned())
+                .unwrap_or_default()
+                .into_iter()
+                .filter(|c| {
+                    filter
+                        .as_ref()
+                        .is_none_or(|f| c.to_string().to_lowercase().contains(f.as_str()))
+                })
+                .collect();
+            outln!(
+                "{}",
+                serde_json::to_string_pretty(&list).unwrap_or_default()
+            );
+            ExitCode::SUCCESS
+        }
+        Some("describe") => report(describe(args.get(1).map(String::as_str))),
+        Some("script") => report(script(&args[1..])),
+        Some("app") => report(app(&args[1..])),
+        Some("mcp") => report(mcp(&args[1..])),
+        Some("perf") => report(perf::perf(&args[1..])),
+        Some("bench") => report(perf::bench(&args[1..])),
+        Some("validate-pdf") => report(validate_pdf(args.get(1).map(String::as_str))),
+        Some("links") => {
+            use redrob_layout_engine::links::*;
+            outln!(
+                "Website   {WEBSITE}\nReleases  {APP_PAGE}\nGitHub    {GITHUB}\nIssues    {ISSUES}"
+            );
+            ExitCode::SUCCESS
+        }
+        // Asking for help is not an error: it goes to stdout and succeeds. An unknown command
+        // still prints the same usage to stderr and fails.
+        Some("--help" | "-h" | "help") => {
+            outln!("{USAGE}");
+            outln!("{}", usage_footer());
+            ExitCode::SUCCESS
+        }
+        _ => {
+            eprintln!("{USAGE}");
+            eprintln!("{}", usage_footer());
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn report(r: Result<(), String>) -> ExitCode {
+    match r {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(e) => {
+            eprintln!("redrob-canvas layout: {e}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn validate_pdf(path: Option<&str>) -> Result<(), String> {
+    let path = path.ok_or("usage: redrob-canvas layout validate-pdf FILE.pdf")?;
+    let bytes = std::fs::read(path).map_err(|e| format!("{path}: {e}"))?;
+    let issues = redrob_layout_pdf::check_pdfx4(&bytes);
+    let valid = issues.is_empty();
+    let report = json!({"path": path, "standard": "PDF/X-4", "valid": valid, "issues": issues});
+    outln!(
+        "{}",
+        serde_json::to_string_pretty(&report).map_err(|e| e.to_string())?
+    );
+    if valid {
+        Ok(())
+    } else {
+        Err(format!("{path} failed PDF/X-4 validation"))
+    }
+}
+
+/// `mcp` (headless, in-process engine) or `mcp --connect PORT|HOST:PORT` (drive a running app
+/// serving a control port, which the Redrob Canvas window does not open yet). JSON-RPC on stdin/stdout; logs on stderr.
+fn mcp(args: &[String]) -> Result<(), String> {
+    use redrob_layout_engine::file_access::{self, AutomationRoots};
+    use redrob_layout_mcp::{Backend, Headless, Remote, Server, control_addr};
+    let mut connect: Option<String> = None;
+    let mut sample = false;
+    let mut roots_args = automation_args::AutomationArgs::new(None, None);
+    let mut it = args.iter().cloned();
+    while let Some(a) = it.next() {
+        if roots_args.consume(&a, &mut it)? {
+            continue;
+        }
+        match a.as_str() {
+            "--connect" => connect = Some(it.next().ok_or("--connect needs a port or host:port")?),
+            "--sample" => sample = true,
+            other => {
+                return Err(format!(
+                    "unknown mcp option `{other}` (usage: redrob-canvas layout mcp [--connect PORT] [--sample] [--automation-read-root DIR] [--automation-write-root DIR])"
+                ));
+            }
+        }
+    }
+    let roots = AutomationRoots::new(
+        roots_args.read_root.as_deref(),
+        roots_args.write_root.as_deref(),
+    )?;
+    if roots.is_some() && connect.is_some() {
+        return Err("--automation-read-root and --automation-write-root confine the in-process server; a running app is not confined by them, \
+so drop --connect (or use --connect without the roots)"
+            .into());
+    }
+    let backend: Box<dyn Backend> = match connect {
+        Some(c) => {
+            let addr = control_addr(&c);
+            Box::new(
+                Remote::connect(&addr)
+                    .map_err(|e| format!("cannot connect to the Layout app at {addr}: {e} (connect to a control port, which the Redrob Canvas window does not open yet)"))?,
+            )
+        }
+        None => {
+            let mut h = Headless::with_document();
+            // `--sample` is the operator's own choice, made before the roots come into force.
+            if sample {
+                h.session
+                    .execute("file.newSample", &json!({}))
+                    .map_err(|e| e.to_string())?;
+            }
+            if let Some(roots) = roots {
+                // Every thread of this process, not only the server's: nothing reaches past the roots.
+                file_access::confine_process(roots.clone());
+                let show = |root: Option<&std::path::Path>| {
+                    root.map_or_else(|| "none".to_string(), |r| r.display().to_string())
+                };
+                eprintln!(
+                    "redrob-canvas layout: files confined: read root {}, write root {}",
+                    show(roots.read_root()),
+                    show(roots.write_root())
+                );
+                h = h.with_automation_roots(Some(roots));
+            }
+            Box::new(h)
+        }
+    };
+    eprintln!(
+        "redrob-canvas layout: MCP server on stdio ({})",
+        backend.describe()
+    );
+    let stdin = std::io::stdin();
+    let stdout = std::io::stdout();
+    Server::new(backend)
+        .serve(stdin.lock(), stdout.lock())
+        .map_err(|e| e.to_string())
+}
+
+/// The first `--page`, `--scale` or `--pdf-options` with no `--export` or `--all-pages` after it.
+/// They apply to the exports that follow them, so one after the last export would do nothing.
+fn option_after_last_export(args: &[String]) -> Option<&str> {
+    let mut unused = None;
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        match a.as_str() {
+            "--page" | "--scale" | "--pdf-options" => {
+                unused = unused.or(Some(a.as_str()));
+                it.next();
+            }
+            "--export" | "--all-pages" => {
+                unused = None;
+                it.next();
+            }
+            "--in" | "--cmd" => {
+                it.next();
+            }
+            _ => {}
+        }
+    }
+    unused
+}
+
+fn run(args: &[String]) -> Result<(), String> {
+    if let Some(opt) = option_after_last_export(args) {
+        return Err(format!(
+            "{opt} has no --export or --all-pages after it; options apply to the exports that follow them, so put it before its --export"
+        ));
+    }
+    let mut s = Session::new();
+    let mut page = 0usize;
+    let mut scale = 1.0f64;
+    let mut it = args.iter();
+    let mut opened = false;
+    let mut pdf_opts = json!({});
+    // Earlier --cmd results, for `$N.path` references.
+    let mut results: Vec<Value> = Vec::new();
+    while let Some(a) = it.next() {
+        let mut val = || {
+            it.next()
+                .cloned()
+                .ok_or_else(|| format!("{a} needs a value"))
+        };
+        match a.as_str() {
+            "--in" => {
+                let p = val()?;
+                s.execute("file.open", &json!({"path": p}))
+                    .map_err(|e| e.to_string())?;
+                opened = true;
+            }
+            "--sample" => {
+                s.execute("file.newSample", &json!({}))
+                    .map_err(|e| e.to_string())?;
+                opened = true;
+            }
+            "--cmd" => {
+                if !opened {
+                    s.execute("file.new", &json!({}))
+                        .map_err(|e| e.to_string())?;
+                    opened = true;
+                }
+                let c = val()?;
+                let (id, p) = c.split_once('=').unwrap_or((&c, "{}"));
+                let p: Value = serde_json::from_str(p).map_err(|e| format!("--cmd {id}: {e}"))?;
+                let p = redrob_layout_engine::script::resolve(&p, &results)
+                    .map_err(|e| format!("--cmd {id}: {e}"))?;
+                let r = s.execute(id, &p).map_err(|e| e.to_string())?;
+                results.push(r.clone());
+                if !r.is_null() {
+                    outln!("{}", serde_json::to_string(&r).unwrap_or_default());
+                }
+            }
+            "--page" => page = val()?.parse().map_err(|_| "bad --page")?,
+            "--scale" => scale = val()?.parse().map_err(|_| "bad --scale")?,
+            "--pdf-options" => {
+                pdf_opts = match serde_json::from_str(&val()?)
+                    .map_err(|e| format!("--pdf-options: {e}"))?
+                {
+                    Value::Null => json!({}),
+                    o @ Value::Object(_) => o,
+                    _ => return Err("--pdf-options: expected a JSON object".to_string()),
+                };
+            }
+            "--export" => {
+                let out = val()?;
+                if out.ends_with(".epub") {
+                    let r = s
+                        .execute("file.exportEpub", &json!({"path": out}))
+                        .map_err(|e| e.to_string())?;
+                    eprintln!("wrote {out} ({} bytes)", r["bytes"]);
+                } else if out.ends_with(".pdf") {
+                    let mut p = pdf_opts.clone();
+                    p["path"] = json!(out);
+                    let r = s.execute("file.exportPdf", &p).map_err(|e| e.to_string())?;
+                    eprintln!("wrote {out} ({} pages, {} bytes)", r["pages"], r["bytes"]);
+                    for w in r["warnings"].as_array().into_iter().flatten() {
+                        eprintln!("warning: {}", w.as_str().unwrap_or_default());
+                    }
+                } else {
+                    export(&mut s, &out, page, scale)?;
+                }
+            }
+            "--all-pages" => {
+                let dir = val()?;
+                let n = s.doc().map_err(|e| e.to_string())?.doc.page_count();
+                std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+                for p in 0..n {
+                    export(&mut s, &format!("{dir}/page-{:03}.png", p + 1), p, scale)?;
+                }
+            }
+            other => return Err(format!("unknown option {other}")),
+        }
+    }
+    Ok(())
+}
+
+fn export(s: &mut Session, out: &str, page: usize, scale: f64) -> Result<(), String> {
+    if out.to_ascii_lowercase().ends_with(".pptx") {
+        let r = s
+            .execute("file.exportPptx", &json!({"path": out}))
+            .map_err(|e| e.to_string())?;
+        eprintln!("wrote {out} ({} slides, {} bytes)", r["slides"], r["bytes"]);
+        for w in r["warnings"].as_array().into_iter().flatten() {
+            eprintln!("warning: {}", w.as_str().unwrap_or_default());
+        }
+        return Ok(());
+    }
+    if out.to_ascii_lowercase().ends_with(".idml") {
+        let r = s
+            .execute("file.exportIdml", &json!({"path": out}))
+            .map_err(|e| e.to_string())?;
+        eprintln!("wrote {out} ({} bytes)", r["bytes"]);
+        return Ok(());
+    }
+    if out.ends_with(".rlayout") {
+        s.execute("file.saveAs", &json!({"path": out}))
+            .map_err(|e| e.to_string())?;
+        eprintln!("saved {out}");
+        return Ok(());
+    }
+    let st = s.doc().map_err(|e| e.to_string())?;
+    let mut r = redrob_layout_render::Renderer::new();
+    let t = std::time::Instant::now();
+    let img = r
+        .render_page(
+            &st.doc,
+            &s.cache,
+            page,
+            scale,
+            true,
+            &redrob_layout_render::RenderOptions {
+                printing_only: true,
+                ..Default::default()
+            },
+        )
+        .ok_or("no such page")?;
+    let bytes = if out.ends_with(".jpg") || out.ends_with(".jpeg") {
+        img.to_jpeg(90)
+    } else {
+        img.to_png()
+    };
+    redrob_layout_engine::atomic::write_atomic(std::path::Path::new(out), &bytes)
+        .map_err(|e| format!("{out}: {e}"))?;
+    eprintln!(
+        "wrote {out} ({}×{}, {:.1} ms, {} glyphs)",
+        img.width,
+        img.height,
+        t.elapsed().as_secs_f64() * 1000.0,
+        r.stats.glyphs
+    );
+    Ok(())
+}
+
+/// `describe ID`: one command's documentation.
+fn describe(id: Option<&str>) -> Result<(), String> {
+    let id = id.ok_or("usage: redrob-canvas layout describe COMMAND")?;
+    let s = Session::new();
+    let all = serde_json::to_value(s.commands()).map_err(|e| e.to_string())?;
+    let c = all
+        .as_array()
+        .and_then(|a| a.iter().find(|c| c["id"] == id))
+        .ok_or_else(|| {
+            let near: Vec<String> = all
+                .as_array()
+                .into_iter()
+                .flatten()
+                .filter_map(|c| c["id"].as_str())
+                .filter(|c| c.split('.').next() == id.split('.').next())
+                .map(str::to_string)
+                .collect();
+            format!(
+                "no command `{id}`{}",
+                if near.is_empty() {
+                    String::new()
+                } else {
+                    format!(" (similar: {})", near.join(", "))
+                }
+            )
+        })?;
+    // Enablement depends on a live document and selection: not meaningful here.
+    let mut c = c.clone();
+    if let Some(o) = c.as_object_mut() {
+        o.remove("enabled");
+        o.remove("disabled_reason");
+    }
+    outln!("{}", serde_json::to_string_pretty(&c).unwrap_or_default());
+    Ok(())
+}
+
+/// `script`: run a command script headless (or in the running app with `--connect`).
+fn script(args: &[String]) -> Result<(), String> {
+    use redrob_layout_mcp::{Backend, Headless, Remote, control_addr};
+    let mut file: Option<String> = None;
+    let mut setup: Vec<(String, Value)> = Vec::new();
+    let mut connect: Option<String> = None;
+    let mut save: Option<String> = None;
+    let mut export: Vec<String> = Vec::new();
+    let mut keep_going = false;
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        let mut val = || {
+            it.next()
+                .cloned()
+                .ok_or_else(|| format!("{a} needs a value"))
+        };
+        match a.as_str() {
+            "--in" => {
+                let p = val()?;
+                let cmd = if p.to_lowercase().ends_with(".idml") {
+                    "file.openIdml"
+                } else {
+                    "file.open"
+                };
+                setup.push((cmd.into(), json!({"path": p})));
+            }
+            "--sample" => setup.push(("file.newSample".into(), json!({}))),
+            "--connect" => connect = Some(val()?),
+            "--save" => save = Some(val()?),
+            "--export" => export.push(val()?),
+            "--keep-going" => keep_going = true,
+            "--help" | "-h" => {
+                outln!("{SCRIPT_HELP}");
+                return Ok(());
+            }
+            f if !f.starts_with("--") && file.is_none() => file = Some(f.to_string()),
+            other => return Err(format!("unknown script option `{other}`")),
+        }
+    }
+    let text = match file.as_deref() {
+        None | Some("-") => {
+            let mut t = String::new();
+            std::io::Read::read_to_string(&mut std::io::stdin(), &mut t)
+                .map_err(|e| e.to_string())?;
+            t
+        }
+        Some(f) => std::fs::read_to_string(f).map_err(|e| format!("{f}: {e}"))?,
+    };
+    let steps = redrob_layout_engine::script::parse(&text)?;
+    let mut backend: Box<dyn Backend> = match &connect {
+        Some(c) => {
+            let addr = control_addr(c);
+            Box::new(
+                Remote::connect(&addr)
+                    .map_err(|e| format!("cannot connect to the Layout app at {addr}: {e} (connect to a control port, which the Redrob Canvas window does not open yet)"))?,
+            )
+        }
+        None => Box::new(Headless::with_document()),
+    };
+    let b = &mut *backend;
+    let exec = |b: &mut dyn Backend, id: &str, p: Value| {
+        b.call("engine.execute", json!({"command": id, "params": p}))
+    };
+    for (c, p) in &setup {
+        exec(b, c, p.clone())?;
+    }
+    let report = if keep_going {
+        // Run every step; failures become {"error": …} results.
+        let mut results: Vec<Value> = Vec::new();
+        for st in &steps {
+            let r = redrob_layout_engine::script::resolve(&st.params, &results)
+                .and_then(|p| exec(b, &st.command, p));
+            results.push(r.unwrap_or_else(|e| json!({"error": e, "command": st.command})));
+        }
+        redrob_layout_engine::script::Report {
+            results,
+            failed: None,
+        }
+    } else {
+        redrob_layout_engine::script::run(&steps, |id, p| exec(b, id, p))
+    };
+    if report.failed.is_none() {
+        if let Some(out) = &save {
+            exec(b, "file.saveAs", json!({"path": out}))?;
+        }
+        for out in &export {
+            let lower = out.to_lowercase();
+            let p = json!({"path": out});
+            if lower.ends_with(".pdf") {
+                exec(b, "file.exportPdf", p)?;
+            } else if lower.ends_with(".idml") {
+                exec(b, "file.exportIdml", p)?;
+            } else if lower.ends_with(".epub") {
+                exec(b, "file.exportEpub", p)?;
+            } else if lower.ends_with(".pptx") {
+                exec(b, "file.exportPptx", p)?;
+            } else {
+                // PNG / JPEG of the first page.
+                b.call("app.export", p)?;
+            }
+        }
+    }
+    outln!(
+        "{}",
+        serde_json::to_string_pretty(&report.to_json()).unwrap_or_default()
+    );
+    match report.failed {
+        Some((i, c, e)) => Err(format!("step {i} ({c}) failed: {e}")),
+        None => Ok(()),
+    }
+}
+
+/// `app`: one command or control-channel method in the running app.
+fn app(args: &[String]) -> Result<(), String> {
+    use redrob_layout_mcp::{Backend, Remote, control_addr};
+    let mut port = "7979".to_string();
+    let mut method: Option<String> = None;
+    let mut rest: Vec<String> = Vec::new();
+    let mut it = args.iter();
+    while let Some(a) = it.next() {
+        match a.as_str() {
+            "--port" | "--connect" => port = it.next().cloned().ok_or("--port needs a value")?,
+            "--method" => method = Some(it.next().cloned().ok_or("--method needs a value")?),
+            _ => rest.push(a.clone()),
+        }
+    }
+    let addr = control_addr(&port);
+    let mut r = Remote::connect(&addr)
+        .map_err(|e| format!("cannot connect to the Layout app at {addr}: {e} (connect to a control port, which the Redrob Canvas window does not open yet)"))?;
+    let json_arg = |s: Option<&String>| -> Result<Value, String> {
+        s.map_or(Ok(json!({})), |t| {
+            serde_json::from_str(t).map_err(|e| format!("bad JSON: {e}"))
+        })
+    };
+    let out = match method {
+        Some(m) => r.call(&m, json_arg(rest.first())?)?,
+        None => {
+            let cmd = rest
+                .first()
+                .ok_or("usage: redrob-canvas layout app [--port PORT] COMMAND [JSON]")?;
+            r.call(
+                "engine.execute",
+                json!({"command": cmd, "params": json_arg(rest.get(1))?}),
+            )?
+        }
+    };
+    outln!("{}", serde_json::to_string_pretty(&out).unwrap_or_default());
+    Ok(())
+}

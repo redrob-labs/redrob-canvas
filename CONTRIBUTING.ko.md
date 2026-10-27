@@ -10,21 +10,14 @@
 
 ## 이것은 무엇이고, 무엇이 아닌가
 
-레드롭 캔버스는 **세 상류 편집기를 감싸는 셸이고, 그 어느 것의 포크도 아닙니다.** the Photo editor, the Vector editor,
-the Layout editor(그리고 공유 craft-libs)는 `crafts/` 아래 git subtree로 통째로 들어와 Photo, Vector, Layout
-모드로 돕니다. 레드롭의 코드는 셸(`apps/redrob-canvas`), 에이전트(`crates/redrob-agent`), AI 도구
-층(`crates/redrob-ai`)입니다.
+레드롭 캔버스는 세 편집기를 모드로 담은 앱 하나입니다. Photo, Vector, Layout 편집기는 `editors/` 아래에,
+편집기들이 함께 쓰는 코드는 `editors/shared`에 있습니다. 그 둘레에 셸(`apps/redrob-canvas`, 이것이
+`redrob-canvas photo|vector|layout` 명령줄이기도 합니다), 에이전트(`crates/redrob-agent`), AI 도구
+층(`crates/redrob-ai`)이 있습니다.
 
-책임의 경계를 분명히 해 두어야 합니다.
-
-- **편집기의 동작은 그 상류의 것입니다.** PSD가 잘못 열리면 the Photo editor의 버그이니
-  [storytold/photocraft](https://github.com/storytold/photocraft)에서 고치고, 그 수정은
-  `scripts/fetch-upstream.sh`로 여기에 돌아옵니다. `crafts/` 아래 파일을 직접 고치지 마세요. 다음 pull에서
-  충돌이 되고, 다음 squash에서 사라집니다.
-- **셸, 에이전트, AI 층, 설치 프로그램, 그리고 이 저장소의 절차는 우리 것**이며, 그곳의 풀 리퀘스트는
-  상류에 아무것도 빚지지 않습니다.
-
-그러므로 편집기 동작을 바꾸는 풀 리퀘스트는 두 가지입니다: 상류의 변경, 그리고 여기의 핀 올리기.
+편집기는 MIT OR Apache-2.0 프로젝트 네 개에서 출발했고, 지금은 그쪽과 동기화하지 않습니다. 우리 코드이니
+편집기 버그도 여기 그 폴더에서 다른 변경처럼 고칩니다. 출처 프로젝트의 저작권 줄과 NOTICE 파일은 그대로
+둡니다(`SOURCE_ORIGINS.md`).
 
 ## 브랜치 모델
 
@@ -38,9 +31,7 @@ the Layout editor(그리고 공유 craft-libs)는 `crafts/` 아래 git subtree�
   `feat/ai-panel`. 타입 목록은 조직 공통의 한 목록이며 공유 `gitflow.yml`이 검사합니다:
   `feat fix chore docs test refactor perf ci build sync hotfix release`. 브랜치 이름은 변경이
   무엇인지를 말하고 무엇이 만들었는지는 말하지 않으므로, 도구나 에이전트 접두사는 실패합니다.
-- 작업 브랜치의 **머지는 squash만** 쓰고 머지 시 브랜치를 지웁니다. **상류 동기화
-  (`sync/upstream-<name>-<sha7>`)와 `main` 승격은 merge commit**입니다. 동기화를 squash하면 subtree의
-  merge base가 사라져 다음 pull이 이미 가져온 작업을 다시 재생합니다.
+- 작업 브랜치의 **머지는 squash만** 쓰고 머지 시 브랜치를 지웁니다. **`main` 승격은 merge commit**입니다.
 
 두 브랜치는 GitHub 룰셋이 보호합니다: 직접 푸시 금지, force push 금지, 필수 체크, 리뷰 스레드 해결.
 릴리스 워크플로는 `origin/main`에서 도달할 수 없는 커밋의 태그를 빌드하지 않으므로, `develop`에서 바로
@@ -51,7 +42,7 @@ the Layout editor(그리고 공유 craft-libs)는 `crafts/` 아래 git subtree�
 ```bash
 git switch develop && git pull
 git switch -c release/v0.7.0
-# tools/merge_workspaces.py에서 버전을 올리고(Cargo.toml을 씀) 실행, CHANGELOG.md 갱신
+# 루트 Cargo.toml의 [workspace.package] version을 올리고 CHANGELOG.md 갱신
 # main으로 풀 리퀘스트를 열어 merge commit으로 머지한 뒤 main에 태그:
 git switch main && git pull
 git tag -a v0.7.0 -m "Redrob Canvas v0.7.0"
@@ -72,7 +63,6 @@ export PATH="$HOME/.cargo/bin:$PATH"        # rust-toolchain.toml이 1.95.0을 �
 git switch develop && git pull
 git switch -c feat/short-description
 
-scripts/verify-upstream.sh
 cargo fmt --all
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --locked
@@ -82,7 +72,6 @@ python3 -m unittest discover -s tools/tests -p "test_*.py"
 # develop으로 풀 리퀘스트
 ```
 
-루트 `Cargo.toml`은 `tools/merge_workspaces.py`가 생성합니다. 스크립트를 고치고 실행해 둘을 함께 커밋하세요.
 `Cargo.lock`이 움직였으면 `cargo fetch --locked` 뒤 `python3 tools/generate_distribution_artifacts.py --generate`를
 돌려 `THIRD_PARTY_NOTICES.md`를 커밋합니다.
 

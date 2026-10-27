@@ -1,16 +1,20 @@
 # The one pull-request workflow. `changes` decides what the pull request needs: nothing heavy for a
 # docs-only or version-only diff, and no Rust job when no Rust input changed. `checks` runs the
-# repository scripts: the upstream pins, the upstream-identifier guard, the generated third-party
-# notices, the design-system guard and the tools' own tests. `rust` runs formatting and clippy of
-# OUR crates (the shell `redrob-canvas`, `redrob-ai`, `redrob-agent`) with `--profile ci` (root
-# Cargo.toml: every dependency at opt-level 0, no incremental); clippy --all-targets type-checks the
-# test code too. The tests themselves (~5 min) run only on a manual workflow_dispatch. `rust` is
+# repository scripts: the generated third-party notices and the design-system guard. On a pull request `rust` compiles OUR crates once (the shell
+# `redrob-canvas`, `redrob-ai`, `redrob-agent`): clippy without test code, `--profile ci` (root
+# Cargo.toml: every dependency at opt-level 0, no incremental). Formatting, clippy --all-targets,
+# the tests and the tools' own tests run only on a manual workflow_dispatch. `rust` is
 # skipped when the pull request targets main (that code already passed here on its way into
 # develop). A skipped job satisfies its required check. PR policy is the org-wide workflow.
 name: CI
 
 on:
   pull_request:
+  # A merge into develop compiles once more, only to save the build cache: a pull request can read
+  # develop's cache but not another pull request's, so without this every PR compiled from scratch.
+  push:
+    branches: [develop]
+    paths-ignore: ["**.md", "docs/**", "LICENSE*"]
   workflow_dispatch:
 
 permissions:
@@ -24,8 +28,8 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
   RUST_BACKTRACE: 1
-  # Our crates and the shell. Not `--workspace`: that would lint and test the four editor subtrees
-  # too, and linking their ~75 test binaries exhausted the hosted runner's disk (ld died with SIGBUS).
+  # Our crates and the shell. Not `--workspace`: that would lint and test the editors under
+  # editors/ too, and linking their ~75 test binaries exhausted the hosted runner's disk (ld died with SIGBUS).
   OUR_CRATES: -p redrob-canvas -p redrob-ai -p redrob-agent
 
 jobs:
@@ -66,7 +70,7 @@ jobs:
           fi
           rust=false
           if [ "$heavy" = true ]; then
-            paths=('*.rs' '*.toml' Cargo.lock '*.wgsl' '*.ttf' '*.tsv' '*.ftl' '*.json' 'crafts/*/assets/*' .github/workflows/ci.yml)
+            paths=('*.rs' '*.toml' Cargo.lock '*.wgsl' '*.ttf' '*.tsv' '*.ftl' '*.json' 'editors/*/assets/*' .github/workflows/ci.yml)
             # A diff whose only Rust-input lines are `version = "x.y.z"`, a build profile's
             # `codegen-units` / `lto`, or `# ` comments changes no code clippy sees.
             if git diff --quiet HEAD^1 HEAD -- "${paths[@]}"; then
@@ -80,20 +84,15 @@ jobs:
           echo "rust=$rust" >> "$GITHUB_OUTPUT"
 
   checks:
+    # The name is the required check's; it outlived the upstream pin step it was named for.
     name: pins, upstream ids, notices, design system
     needs: changes
     # `!= 'false'`: an empty output (the detector failed) runs the job instead of skipping it.
-    if: always() && needs.changes.outputs.heavy != 'false'
+    if: always() && github.event_name != 'push' && needs.changes.outputs.heavy != 'false'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.3.1
-        with:
-          fetch-depth: 0 # verify-upstream.sh reads each subtree's squash commit out of git log
-      - name: Upstream pins and identifiers
-        run: |
-          ./scripts/verify-upstream.sh
-          python3 scripts/check_upstream_ids.py
       - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
         with:
           toolchain: "1.95.0"
@@ -105,7 +104,8 @@ jobs:
           python3 tools/generate_distribution_artifacts.py --check
       - name: Design system tokens, mark and brand assets are current
         run: python3 tools/check_design_system.py
-      - name: Tool tests
+      - name: Tool tests (by hand)
+        if: github.event_name != 'pull_request'
         run: python3 -m unittest discover -s tools/tests -p "test_*.py"
 
   rust:
@@ -131,16 +131,19 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           key: ci-profile
-      - name: Formatting
-        run: cargo fmt --all -- --check
-      - name: Clippy
+      # Pull requests compile once (the release build compiles again, on every target). Formatting,
+      # test-code lint and the tests run by hand (Actions -> CI -> Run workflow) before a release.
+      - name: Compile (pull request, and the develop cache warm-up)
+        if: github.event_name != 'workflow_dispatch'
         run: |
           # shellcheck disable=SC2086 # OUR_CRATES is a list of flags on purpose
-          cargo clippy $OUR_CRATES --all-targets --locked --profile ci -- -D warnings
-      # ~5 min; pull requests get clippy --all-targets (test code type-checked), the suite runs
-      # when CI is started by hand (Actions -> CI -> Run workflow).
-      - name: Tests (manual run only)
+          cargo clippy $OUR_CRATES --locked --profile ci -- -D warnings
+      - name: Formatting (by hand)
+        if: github.event_name == 'workflow_dispatch'
+        run: cargo fmt --all -- --check
+      - name: Clippy and tests (by hand)
         if: github.event_name == 'workflow_dispatch'
         run: |
           # shellcheck disable=SC2086
+          cargo clippy $OUR_CRATES --all-targets --locked --profile ci -- -D warnings
           cargo test $OUR_CRATES --locked --profile ci

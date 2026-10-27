@@ -1,0 +1,14 @@
+[package]
+name = "redrob-layout-epub"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Layout EPUB 3 (reflowable) export: stories in reading order, CSS from styles, images"
+
+[lints]
+workspace = true
+
+[dependencies]
+redrob-layout-doc = { workspace = true }
+redrob-layout-color = { workspace = true }
+zip = { workspace = true }

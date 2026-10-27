@@ -28,12 +28,11 @@ Expect an acknowledgement within five business days.
 
 ## Scope
 
-In scope: the Rust crates under `crates/`, the egui shell under `apps/redrob-canvas`,
+In scope: the Rust crates under `crates/`, the egui shell and command line under `apps/redrob-canvas`,
 the local AI engine bridge in `crates/redrob-ai`, and the build and distribution
 tooling under `scripts/` and `tools/`.
 
-Out of scope: vulnerabilities in the vendored upstream editors under `crafts/`
-(the Photo editor, the Vector editor, the Layout editor, craft-libs) and in IOPaint -- report those
-to their maintainers. If an upstream vulnerability is reachable *through* this
-project's integration or build configuration, that is in scope and we want to
-hear about it.
+The editors under `editors/` (Photo, Vector, Layout and their shared crates) are
+in scope too: they are developed here. Out of scope: vulnerabilities in IOPaint --
+report those to its maintainers. If one is reachable *through* this project's
+integration or build configuration, that is in scope and we want to hear about it.

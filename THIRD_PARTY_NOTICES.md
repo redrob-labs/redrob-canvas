@@ -3,9 +3,9 @@
 
 This file was generated without network access from the exact `Cargo.lock` resolution, Cargo metadata read with `--locked --offline`, and the licence and notice files inside each resolved package's own source as Cargo unpacked it. It inventories every workspace, registry and git package the build resolves; the corpus below reproduces each distinct licence or notice text once, keyed by the SHA-256 of the original bytes.
 
-Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). The four vendored editors under `crafts/` and their own NOTICE texts are recorded in `NOTICE` and `UPSTREAM_NOTICES.md`; the workspace crates they contribute appear in the inventory below as `workspace source`.
+Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). The editors under `editors/` came from four MIT OR Apache-2.0 projects; their NOTICE texts are recorded in `NOTICE` and `SOURCE_ORIGINS.md`; the workspace crates they contribute appear in the inventory below as `workspace source`.
 
-- Cargo.lock SHA-256: `3efa32716227c542f5089f74c7f824dcfdd8d1e18688c18817609d157e5bcff2`
+- Cargo.lock SHA-256: `1d42eb57784a0ff35526bb5454ee782c768b9bc761f30f9ab448d4ad208ef3ad`
 - Resolved packages: **922**
 - Unique reproduced license/notice texts: **545**
 - Generation mode: `cargo metadata --locked --offline`; no network content was used.
@@ -530,85 +530,85 @@ Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COP
 | `redox_syscall` | `0.5.18` | registry+https://github.com/rust-lang/crates.io-index | `ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d` | `MIT` | `LICENSE@efcfee7981ff7243` |
 | `redox_syscall` | `0.9.4` | registry+https://github.com/rust-lang/crates.io-index | `737970939a87c6fa31e7acad13307bccbb017a073b695b6089a2c484f929e20e` | `MIT` | `LICENSE@efcfee7981ff7243` |
 | `redox_users` | `0.5.3` | registry+https://github.com/rust-lang/crates.io-index | `60dc65c0ff1a7ae1294b0c67b9f14baf70b644404010370171787bfac1038fc0` | `MIT` | `LICENSE@e6a8ae2d79608378` |
-| `redrob-agent` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-ai` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-agent` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-ai` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
 | `redrob-app-bridge` | `0.1.0` | git+https://github.com/redrob-labs/redrob-code?tag=v0.7.0#31a7dd330c33961f506a7346ad1fe9943691a6f5 | `git:31a7dd330c33961f506a7346ad1fe9943691a6f5` | `MIT` | `README.md@9280297c7cdba747` |
-| `redrob-canvas` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-craft-atomic` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@fb67c10761d3ffb3` |
-| `redrob-craft-cms` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@c7d57e9f7841bec6` |
-| `redrob-craft-pdf` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f53fe018b7f736a7` |
-| `redrob-craft-print` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f39ce60244ba2e06` |
-| `redrob-craft-quit` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-craft-settings` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f23849cce108c0d8` |
-| `redrob-craft-ui` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@3be7273263326119` |
+| `redrob-canvas` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-canvas-atomic` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@4825eb3bb7942a7f` |
+| `redrob-canvas-cms` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@370e56a9efc19195` |
+| `redrob-canvas-pdf` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@124abe8deb864ffb` |
+| `redrob-canvas-print` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f2d0b729cf0d0709` |
+| `redrob-canvas-quit` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-canvas-settings` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@f0c4b12907575732` |
+| `redrob-canvas-ui` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@ee869cc73ffdd624` |
 | `redrob-engine-client` | `0.1.0` | git+https://github.com/redrob-labs/redrob-code?tag=v0.6.4#bcb8af0dc6f3b97c95208259da4c6a993e4935d9 | `git:bcb8af0dc6f3b97c95208259da4c6a993e4935d9` | `MIT` | (none shipped) |
 | `redrob-engine-client` | `0.1.0` | git+https://github.com/redrob-labs/redrob-code?tag=v0.7.0#31a7dd330c33961f506a7346ad1fe9943691a6f5 | `git:31a7dd330c33961f506a7346ad1fe9943691a6f5` | `MIT` | (none shipped) |
-| `redrob-layout-color` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-compose` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-doc` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-engine` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-epub` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-fonts` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-format` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-geom` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-idml` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-images` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-mcp` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-pdf` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-pptx` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-render` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-textimport` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-tools` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-layout-ui-egui` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-affinity` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@62589fc118626005` |
-| `redrob-photo-algo` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-automation` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-cms` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@451de5fd712baafa` |
-| `redrob-photo-codecs` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@5ccb43e3c0a9dcdd` |
-| `redrob-photo-color` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-compose` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-doc` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-engine` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-format` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-geom` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-gpu` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-heif` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@27523bf034ac593e` |
-| `redrob-photo-io` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-ops` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-paint` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-plugins` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-psd` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@9cfd886fb5f2ce20` |
-| `redrob-photo-raster` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-raw` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@c132a1c34a60f72a` |
-| `redrob-photo-tablet` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-testkit` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-text` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-ui-egui` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-photo-vector` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-affinity` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@27134d28cc9b5938` |
-| `redrob-vector-brush` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-cad` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-color` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-doc` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-effects` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-engine` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-eps` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-format` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-geom` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-mcp` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-metafile` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-pathops` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@66a9483fc1edeb17` |
-| `redrob-vector-pdf` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-plugins` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-render` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-scriptcheck` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-svg` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-testkit` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-text` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-three-d` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-tools` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-trace` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
-| `redrob-vector-ui-egui` | `0.13.2` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-color` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-compose` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-doc` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-engine` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-epub` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-fonts` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-format` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-geom` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-idml` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-images` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-mcp` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-pdf` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-pptx` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-render` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-textimport` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-tools` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-layout-ui-egui` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-affinity` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@3cdd59e1020b0fdc` |
+| `redrob-photo-algo` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-automation` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-cms` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@5edc68110dad2f92` |
+| `redrob-photo-codecs` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@7c64c5992a997da0` |
+| `redrob-photo-color` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-compose` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-doc` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-engine` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-format` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-geom` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-gpu` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-heif` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@551e32be887c7124` |
+| `redrob-photo-io` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-ops` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-paint` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-plugins` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-psd` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@2a0b602391f7a6fb` |
+| `redrob-photo-raster` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-raw` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@c132a1c34a60f72a` |
+| `redrob-photo-tablet` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-testkit` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-text` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-ui-egui` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-photo-vector` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-affinity` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@1fefc3eafedff302` |
+| `redrob-vector-brush` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-cad` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-color` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-doc` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-effects` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-engine` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-eps` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-format` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-geom` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-mcp` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-metafile` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-pathops` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@d1e402f98b4aab4d` |
+| `redrob-vector-pdf` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-plugins` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-render` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-scriptcheck` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-svg` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-testkit` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-text` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-three-d` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-tools` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-trace` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-vector-ui-egui` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
 | `ref-cast` | `1.0.27` | registry+https://github.com/rust-lang/crates.io-index | `7e440fb4e4b4147295338efb76001ab9e4efc0e5839df2c47fc5ac2381d365c3` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `ref-cast-impl` | `1.0.27` | registry+https://github.com/rust-lang/crates.io-index | `92ecd8964f8453721699a1ed72037b0db49ce2f5a5138486ee89bed6f67cdf3a` | `MIT OR Apache-2.0` | `LICENSE-APACHE@62c7a1e35f564068`<br>`LICENSE-MIT@23f18e03dc49df91` |
 | `regex` | `1.13.1` | registry+https://github.com/rust-lang/crates.io-index | `f020237b6c8eed93db2e2cb53c00c60a8e1bc73da7d073199a1180401450218d` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@6485b8ed310d3f03` |
@@ -3980,6 +3980,234 @@ DEALINGS IN THE SOFTWARE.
 
 ````
 
+### `124abe8deb864ffb2b2331b99f56387a5fc5228083cdd60691fe5ac7a9e6c84b`
+
+Used by:
+- redrob-canvas-pdf 0.14.0 - README.md
+
+Original byte length: `14331`; trailing newline: `yes`.
+
+````text
+# redrob-canvas-pdf
+
+Shared PDF infrastructure with independent optional features. Applications own document
+models, editing, layout, font policy, worker scheduling, output presets and printing.
+No feature is enabled by default.
+
+| Feature | Provides |
+| --- | --- |
+| `read` | Bounded opening and the patched Hayro syntax types |
+| `interpret` | `read` plus an app-owned Device interpreter, fonts and CMaps |
+| `raster` | `interpret` plus premultiplied RGBA8 rendering |
+| `write` | Guarded Krilla authoring; no shared reader dependency |
+| `write-pdf` | `write` plus Krilla's embedded-PDF support |
+| `write-simple-text` | `write` plus Krilla's optional text shaper and `draw_text` |
+
+## Reading and rendering
+
+`open` accepts shared bytes without copying. `open_slice` reserves storage fallibly before
+copying. Both preserve typed password errors. Their `_with_options` variants accept
+`OpenOptions`: a caller-owned input limit and immutable per-document `syntax::DecodeLimits`.
+The default input limit is 512 MiB; callers can preserve their own accepted-file policy.
+Ordinary Flate/LZW/RunLength expansion defaults to 256 MiB per stream and can be lowered,
+including during initial xref reads, object streams, repair and fallback. Known-size image
+pixels and streaming page content have separate backend budgets. These controls do not bound
+total parser memory or execution time.
+
+For a bare Flate page, `Page::page_stream` materializes content under the ordinary limit,
+while `Page::content_reader` decodes incrementally under the separate streaming budget.
+Interpretation and rasterization use that incremental path. Lowering the ordinary limit
+(even to zero) therefore does not limit streamed Flate page content or cause a truncation
+warning by itself. Whole-stream fallback decoders still use the ordinary limit.
+
+`interpret_page` guards an app-owned Device. `raster::render` and `render_into` accept explicit
+background, scale, viewport, offset and optional solid-colour replacement. Output is
+premultiplied RGBA8. Geometry is cropped, rotated and scaled for UserUnit by the backend.
+Dimensions without an explicit viewport floor to at least one pixel per side; callers can
+request rounded-up sizes for partial edge pixels. Output is limited to 8192 pixels per side
+and 64,000,000 pixels total. Invalid geometry and buffer lengths fail before drawing.
+
+`InterpreterSettings` preserves caller font resolution, annotation policy, OCG object
+identities, cancellation, preview quality and warning callbacks. Preview caches remain
+separate from final-quality image entries. Reading-colour presets and print bypass policy
+belong to the app; the shared layer only maps the requested colours.
+
+Diagnostics report known image failures and incomplete page or nested painting content,
+including omitted streams, failed decoding and exhausted content budgets. They are not a fidelity certificate: the
+backend may approximate unsupported content, does not currently emit `UnsupportedFont`,
+and cached objects need not repeat previous warnings. Structural xref repair and objects
+omitted by a decode limit have no separate warning; a successful open does not certify
+that all objects survived. Some tolerant whole-stream decoders can return an incomplete
+prefix without a failure status. Use fresh caches for checks, while retaining these limitations.
+Native unwinding panics become errors; discard partial devices, buffers, parsers and caches
+after backend failure. WASM aborts and process-wide allocation failure cannot be caught.
+Cancellation is polled between operators, so a decoder may finish before noticing it.
+
+## Backend provenance and consumer pins
+
+The shared reader vendors the current patched Hayro trees from PdfCraft revision
+`7437bde378f43856eada40af25b983812e615e8a`. See
+[`vendor/README.craft-reader.md`](../../vendor/README.craft-reader.md) for the transfer and
+local patches. Lopdf, COS editing, inspection fallback and application caches remain app-owned.
+
+The patched 0.7 reader also carries focused compatibility changes from Hayro 0.8:
+whole-dictionary resource scopes, a 64-level direct-container limit, whole-run text
+fill/stroke order and byte transfer-function sampling. It retains the existing Lab
+Bradford and floating-color behavior, Type 3 handling, decoding limits and streaming
+completion diagnostics. Iterative page-tree traversal preserves deep valid trees and
+valid siblings around cycles, with a 100,000-entry work budget that fails closed rather
+than exposing a partial page list. These changes do not imply full equivalence to the 0.8 backend;
+the vendor notes record the boundaries. Existing consumers remain on their immutable
+revision until they explicitly adopt a new one.
+
+Consumers pin `redrob-canvas-pdf` and their required root `[patch.crates-io]` entries to the same full
+`https://github.com/storytold/craft-libs` revision. Cargo ignores dependency-local patches.
+Reader consumers patch `hayro-syntax`, `hayro-interpret` and `hayro-jbig2`; raster consumers
+also patch `hayro`. Writer consumers patch `krilla`. A plain `write` consumer does not need
+reader patches. Keep unrelated redrob-canvas-ui/redrob-canvas-print versions unchanged when adopting PDF.
+A pinned commit must be available remotely before a fresh public checkout can resolve it.
+
+Synthetic native and WASM contracts cover opening, caller limits, alpha, geometry, settings,
+preview/final caching, diagnostics, cancellation and native panic recovery. Vendored syntax
+unit tests additionally cover decoder limits and incomplete streams. App-owned regression
+suites retain higher-level fidelity, editing, text and worker contracts. Real-file corpora
+stay outside this repository; dependency assets and licences are in the root attribution.
+
+## Reader verification
+
+The Shared PDF workflow runs native and WebAssembly facade contracts, an independent
+`read-only-contract` consumer, and the transferred backend tests. The independent consumer
+keeps interpreter-bearing dev-dependencies out of the shipping `read` feature graph.
+Run `bash scripts/test-pdf-backends.sh` from the repository root to test all four vendored
+backends, the syntax doctest and the syntax-only configuration. The script uses temporary
+source copies and the complete local patch set, preserving the vendored lockfiles.
+Run `cargo test --manifest-path crates/pdf/read-only-contract/Cargo.toml --locked` for the
+read-only consumer, then repeat with `--target wasm32-unknown-unknown` and the test runner.
+These backend checks supplement the root workspace gates; excluded vendor crates are not
+covered by `cargo test --workspace` alone.
+
+## Writing
+
+Plain `write` retains Krilla raster images without its optional text shaper. Applications
+that supply shaped glyphs do not need that shaper. Adapters that call `draw_text`, such as
+DeckCraft, also need `write-simple-text` when adopting this revision. `write-pdf` adds
+embedded-PDF support independently of text shaping.
+
+The writer pins Krilla 0.8.2, with a local unwind-cleanup patch documented in
+[`vendor/krilla/README.craft.md`](../../vendor/krilla/README.craft.md). Successful
+serialization uses the same backend version as before extraction. It provides:
+
+- `write::configuration`: version and archival validation configuration with typed failures.
+- `write::Metadata` and `write::Writer`: common metadata setup and consuming serialization;
+  compression, colour profiles and other serialization settings pass through unchanged.
+  `Writer::new_with_language` also accepts an optional document language for the catalog
+  and XMP metadata; empty language is treated as absent, while callers retain
+  selection and validation policy for nonempty tags.
+- `write::font`: fallible font copying/preparation for subset embedding, with a 512 MiB limit
+  per font, at most 256 variation coordinates, and rejection of non-finite coordinates.
+- `write::guard`: a native unwind guard for the whole app export, including drawing and
+  postprocessing. App errors pass through; serialization errors retain backend diagnostics.
+  Caught panic messages retain up to 1024 Unicode scalar values; the installed panic hook
+  remains responsible for logging source locations and full diagnostics.
+
+`Writer::document_mut` and `write::backend` deliberately expose Krilla's page, resource and
+painting APIs. The apps keep their document walks, pagination, font selection/licensing,
+outline fallbacks and warnings, colour policy, PDF/X postprocessing, tagging semantics,
+links, export presets and native editing payloads. Shared writing does not introduce a
+universal document model or claim additional format conformance. Dates and branding are
+provided by callers; the shared writer does not read a clock.
+
+`Writer::finish` consumes its document even on error. When `guard` returns an internal failure,
+discard any writer or drawing state captured by the closure; construct it inside the closure
+where possible. Failed page/surface cleanup poisons the backend document, so retaining it
+after a narrow catch cannot silently serialize a missing page. This also rejects failure
+during explicit surface finalization. Other captured app state must still be discarded.
+Native unwind recovery cannot catch WASM aborts or process-wide out-of-memory
+failures. Font preparation bounds do not impose a total memory, output-size or time budget on
+PDF serialization. Individual unsupported fonts still follow each app's existing outline
+fallback and warning behavior.
+
+Run `cargo test -p redrob-canvas-pdf --no-default-features --features write`, and repeat with
+`--features write-pdf` and `--all-features`. The same writer contracts run with
+`--target wasm32-unknown-unknown` and a matching `wasm-bindgen-test-runner`. They exercise
+metadata, page sizes, versions, reproducibility, typed validation failures, malformed fonts,
+application error preservation, embedded pages, and native-only panic recovery.
+
+
+## Source pinning and local development
+
+Consumers pin both the facade and patched writer to the same full commit:
+
+```toml
+[workspace.dependencies]
+redrob-canvas-pdf = { git = "https://github.com/storytold/craft-libs", rev = "<full-commit-id>", version = "=0.1.0", default-features = false, features = ["write"] }
+
+[patch.crates-io]
+krilla = { git = "https://github.com/storytold/craft-libs", rev = "<full-commit-id>", version = "=0.8.2" }
+```
+
+Choose `write-pdf` only when embedding PDF pages. Cargo ignores dependency workspaces'
+root patches; copy the Krilla patch into the consuming workspace. A compile-time marker
+rejects unpatched Krilla. Check the normal dependency graph separately from the test graph
+and ensure there is one Krilla source, including uses through `krilla-svg`. This writer
+migration does not change an application's reader backend or its other shared pins.
+The selected revision must be remotely available before fresh consumers can resolve it.
+Local path replacements are development-only and should not be committed to an app.
+
+Run `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings` and
+`cargo test --workspace`, then test `redrob-canvas-pdf` with `--features write` and
+`--features write-pdf` (the default feature set intentionally enables no PDF operations).
+Run the same writer contracts on `wasm32-unknown-unknown` with a matching
+`wasm-bindgen-test-runner`. Native recovery tests are subprocess or unwind checks;
+WASM tests exercise successful paths and typed input errors, not recovery from aborts.
+
+## Unicode and font contracts
+
+The writer embeds the font and glyph run supplied by the application. Applications
+must select a font that covers the requested characters, shape text and resolve
+bidirectional layout before drawing. Passing correct Unicode only in document
+metadata does not preserve page text. A selectable-text export must retain the
+actual glyph outlines and a matching ToUnicode map, and applications must report
+unsupported font preparation rather than silently dropping characters. Existing
+app-specific outline fallback remains an explicit policy choice.
+
+`tests/unicode_writing.rs` adds opt-in, externally supplied font fixtures. It exports,
+reopens and interprets real page text without putting the source text in metadata,
+checks nonzero glyph IDs, embedded fonts and visible non-space outlines, and asserts
+exact extraction for Latin accents, Greek, Cyrillic, Vietnamese, Arabic and Thai.
+A variable-font test checks default/empty coordinates and distinct light/bold
+embedded outlines while preserving extraction. These are embedding/mapping
+contracts; they do not qualify Arabic joining, RTL caret behavior, shaping quality,
+or lossless text editing in an application's separate COS editor.
+
+No PDF test fonts are stored in this repository. Obtain the licensed fixtures listed in
+[`tests/fonts.json`](tests/fonts.json), verify their SHA-256 hashes, place them in
+one directory using the listed names, then run:
+
+```sh
+REDROB_CRAFT_PDF_TEST_FONT_DIR=/absolute/path/to/licensed-fonts \
+RUSTFLAGS="--cfg craft_pdf_unicode_fixtures" \
+cargo test -p redrob-canvas-pdf --all-features --test unicode_writing
+```
+
+Repeat with `--target wasm32-unknown-unknown` and the matching test runner for
+runtime WASM coverage. Ordinary builds and tests do not require these fonts or the
+fixture environment variable. With write enabled, the complete test code is
+compiled even without fixtures; its two runtime tests are explicitly ignored with a
+provisioning reason. Running ignored tests without fixtures fails with setup instructions.
+The Shared PDF CI workflow fetches and hash-verifies these fonts outside the checkout
+and enables the contracts on native and WASM. Locally, run
+`python3 scripts/fetch-pdf-test-fonts.py /absolute/path/to/licensed-fonts` to provision
+them. `tests/upstream_reading.rs` uses the same Inter fixture to verify TrueType
+WinAnsi fallback with missing or partial ToUnicode maps, explicit Encoding and
+Differences precedence, and a ToUnicode override. The fallback changes extraction
+only: existing nonsymbolic glyph selection can still choose StandardEncoding glyphs
+or `.notdef`. Tests pin that distinction and the upstream WinAnsi unused-code bullet
+mapping; fallback text is not proof of the original author's text. Without fixtures those reader
+contracts are also compiled and explicitly ignored; provisioned CI executes them.
+
+````
+
 ### `1327309babc5f34582ae4731b9022c75ff6fa9903eb17cfd113f4abae95b898b`
 
 Used by:
@@ -4696,6 +4924,163 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+````
+
+### `1fefc3eafedff302d0097f92cb5e8a3d85d4d3b6cef1516d3d555616b2e9c01e`
+
+Used by:
+- redrob-vector-affinity 0.14.0 - README.md
+
+Original byte length: `10849`; trailing newline: `yes`.
+
+````text
+# redrob-vector-affinity
+
+An independent, bounded Rust reader for native Affinity documents: `.af` from Affinity 3 and
+`.afdesign`, `.afphoto` and `.afpub` from Affinity 1 and 2 (container versions 8 to 12). It reads
+the archive, the tagged object stream in `doc.dat` and the part of the document model listed below,
+and hands the engine a document in pixels with every transform composed. It does not write
+Affinity files.
+
+## What is imported
+
+| Affinity | Vector |
+|---|---|
+| Pages, Publisher spreads (one or two pages) | artboards, spreads side by side |
+| Artboards (legacy `ABEn` or Affinity 3 `phrp`/`aprp`), with name, paint and any transform | artboards plus a clip group with the actual vector outline, background and stroke |
+| Layers (`Scop`), groups (`Grup`), pass-through or isolated | layers and sublayers, groups |
+| Curves (`PCrv`): cubic subpaths, closed flags, live corners (`CnrD`) | paths (multi-subpath curves fill even-odd) |
+| Rectangles with corner radii (relative or absolute, locked or per corner) and round or straight corners, ellipses, polygons (smooth too), stars, square stars, pies, triangles, trapezoids | paths |
+| Compound shapes (`Comp`, add and subtract) | one even-odd path |
+| A shape or curve with children clips them | clip group whose clipping path keeps its fill (behind) and stroke (over) |
+| Vector masks (`AdCh` curves and shapes) | clip group |
+| Pixel masks (`MRst`, attached or as a layer in a group) | opacity mask |
+| Solid fills: RGBA, HSLA, CMYK, grey, Lab (D50) | fill appearance (alpha as fill opacity) |
+| Linear, elliptical and radial gradients with Affinity's midpoint bias | gradients (the bias as the midpoint where the blend is half way) |
+| Strokes: weight, scale with object, dash pattern and phase, alignment, miter limit, behind the fill | stroke appearance |
+| Fill layers (`FRst`) | filled rectangles |
+| Artistic and frame text: Unicode scalar-indexed runs, stored fallback font, family/weight/style, boolean OpenType features, all caps, size, tracking, fixed leading, colour, paragraph alignment, first baseline | point type and area type |
+| Placed images (`ImgN`): the original JPEG/PNG embedded in the file | embedded images |
+| Pixel layers (`Rstr`): RGBA 8/16-bit and CMYK 8-bit tiles, cropped to their content; source-backed RGBA8 JPEG/PNG tiles with matching dimensions and zero origin | embedded PNG images |
+| Embedded documents and symbols (`EmbN`) | the picture Affinity cached of them |
+| Opacity, visibility, lock, names, the blend modes Vector has | the same |
+
+Everything else is reported in the import warnings, one line per kind with a count, never
+dropped silently: layer effects, adjustment layers and live filters, brush and pressure strokes,
+transparency gradients, fill opacity, bitmap fills, master pages, conical gradients (as radial),
+special shapes (cloud, heart, cog, callouts, arrows…, imported as their bounding ellipse), corner
+types other than round or straight, stars with rounded points, several fills or strokes on one object (the
+active one is used), outlined or scaled text, text fields such as page numbers, frames with
+columns or a curved outline, paragraph indents/spacing, mixed paragraph alignments, unsupported font selectors, grey/Lab/32-bit pixels, CMYK pixels (converted to RGB without the
+document's profile) and Affinity-only blend modes (Add, Linear Light… as Normal).
+
+When the native document can't be read at all, the engine opens the embedded PNG preview instead,
+with a warning that names the reason; that preview can't be placed, used as a template or mined
+for swatches and styles. Save never writes back over the Affinity file.
+
+## Provenance and clean-room
+
+Affinity has no published file-format specification, so this reader is built only from a public
+description of the format and from public files, never from Affinity itself. This is how the sibling app Photo already treats formats that
+are only partly documented:
+its PSD reader fills the gaps in Adobe's specification from the MIT-licensed psd-tools and
+ag-psd, and its camera raw decoder recovered Nikon's compression tables by black-box analysis
+of CC0 sample files.
+
+* **No Affinity software.** Affinity was never downloaded, installed, run, scripted, screenshotted or
+  disassembled for this work, and nothing from an Affinity installation (program code, resources,
+  presets, fonts, colour profiles) was read. No file was made with Affinity for it: every sample
+  is a document its author published.
+* **A public, permissively licensed description.** The container and object-stream layout was
+  learned from [VMDevCpp/afread](https://github.com/VMDevCpp/afread) (MIT, at
+  `04b672334a43e3e37ded6b5ffc57af231d589774`, written for container versions 7–11) and re-described
+  in our own words before this Rust code was written; no code was translated. No GPL/AGPL code (such
+  as Inkscape's Affinity extension) was read.
+* **Every structure checked against public files.** afread doesn't say how its author learned the
+  format, so nothing here rests on it alone: each structure the reader relies on is confirmed by
+  the public documents. Every archive entry carries a CRC-32 that must match, and every field in
+  the object stream names its own type, so a misread layout fails loudly instead of producing
+  plausible wrong data.
+* **Meaning fitted to Affinity's own pictures.** What shapes, paints, text and pixel data mean was
+  worked out by comparing our render with the thumbnail every Affinity document embeds (Affinity's
+  render of itself), on 176 public documents saved by Affinity 1.x, 2.x and 3.0/3.1 on Windows,
+  macOS and iPad. The collection has since grown to 189 distinct documents, and the reader opens
+  all of them. Most are published under CC0, MIT, BSD, Apache-2.0 or CC BY (-SA); the others
+  (no licence stated, or GPL or non-commercial terms) were only opened locally to compare
+  pictures, never committed or redistributed. The corpus test keeps the comparison for the pinned
+  files, which are CC0, MIT or Apache-2.0 only.
+* **Nothing of Affinity's is in this repository**: no program code, assets or documents. The test
+  files are fetched at pinned commits and sha256-verified, never committed.
+* **Read-only.** Nothing is written in Affinity's format; export waits until someone can check
+  written files in Affinity itself.
+
+The reader also has an independent copy in Photo's `redrob-photo-affinity`.
+
+## Validation
+
+* Unit tests on synthetic containers built by the `synth` feature (stored, zlib and zstd entries,
+  checksums, budgets, cycles, hostile streams, every truncation) and property tests of random
+  mutations.
+* `cargo xtask corpus --affinity` fetches 51 public CC0/MIT/Apache-2.0 documents at pinned
+  commits, SHA-256 verified against `xtask/affinity-corpus.sha256`, with upstream license notices.
+  Of these, 33 are current `.af`: four CC0 vector illustrations and 28 original Affinity 3.2.3
+  feature probes plus one separately identified derived regression input from
+  [SethRobinson/Patchy](https://github.com/SethRobinson/Patchy). Only document data and provenance
+  notices were inspected, never that project's importer or authoring scripts.
+* `tests/real_files.rs` parses every file and freezes the modeled features of all 33 current
+  `.af` files. Native raster tests compare decoded pixels with independent embedded images;
+  text tests assert Unicode run boundaries, fallback fonts and feature retention.
+* `engine/tests/affinity_corpus.rs` requires editable native import, exact `.rvector`
+  save/reload, and SVG/PDF/PSD export of every board in all 33 current files. It checks SVG/PDF
+  dimensions and reimport, and independently decodes PSD merged pixels using the published
+  specification. These are Vector consistency checks, not independent Affinity PSD oracles.
+  Saved-thumbnail comparisons cover the existing 22 documents plus nine new representative
+  fixtures, checking every board; unsupported effects and text layout are not claimed visually
+  faithful. The Affinity corpus workflow requires the files, so missing fixtures cannot silently
+  pass CI. Run locally with `AFFINITY_CORPUS_REQUIRED=1` for the same strict gate.
+* Synthetic engine regressions cover nested, rotated and curved artboards, negative origins,
+  multiple spreads and resolution conversion, alongside text recovery and native save/export.
+* `engine/tests/import_fuzz.rs` mutates a synthetic native document's stream and archive and checks
+  that whatever opens also renders and exports; `fuzz/` has `cargo-fuzz` targets for the whole
+  reader (`container`) and the object stream (`stream`):
+
+  ```sh
+  cd crates/affinity
+  cargo +nightly fuzz run stream -- -max_total_time=600
+  ```
+
+The source audit, licensing decisions and remaining complex-document/font cases are recorded in
+[affinity-validation.md](../../docs/affinity-validation.md). Reopening Vector's exports in
+Affinity remains an independent validation step that hasn't been done.
+
+What has not been verified: files from Affinity builds or platforms outside the public set, files
+written by other applications, rotated or skewed images against Affinity's render, mask polarity
+against a render with and without the mask, and anything listed as a warning above. The `synth`
+builders write only what this reader accepts; Affinity has never opened their output, so they are
+test fixtures, not an exporter.
+
+## Safety limits
+
+Every size is checked before it is allocated: 256 MiB per archive entry and 1 GiB per import by
+default (`Limits`), a 64 MiB zstd window, 4096 saved revisions, array lengths no longer than the
+bytes left, 16 777 216 decoded values per document stream (fields and array elements together, counted before
+anything is allocated: a value takes about 40 bytes in memory however few it took in the file; the largest of
+those 189 public documents uses 3.3 million), 384 levels of object nesting, 128 levels of layers, 500 000 layers, four million curve
+nodes per curve; compound outlines also cap recursion at 128 levels, operand visits at 100 000
+and cumulative geometry work at four million, rejecting cycles and partial results on limits.
+Pie sweeps normalize finite angles in constant time. Pixel layers are limited to 64 megapixels
+(cropped to their content first); gradients to 1024 stops. Text collection is bounded to a
+million characters per node before allocation, with a cumulative 16 MiB budget for owned font
+names, features and gradient stops. Exhaustion warns and uses default attributes for remaining
+text, preserving its characters.
+Every archive entry's CRC-32 and size must match. Malformed input returns an `Error`; the
+crate has no panics outside tests.
+
+## Privacy
+
+Affinity documents can hold the folder they were saved in, user names, original image paths and
+XMP metadata. This reader never imports those fields.
 
 ````
 
@@ -6330,163 +6715,6 @@ Software.
 
 ````
 
-### `27134d28cc9b59382a58cf09ef56dddf8eaf8bb36fb4d0c758dd1d6dea5fffbe`
-
-Used by:
-- redrob-vector-affinity 0.13.2 - README.md
-
-Original byte length: `10879`; trailing newline: `yes`.
-
-````text
-# redrob-vector-affinity
-
-An independent, bounded Rust reader for native Affinity documents: `.af` from Affinity 3 and
-`.afdesign`, `.afphoto` and `.afpub` from Affinity 1 and 2 (container versions 8 to 12). It reads
-the archive, the tagged object stream in `doc.dat` and the part of the document model listed below,
-and hands the engine a document in pixels with every transform composed. It does not write
-Affinity files.
-
-## What is imported
-
-| Affinity | VectorCraft |
-|---|---|
-| Pages, Publisher spreads (one or two pages) | artboards, spreads side by side |
-| Artboards (legacy `ABEn` or Affinity 3 `phrp`/`aprp`), with name, paint and any transform | artboards plus a clip group with the actual vector outline, background and stroke |
-| Layers (`Scop`), groups (`Grup`), pass-through or isolated | layers and sublayers, groups |
-| Curves (`PCrv`): cubic subpaths, closed flags, live corners (`CnrD`) | paths (multi-subpath curves fill even-odd) |
-| Rectangles with corner radii (relative or absolute, locked or per corner) and round or straight corners, ellipses, polygons (smooth too), stars, square stars, pies, triangles, trapezoids | paths |
-| Compound shapes (`Comp`, add and subtract) | one even-odd path |
-| A shape or curve with children clips them | clip group whose clipping path keeps its fill (behind) and stroke (over) |
-| Vector masks (`AdCh` curves and shapes) | clip group |
-| Pixel masks (`MRst`, attached or as a layer in a group) | opacity mask |
-| Solid fills: RGBA, HSLA, CMYK, grey, Lab (D50) | fill appearance (alpha as fill opacity) |
-| Linear, elliptical and radial gradients with Affinity's midpoint bias | gradients (the bias as the midpoint where the blend is half way) |
-| Strokes: weight, scale with object, dash pattern and phase, alignment, miter limit, behind the fill | stroke appearance |
-| Fill layers (`FRst`) | filled rectangles |
-| Artistic and frame text: Unicode scalar-indexed runs, stored fallback font, family/weight/style, boolean OpenType features, all caps, size, tracking, fixed leading, colour, paragraph alignment, first baseline | point type and area type |
-| Placed images (`ImgN`): the original JPEG/PNG embedded in the file | embedded images |
-| Pixel layers (`Rstr`): RGBA 8/16-bit and CMYK 8-bit tiles, cropped to their content; source-backed RGBA8 JPEG/PNG tiles with matching dimensions and zero origin | embedded PNG images |
-| Embedded documents and symbols (`EmbN`) | the picture Affinity cached of them |
-| Opacity, visibility, lock, names, the blend modes VectorCraft has | the same |
-
-Everything else is reported in the import warnings, one line per kind with a count, never
-dropped silently: layer effects, adjustment layers and live filters, brush and pressure strokes,
-transparency gradients, fill opacity, bitmap fills, master pages, conical gradients (as radial),
-special shapes (cloud, heart, cog, callouts, arrows…, imported as their bounding ellipse), corner
-types other than round or straight, stars with rounded points, several fills or strokes on one object (the
-active one is used), outlined or scaled text, text fields such as page numbers, frames with
-columns or a curved outline, paragraph indents/spacing, mixed paragraph alignments, unsupported font selectors, grey/Lab/32-bit pixels, CMYK pixels (converted to RGB without the
-document's profile) and Affinity-only blend modes (Add, Linear Light… as Normal).
-
-When the native document can't be read at all, the engine opens the embedded PNG preview instead,
-with a warning that names the reason; that preview can't be placed, used as a template or mined
-for swatches and styles. Save never writes back over the Affinity file.
-
-## Provenance and clean-room
-
-Affinity has no published file-format specification, so this reader is built only from a public
-description of the format and from public files, never from Affinity itself. This is how the sibling app PhotoCraft already treats formats that
-are only partly documented:
-its PSD reader fills the gaps in Adobe's specification from the MIT-licensed psd-tools and
-ag-psd, and its camera raw decoder recovered Nikon's compression tables by black-box analysis
-of CC0 sample files.
-
-* **No Affinity software.** Affinity was never downloaded, installed, run, scripted, screenshotted or
-  disassembled for this work, and nothing from an Affinity installation (program code, resources,
-  presets, fonts, colour profiles) was read. No file was made with Affinity for it: every sample
-  is a document its author published.
-* **A public, permissively licensed description.** The container and object-stream layout was
-  learned from [VMDevCpp/afread](https://github.com/VMDevCpp/afread) (MIT, at
-  `04b672334a43e3e37ded6b5ffc57af231d589774`, written for container versions 7–11) and re-described
-  in our own words before this Rust code was written; no code was translated. No GPL/AGPL code (such
-  as Inkscape's Affinity extension) was read.
-* **Every structure checked against public files.** afread doesn't say how its author learned the
-  format, so nothing here rests on it alone: each structure the reader relies on is confirmed by
-  the public documents. Every archive entry carries a CRC-32 that must match, and every field in
-  the object stream names its own type, so a misread layout fails loudly instead of producing
-  plausible wrong data.
-* **Meaning fitted to Affinity's own pictures.** What shapes, paints, text and pixel data mean was
-  worked out by comparing our render with the thumbnail every Affinity document embeds (Affinity's
-  render of itself), on 176 public documents saved by Affinity 1.x, 2.x and 3.0/3.1 on Windows,
-  macOS and iPad. The collection has since grown to 189 distinct documents, and the reader opens
-  all of them. Most are published under CC0, MIT, BSD, Apache-2.0 or CC BY (-SA); the others
-  (no licence stated, or GPL or non-commercial terms) were only opened locally to compare
-  pictures, never committed or redistributed. The corpus test keeps the comparison for the pinned
-  files, which are CC0, MIT or Apache-2.0 only.
-* **Nothing of Affinity's is in this repository**: no program code, assets or documents. The test
-  files are fetched at pinned commits and sha256-verified, never committed.
-* **Read-only.** Nothing is written in Affinity's format; export waits until someone can check
-  written files in Affinity itself.
-
-The reader also has an independent copy in PhotoCraft's `redrob-photo-affinity`.
-
-## Validation
-
-* Unit tests on synthetic containers built by the `synth` feature (stored, zlib and zstd entries,
-  checksums, budgets, cycles, hostile streams, every truncation) and property tests of random
-  mutations.
-* `cargo xtask corpus --affinity` fetches 51 public CC0/MIT/Apache-2.0 documents at pinned
-  commits, SHA-256 verified against `xtask/affinity-corpus.sha256`, with upstream license notices.
-  Of these, 33 are current `.af`: four CC0 vector illustrations and 28 original Affinity 3.2.3
-  feature probes plus one separately identified derived regression input from
-  [SethRobinson/Patchy](https://github.com/SethRobinson/Patchy). Only document data and provenance
-  notices were inspected, never that project's importer or authoring scripts.
-* `tests/real_files.rs` parses every file and freezes the modeled features of all 33 current
-  `.af` files. Native raster tests compare decoded pixels with independent embedded images;
-  text tests assert Unicode run boundaries, fallback fonts and feature retention.
-* `engine/tests/affinity_corpus.rs` requires editable native import, exact `.rvector`
-  save/reload, and SVG/PDF/PSD export of every board in all 33 current files. It checks SVG/PDF
-  dimensions and reimport, and independently decodes PSD merged pixels using the published
-  specification. These are VectorCraft consistency checks, not independent Affinity PSD oracles.
-  Saved-thumbnail comparisons cover the existing 22 documents plus nine new representative
-  fixtures, checking every board; unsupported effects and text layout are not claimed visually
-  faithful. The Affinity corpus workflow requires the files, so missing fixtures cannot silently
-  pass CI. Run locally with `AFFINITY_CORPUS_REQUIRED=1` for the same strict gate.
-* Synthetic engine regressions cover nested, rotated and curved artboards, negative origins,
-  multiple spreads and resolution conversion, alongside text recovery and native save/export.
-* `engine/tests/import_fuzz.rs` mutates a synthetic native document's stream and archive and checks
-  that whatever opens also renders and exports; `fuzz/` has `cargo-fuzz` targets for the whole
-  reader (`container`) and the object stream (`stream`):
-
-  ```sh
-  cd crates/affinity
-  cargo +nightly fuzz run stream -- -max_total_time=600
-  ```
-
-The source audit, licensing decisions and remaining complex-document/font cases are recorded in
-[affinity-validation.md](../../docs/affinity-validation.md). Reopening VectorCraft's exports in
-Affinity remains an independent validation step that hasn't been done.
-
-What has not been verified: files from Affinity builds or platforms outside the public set, files
-written by other applications, rotated or skewed images against Affinity's render, mask polarity
-against a render with and without the mask, and anything listed as a warning above. The `synth`
-builders write only what this reader accepts; Affinity has never opened their output, so they are
-test fixtures, not an exporter.
-
-## Safety limits
-
-Every size is checked before it is allocated: 256 MiB per archive entry and 1 GiB per import by
-default (`Limits`), a 64 MiB zstd window, 4096 saved revisions, array lengths no longer than the
-bytes left, 16 777 216 decoded values per document stream (fields and array elements together, counted before
-anything is allocated: a value takes about 40 bytes in memory however few it took in the file; the largest of
-those 189 public documents uses 3.3 million), 384 levels of object nesting, 128 levels of layers, 500 000 layers, four million curve
-nodes per curve; compound outlines also cap recursion at 128 levels, operand visits at 100 000
-and cumulative geometry work at four million, rejecting cycles and partial results on limits.
-Pie sweeps normalize finite angles in constant time. Pixel layers are limited to 64 megapixels
-(cropped to their content first); gradients to 1024 stops. Text collection is bounded to a
-million characters per node before allocation, with a cumulative 16 MiB budget for owned font
-names, features and gradient stops. Exhaustion warns and uses default attributes for remaining
-text, preserving its characters.
-Every archive entry's CRC-32 and size must match. Malformed input returns an `Error`; the
-crate has no panics outside tests.
-
-## Privacy
-
-Affinity documents can hold the folder they were saved in, user names, original image paths and
-XMP metadata. This reader never imports those fields.
-
-````
-
 ### `2731ca4a6fe0038e55efcefcea98ac2b0b0e1da1231154543c63bc2a46656f69`
 
 Used by:
@@ -6509,51 +6737,6 @@ This README is kept intentionally small to consolidate the documentation, see
 
 This crate is part of the [`objc2` project](https://github.com/madsmtm/objc2),
 see that for related crates.
-
-````
-
-### `27523bf034ac593e83b838309d61b9a687be8ef1c4003bc44fc03327a8ac85f8`
-
-Used by:
-- redrob-photo-heif 0.13.2 - README.md
-
-Original byte length: `2117`; trailing newline: `yes`.
-
-````text
-# redrob-photo-heif
-
-The optional HEIF/HEIC decoder of PhotoCraft: iPhone and Mac photos. A thin, panic-guarded wrapper
-around [`heic-rs`](https://github.com/tbraun96/heic-rs), a pure-Rust HEVC still-picture decoder
-(no `unsafe`, MIT OR Apache-2.0): single pictures and grid-tiled photos, 8- and 10-bit (10-bit
-decodes to 16-bit), alpha auxiliary images, the container's rotation/mirror/crop, ICC, EXIF and XMP.
-Read-only: writing would need an HEVC encoder.
-
-```rust
-let info = redrob_photo_heif::probe(&bytes)?;             // size, depth, alpha: check limits first
-let img = redrob_photo_heif::decode(&bytes, &redrob_photo_heif::Options::default())?;
-// img.width, img.height, img.has_alpha, img.sixteen_bit, img.data (RGB/RGBA), img.icc, img.exif, img.xmp
-```
-
-Errors are `Error::Unsupported` (image sequences, overlays, …), `Error::Limit` or
-`Error::Malformed`. It never panics: every call into heic-rs runs under `catch_unwind`, and a panic
-inside it (fuzzing found two in 0.1.1) becomes `Error::Malformed`.
-
-## Why it is a separate, optional crate
-
-- **A young decoder.** heic-rs is new and has a single maintainer. It is pinned exactly
-  (`=0.1.1`); moving the pin is a reviewed change (re-run `cargo fuzz run decode_heif` in
-  `crates/codecs` and `cargo xtask test-corpus`).
-- **HEVC patents are a distributor's call.** HEVC is patent-encumbered in some jurisdictions, so
-  whether a build includes an HEVC decoder is a build-time choice. `redrob-photo-codecs` uses this
-  crate only behind its non-default `heif` feature; the apps forward it
-  (`cargo build -p photocraft --features heif`). Official PhotoCraft builds and CI enable it.
-  Without it, HEIC files are still recognised and opening one is a clear "HEIC/HEIF support isn't
-  included in this build" error.
-
-The crate depends on no other PhotoCraft crate and knows nothing of `redrob-photo-codecs`' types;
-`codecs` → `heif` is the one allowed dependency between standalone crates (`cargo xtask layers`).
-Tests on real files live in `redrob-photo-codecs` (`tests/heif.rs`, features `corpus,heif`, files
-fetched by `cargo xtask corpus --heif`).
 
 ````
 
@@ -7097,6 +7280,180 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
+
+````
+
+### `2a0b602391f7a6fb4a246190d59f6e53df42e749efd5d973185e46a7064d877e`
+
+Used by:
+- redrob-photo-psd 0.14.0 - README.md
+
+Original byte length: `12837`; trailing newline: `yes`.
+
+````text
+# redrob-photo-psd
+
+A standalone reader and writer for Adobe Photoshop **PSD** (version 1) and **PSB** (version 2, "large document format") files. It keeps everything it reads, so an unmodified file writes back byte for byte. It depends on no other photo crate.
+
+* Clean-room implementation from Adobe's public *Photoshop File Formats Specification*. Where the spec is silent, behavior follows MIT-licensed psd-tools / ag-psd documentation, and the code comments say so.
+* `#![forbid(unsafe_code)]`. Builds for `wasm32-unknown-unknown`. The core API works on byte slices; the file helpers only exist on native targets.
+* Parsing never panics on malformed input. Limits: dimensions ≤ 300 000; allocations are checked against the remaining input; a single decode produces at most `MAX_DECODED_BYTES` (8 GiB on 64-bit targets, 2 GiB on 32-bit targets); descriptor nesting depth ≤ 64.
+
+## Guarantees
+
+| Property | How |
+|---|---|
+| `PsdFile::from_bytes(b)?.to_bytes()? == b` for unmodified files | Channel data keeps its original encoding. Unknown blocks and resources are stored raw. Exact padding is recorded wherever it can vary: tagged blocks, layer info, section trailers. |
+| `from_bytes(to_bytes(f)) == f` for any model `f` | Canonical defaults: `padding: None` means "zero-pad to even", and the parser yields `None` whenever the file used that default. |
+| Lazy decoding | The parser only copies encoded bytes. Channels are decoded when asked (`ChannelData::decode`, `ImageData::decode`). |
+| No compositing | `PsdBuilder` takes the merged image from the caller. Without one, it writes a white placeholder and sets `has_real_merged_data = false` in resource 1057. |
+
+## Public API (overview)
+
+```rust
+// Top level
+PsdFile::from_bytes(&[u8]) -> Result<PsdFile>
+PsdFile::from_bytes_and_merged(&[u8], want) -> Result<(PsdFile, Option<Result<Vec<u8>>>)>
+                                            // + decode_merged() when want(&file): ZIP inflated once
+PsdFile::to_bytes(&self) -> Result<Vec<u8>>
+PsdFile::open(path) / save(path)            // native only
+PsdFile { header, color_mode_data, resources, layer_info, layer_info_placement,
+          global_layer_mask, global_blocks, layer_mask_trailing, image_data }
+PsdFile::layers() -> &[LayerRecord]         // file order = bottom-most first
+PsdFile::layers_mut() -> &mut Vec<LayerRecord>
+PsdFile::layer(i) -> Option<Layer<'_>>;  iter_layers()
+PsdFile::layer_tree() -> Vec<LayerNode>     // nested groups, children bottom-to-top
+PsdFile::layer_tree_max_depth(n) -> Vec<LayerNode> // same, groups nested n deep keep no children
+PsdFile::decode_merged() -> Result<Vec<u8>> // planar big-endian samples
+PsdFile::composite_rgba8() -> Result<RgbaImage>
+PsdFile::resource(id), global_block(key), icc_profile(), resolution(),
+        has_real_merged_data(), merged_has_alpha(), validate()
+
+// Header
+Header { version: Version::{Psd,Psb}, channels, width, height, depth, color_mode, reserved }
+ColorMode::{Bitmap, Grayscale, Indexed, Rgb, Cmyk, Multichannel, Duotone, Lab, Unknown(u16)}
+
+// Layers
+LayerInfo { merged_alpha, layers: Vec<LayerRecord>, padding }
+LayerRecord { rect, channels: Vec<ChannelData>, blend_mode, opacity, clipping, flags,
+              filler, mask: MaskData, blending_ranges, name, blocks, extra_trailing }
+LayerRecord::name()            // prefers `luni`
+LayerRecord::section_divider(), section_type(), layer_id(), fill_opacity(), is_visible(),
+             block(key), block_mut(key), channel(id), channel_rect(id), decode_channel(id, depth, version)
+ChannelData { id, compression: Option<Compression>, data }   // encoded bytes kept verbatim
+ChannelData::encode(id, compression, decoded, w, h, depth, version)
+ChannelData::decode(w, h, depth, version); set_decoded(...)
+MaskData::{None, Mask(LayerMask), Raw(Vec<u8>)}
+LayerMask { rect, default_color, flags, parameters: Option<MaskParameters>, real: Option<RealMask>, trailing, real_first }
+BlendMode (27 modes + PassThrough + Unknown([u8;4])); BlendMode::key()/from_key()
+Layer<'_>::rgba8() -> Result<RgbaImage>; user_mask() -> Option<Result<GrayImage>>; channel_bytes(id)
+
+// Tagged blocks
+TaggedBlock { signature /* 8BIM | 8B64 */, key, data, padding: Option<Vec<u8>> }
+TaggedBlock::parsed() -> Option<Result<BlockData>>
+BlockData::{UnicodeName, SectionDivider, LayerId, NameSource, BlendClippedAsGroup,
+            BlendInteriorElements, Knockout, Protection, SheetColor, FillOpacity, MetadataSetting}
+constructors: unicode_name, section_divider, layer_id, name_source, blend_clipped_as_group,
+              blend_interior_elements, knockout, protection, sheet_color, fill_opacity
+TaggedBlock::check_structure() -> Result<()>   // strict inner re-parse of PlLd, SoLd, SoLE, lnk2/3/D, lfx2
+tagged::uses_long_length(version, key)   // PSB 8-byte length keys (the spec's 13 + lnk3, lnkE, pths, extd, extn, FELS, cinf, artd)
+LayerInfo::unpadded_len(version), LayerInfo::pad_to(version, 4)   // Photoshop pads the layer info to 4
+
+// Image resources
+ImageResource { signature, id, name, data };  ImageResource::parsed() -> Option<Result<ResourceData>>
+ResourceData::{ResolutionInfo, LayerState, LayerGroupInfo, Thumbnail, GlobalAngle, IccProfile,
+               GlobalAltitude, VersionInfo, Exif, Xmp}
+
+// Compression
+Compression::{Raw, Rle, Zip, ZipPrediction, Unknown(u16)}
+compression::{encode_planes, decode_planes, PlaneLayout, packbits::{encode, decode}, predict, unpredict}
+pixels::{samples_u16, samples_f32, u16_to_bytes, f32_to_bytes, unpack_bits, plane_to_u8}
+
+// Descriptors
+descriptor::{Descriptor, VersionedDescriptor, Value, Id, Class, ReferenceItem, UnicodeString, ObjectArray}
+Descriptor::from_bytes / to_bytes;  VersionedDescriptor::from_bytes / to_bytes (version 16)
+
+// Builder
+PsdBuilder::new(w, h).color_mode(..).depth(8|16).version(..).compression(..).resolution(dpi).icc_profile(..)
+builder.push_layer(LayerSpec) / begin_group(GroupSpec) / end_group()? / composite(PixelData)
+builder.build() -> Result<PsdFile>;  builder.to_bytes()
+PixelData::{Rgba8, Rgba16, GrayA8, GrayA16, Cmyka8, Cmyka16}   // CMYK given as ink, stored inverted
+
+// Test generator (feature `testgen`)
+testgen::{all_cases, merged_only, layered, small, sample_descriptor, pattern_plane}
+```
+
+## Feature matrix
+
+| Area | Read | Write | Typed | Notes |
+|---|:-:|:-:|:-:|---|
+| Header, PSD v1 / PSB v2 | ✓ | ✓ | ✓ | depth 1/8/16/32; all 8 color modes plus `Unknown` |
+| Color mode data | ✓ | ✓ | raw | indexed palette is used by `composite_rgba8` |
+| Image resources | ✓ | ✓ | partial | 1005, 1024, 1026, 1033/1036 (raw), 1037, 1039, 1049, 1057, 1058, 1060 |
+| Layer records | ✓ | ✓ | ✓ | flags, clipping, filler, blending ranges (raw + accessor) |
+| Layer masks | ✓ | ✓ | ✓ | 20 / 36-byte forms, mask parameters, real mask; unparseable masks stay raw |
+| Channel ids -1 / -2 / -3 | ✓ | ✓ | ✓ | per-channel rect via `channel_rect` |
+| Raw / RLE / ZIP / ZIP+prediction | ✓ | ✓ | – | prediction at 8/16/32 bits (32: byte-plane shuffle + delta); RLE counts are u16 in PSD, u32 in PSB |
+| Merged image data | ✓ | ✓ | – | validated at parse time (sizes, RLE counts, zlib stream incl. checksum); a zlib stream declaring more than `MAX_DECODED_BYTES` is kept verbatim without inflating it, and decoding it reports the limit |
+| Tagged blocks (raw passthrough) | ✓ | ✓ | – | keeps `8BIM` / `8B64` and exact padding |
+| PSB 8-byte-length keys | ✓ | ✓ | – | LMsk Lr16 Lr32 Layr Mt16 Mt32 Mtrn Alph FMsk lnk2 FEid FXid PxSD |
+| Lr16 / Lr32 / Layr layer info | ✓ | ✓ | ✓ | lifted into `layer_info`; re-inserted at its original position |
+| luni lsct lsdk lyid lnsr clbl infx knko lspf lclr iOpa shmd | ✓ | ✓ | ✓ | `TaggedBlock::parsed()` |
+| ActionDescriptor (all OSTypes) | ✓ | ✓ | ✓ | including references, `ObAr` (best effort), `UnFl`, `Pth `, version-16 wrapper |
+| Layer tree (groups) | ✓ | ✓ | ✓ | open/closed folders plus bounding dividers; tolerant of malformed nesting |
+| RGBA8 extraction | ✓ | – | – | RGB / gray / CMYK layers; merged image also supports indexed / bitmap / duotone |
+| Builder | – | ✓ | – | RGB / gray / CMYK at 8/16 bit, masks, groups, blend modes, opacity, fill, visibility, clipping |
+| Patterns | ✓ | ✓ | ✓ | `Patt` / `Pat2` / `Pat3`, `.pat`, and `.abr` embedded patterns; non-empty tiles allow in-bounds channel subrectangles, decoded size is capped and PackBits expansion is input-bounded |
+| Actions (`.atn`) | ✓ | ✓ | ✓ | `atn::parse` / `atn::write`: version-16 sets (Photoshop 6+): actions with function key, modifiers and colour; steps with event code or string name, panel name, enabled/dialog flags and their descriptor. Exact round trip; version-12 (Photoshop 5) files are rejected as unsupported |
+
+Pattern channel subrectangles are padded with zeroes to the tile rectangle. All channel
+metadata is checked before any plane is decoded, against one `PatternBudget` shared by every
+pattern of a parse (a block, a `.pat` file): `MAX_DECODED_BYTES` decoded and 512 MiB of zero
+padding in total. `parse_pattern_block_with` lets several blocks of one document share a budget;
+`.abr` patterns are charged to the file's sample budget. All channels of a pattern must have the
+same depth. Fully populated channels reuse their decoded buffer without a second copy;
+allocations for padded channels return an error on failure.
+
+### Preserved raw, not yet typed (parsers planned for M8)
+
+* Layer effects: `lfx2`, `lrFX`, `lmfx`. The descriptors inside can be parsed on demand with `VersionedDescriptor::from_bytes(&block.data[4..])`.
+* Type layers: `TySh`, `tySh`, and the EngineData inside them.
+* Smart objects: `SoLd`, `PlLd`, `SoLE`, `lnk2`, `lnkD`, `lnk3`.
+* Vector masks and shapes: `vmsk`, `vsms`, `vogk`, `vscg`.
+* Adjustment and fill layers: `curv`, `levl`, `hue2`, `SoCo`, `GdFl`, `PtFl`, …, plus `Patt`, `Txt2`, `FMsk`, 3D and video blocks.
+* Global layer mask info (raw, with accessors), thumbnails (raw), slices, guides, paths, and every other resource id.
+
+## Testing
+
+`cargo test -p redrob-photo-psd --all-features` runs the unit tests, integration tests and proptests:
+
+* Byte stability and model round-trips for every generated case: all depths, color modes and compressions, PSD and PSB.
+* PackBits edge cases.
+* Known vectors for 8/16/32-bit prediction.
+* PSD vs PSB length handling.
+* Truncation sweeps: every prefix of several small files must return `Err`.
+* Random-mutation and random-byte proptests: never panic.
+* Layer tree cases.
+* Builder → `rgba8` correctness.
+* Unknown blend modes and unknown blocks pass through unchanged.
+
+`tests/corpus.rs` walks `corpus/psd/**/*.{psd,psb}` at the workspace root when that directory exists. For each file it asserts that parsing succeeds and the file round-trips byte for byte, and it prints a result per file. Without the directory it skips silently.
+
+A `cargo-fuzz` skeleton lives in `fuzz/`. It is its own workspace and is excluded from photo's. Run it with `cargo +nightly fuzz run parse` (or `descriptor`) from `crates/psd`.
+
+## Spec ambiguities and decisions
+
+* **Tagged block padding.** The spec says lengths are "rounded up to an even byte count". In practice writers either include the padding in the length or append it after the data, and pad to 2 or 4. The parser detects the padding that actually follows each block: the smallest k ≤ 3 after which the next signature or the end of the region appears. It stores that padding unless it matches the default.
+* **Layer info padding** (2 vs 4) is recorded the same way.
+* **16/32-bit layers** are read from global `Lr16` / `Lr32` blocks when the main layer info is empty. The block data is a layer-info body with no inner length field.
+* **Mask record layout.** The order is: rect, default color, flags, parameters (when flag bit 4 is set), then the real flags, background and rect whenever at least 18 bytes remain. Anything left over (for example the 2 padding bytes of the 20-byte form) is kept in `trailing`.
+* **Mask channel rects.** Channel -2 uses the mask rect. Channel -3 uses the real mask rect.
+* **Merged ZIP data** is a single zlib stream over all planes. Prediction is applied per row across all planes.
+* **ZIP prediction at depth 1** is treated as byte-wise delta.
+* **`ObAr`** is read as a u32 prefix followed by a descriptor-shaped body, following ag-psd's reading. The spec does not document it.
+* **Descriptor `bool`** bytes other than 0/1 are normalized to 1 on write.
+* **Pascal names** have their pad bytes written as zeros. A layer & mask section that contains only a zero layer-info length is normalized to an empty section. These are the only known non-byte-exact cases, and both are pathological.
+* **Header limits.** The parser accepts up to 300 000 × 300 000 for both versions. `PsdFile::validate()` enforces the spec's 30 000 limit for PSD.
 
 ````
 
@@ -8591,6 +8948,209 @@ DEALINGS IN THE SOFTWARE.
 
 ````
 
+### `370e56a9efc191954ba998a7c819f3affe5838f2043bb99ff401c694f09cef84`
+
+Used by:
+- redrob-canvas-cms 0.14.0 - README.md
+
+Original byte length: `11108`; trailing newline: `yes`.
+
+````text
+# Craft CMS
+
+`redrob-canvas-cms` is a pure-Rust ICC colour management module for the Craft suite: profile parsing
+and writing, transforms between profiles, rendering intents, black point compensation, soft
+proofing, gamut checks, 3D LUTs and a set of built-in profiles. No C, no `unsafe`, and no
+dependency on other shared crates. Implemented from the public ICC.1:2010 (v4.3) and
+ICC.1:2001-04 (v2) specifications, CIE 15, and Adobe's published black point compensation paper.
+
+Extracted from Photo's `crates/cms` at
+[`b3222ee`](https://github.com/storytold/photocraft/tree/b3222ee8e7e6bcb4799c37f904c595f20f9baf5e/crates/cms)
+(refs #36).
+
+## API
+
+```rust
+use redrob_canvas_cms::{Builtin, Intent, Profile, Transform};
+
+let src = Profile::parse(&icc_bytes)?;                    // v2/v4: matrix/TRC, gray TRC, mft1/mft2/mAB/mBA
+let dst = Builtin::CoatedCmyk.profile();
+let t = Transform::new(&src, dst, Intent::RelativeColorimetric, /*bpc*/ true)?;
+t.convert_u8(&rgba8, 4, &mut cmyka8, 5, /*copy alpha*/ true)?;  // also convert_u16 / convert_f32 / apply (in place)
+let mut out = [0.0; 4];
+t.eval(&[1.0, 0.0, 0.0], &mut out)?;                       // exact single colour
+```
+
+Calls never panic on caller input: strides below the channel count, buffers that are not
+whole pixels, a destination with fewer pixels than the source, slices shorter than the
+channel count and out-of-range table or LUT dimensions return `CmsError::InvalidArgument`.
+Buffers are checked once per call, before any pixel is written.
+
+* `Transform::proof(src, proof, display, intent, bpc, simulate_paper)`: soft-proof chain.
+* `GamutCheck::new(src, proof, ΔE)`: out-of-gamut test (gamut warning).
+* `Lut3d::from_transform(&t, 33)?.to_rgba16f_bytes()`: display transform as a 3D texture.
+* `transform::cached(src, dst, opts)`: process-wide transform cache.
+* `lutfile::parse(name, bytes)` / `lutfile::write_cube(&lut)`: `.cube`, `.3dl` and `.look` LUT
+  files; `lutfile::builtin(id)` returns generated looks (`lutfile::BUILTIN`).
+* `Profile::to_bytes()`: original bytes of parsed profiles (byte-exact), or an ICC v4.3 encoding.
+* `Builtin::from_profile_name(desc)`: the built-in with that description (exact match);
+  `Builtin::stand_in_for(desc)`: the built-in that approximates a profile a document names
+  when its ICC bytes are not available (see [Selecting by profile name](#selecting-by-profile-name)).
+* `Profile::same_colors(&other)`: the same colour space whatever the encoding (every sample of
+  a device grid within ΔE 0.5 through both), e.g. Photoshop's sRGB IEC61966-2.1 and the built-in
+  sRGB. `content_hash()` compares bytes and suits cache keys only.
+
+### Evaluation
+
+* Exact path: a float stage pipeline (curves, matrices, CLUTs, Lab↔XYZ, PCS encodings, BPC /
+  absolute scaling). Float buffers use it by default (`TransformOptions::precise_float`).
+* Integer buffers: matrix/TRC chains use per-code input tables + matrix + output tables indexed
+  by `x^(1/4)` (accurate near black even for pure gamma curves); chains containing a CLUT are
+  sampled into a device link (33³ for 3 inputs, 17⁴ for 4, 4096 for 1) evaluated with
+  tetrahedral interpolation (4D: linear on the first input between two tetrahedra); purely
+  analytic chains (e.g. Lab ↔ RGB) are evaluated exactly. Buffers ≥ 16k pixels run on rayon
+  (native only).
+* Rendering intents: AToB0/1/2 and BToA0/1/2 by intent with AToB0/BToA0 fallback; absolute
+  colorimetric scales by media white (`wtpt`; v2 display profiles treated as D50; a zero,
+  negative or non-finite white is refused with `CmsError::Invalid`); BPC uses
+  neutral black points (Y only) mapped linearly in XYZ.
+* White: except in absolute colorimetric (and soft proofs that simulate paper), the source's
+  device white comes out as exactly the destination's (no ink, or 1.0) on every path. LUT
+  profiles rarely put white on a grid node, so the device link's white node is set to it and
+  the exact and float paths compare each pixel with white; all other colours are left as the
+  profiles give them. With a profile whose white falls between its nodes (`coated-cmyk`: 0.4 %
+  C), the last step to white is that much larger than its neighbours.
+
+## Built-in profiles (all CC0-1.0, generated by this crate)
+
+The profile descriptions and copyright text keep the Photo names they were first
+published with, so profiles embedded in existing files still match byte for byte.
+
+| id | description |
+|---|---|
+| `srgb` | sRGB IEC61966-2.1 (Rec. 709 primaries, D65 Bradford-adapted, sRGB TRC) |
+| `display-p3` | Display P3 |
+| `adobe-rgb-compat` | Adobe RGB (1998)-compatible (published primaries, gamma 563/256) |
+| `prophoto-compat` | ProPhoto-compatible (ROMM primaries, D50, gamma 1.8) |
+| `linear-srgb` | sRGB primaries, linear |
+| `rec2020` | Rec. 2020 primaries, Rec. 709 OETF |
+| `gray-gamma-2.2`, `sgray` | gray gamma 2.2; gray with the sRGB curve (default gray working space) |
+| `lab-d50` | Lab identity (v4 encoding) |
+| `coated-cmyk` | **Photo Coated CMYK (synthetic, 300% TAC, medium GCR)**: default CMYK |
+| `coated-fogra39` | Coated FOGRA39 (fitted, redrob-canvas-cms): fitted to Fogra's FOGRA39 data, 330% TAC, medium GCR |
+
+### The CMYK profiles
+
+Adobe's CMYK profiles (U.S. Web Coated SWOP, Coated FOGRA39) are proprietary, and the freely
+downloadable characterisation-based profiles (ECI/FOGRA, colord, Ghostscript) carry
+redistribution conditions or unclear licences, so this crate generates its own. Both share the
+separation code in `src/synth.rs`: GCR black generation (starts at 20 % gray component, K max
+95 %), a bounded least-squares CMY solve under the total ink limit, and perceptual tables with
+L* black-point scaling and soft chroma compression against a sampled gamut boundary.
+
+**`coated-cmyk`** (`profiles/coated-cmyk.icc`, 237 KB, AToB 11⁴ lut16, BToA 21³
+lut16) comes from a Yule–Nielsen modified Neugebauer model (n = 2) over the 16 overprints with
+ISO 12647-2 coated-paper Lab aims for paper/C/M/Y/RGB overprints, parabolic dot gain (14 % CMY,
+17 % K at 50 %) and a 300 % ink limit. It is a plausible coated-offset profile, not a measured
+characterisation: its midtones are darker than FOGRA39 (mean ΔE00 6.7 against the FOGRA39
+patches, oranges such as 0/50/100/0 about 5 ΔE00 off).
+
+**`coated-fogra39`** (`profiles/craft-coated-fogra39.icc`, 713 KB, AToB 11⁴ lut16, BToA 33³
+lut16, 330 % ink limit) reproduces the colours of documents set up for Coated FOGRA39 or ISO
+Coated v2. It is fitted to Fogra's FOGRA39 characterisation data (`tests/data/FOGRA39.txt`,
+1617 IT8.7/4 patches, CMYK with D50 XYZ and Lab; ISO 12647-2:2004 Amd 1 offset on paper type
+1/2): a Yule–Nielsen modified Neugebauer model with free overprints, per-ink tone curves and a
+fitted n (1.45) is solved by least squares against all patches (mean ΔE00 1.1 on its own), then
+a Gaussian-kernel ridge regression of the remaining Lab errors over CMYK (σ = 0.2, λ = 0.01)
+corrects it before the AToB table is sampled, with no ink mapped to exactly L* 100,
+a* = b* = 0. The BToA tables invert that AToB table; their input curves put that white on a
+grid node holding no ink (`CmykParams::white_on_node`), so the profile separates PCS white to
+within 2·10⁻⁵ ink on its own.
+
+| Through the AToB, relative colorimetric, against the 1617 FOGRA39 patches | mean ΔE00 | p95 | max |
+|---|---|---|---|
+| `coated-fogra39` | 0.07 | 0.18 | 0.53 |
+| `coated-fogra39` fit, against the 10 % of patches held out of it | 0.11 | 0.32 | 0.79 |
+| `coated-cmyk` | 6.67 | 13.4 | 16.1 |
+
+Lab → CMYK → Lab through the profile (relative colorimetric) returns colours inside the gamut
+within mean ΔE00 0.24 (p95 1.07, max 2.55). Converted to sRGB (relative colorimetric with black
+point compensation), process solids, overprints and oranges land within 0.8 ΔE00 of reference
+values for Coated FOGRA39 (`tests/fogra39.rs`).
+
+"FOGRA39" identifies the reference data the profile is fitted to; it does not imply
+certification, approval or endorsement by Fogra. The data file is Fogra's, distributed
+unmodified with Fogra identified as the source as Fogra's terms require (see `NOTICE`); it is
+left out of the published crate, as only the tests read it.
+
+Regenerate the profiles with
+
+```sh
+REDROB_CRAFT_CMS_REGEN_PROFILES=1 cargo test -p redrob-canvas-cms --release --test regen --test fogra39
+```
+
+Use your printer's profile for production print.
+
+### Selecting by profile name
+
+Use the ICC bytes a document embeds or a user loads whenever there are any. When a document
+only names its profile (its `desc` tag), two functions map the name to a built-in, ignoring
+case and whitespace:
+
+* `Builtin::from_profile_name`: exact matches only, a built-in's own description.
+* `Builtin::stand_in_for`: the exact match, else a built-in that approximates the named
+  profile.
+
+| Name in the document | `from_profile_name` | `stand_in_for` |
+|---|---|---|
+| each built-in's own description (e.g. sRGB IEC61966-2.1) | that built-in | that built-in |
+| Coated FOGRA39 (ISO 12647-2:2004), Coated FOGRA39 | `None` | `coated-fogra39` |
+| ISO Coated v2 (ECI) | `None` | `coated-fogra39` |
+| ISO Coated v2 300% (ECI) | `None` | `None` |
+| anything else | `None` | `None` |
+
+The stand-ins are made from the same characterisation data as the named profiles: ECI's ISO
+Coated v2 is made from FOGRA39L, the data of Adobe's Coated FOGRA39. They describe the same
+printed colours. The built-in separates to at most 330 % total ink, the limit of ISO Coated v2
+(Adobe doesn't publish Coated FOGRA39's). Black generation and ink distribution differ, so
+separations through a stand-in are not the named profile's. ISO Coated v2 300% (ECI) has no
+stand-in: the built-in separates to up to 330 % total ink.
+
+### Display transforms
+
+Page-layout and image editors usually convert CMYK for display with relative colorimetric and
+black point compensation. To match them, keep BPC on (the `TransformOptions` default):
+
+```rust
+use redrob_canvas_cms::{Builtin, Intent, Profile, Transform};
+
+// The document's own profile first; a stand-in only when it carries no ICC bytes.
+let parsed;
+let cmyk: &Profile = match doc_icc_bytes {
+    Some(bytes) => {
+        parsed = Profile::parse(bytes)?;
+        &parsed
+    }
+    None => match Builtin::stand_in_for(&doc_profile_name) {
+        Some(b) => b.profile(),
+        None => return Err(UnknownProfile(doc_profile_name)), // e.g. ask the user for the profile
+    },
+};
+let t = Transform::new(cmyk, Builtin::Srgb.profile(), Intent::RelativeColorimetric, /*bpc*/ true)?;
+// or: transform::cached(src, dst, TransformOptions::default())
+```
+
+## Not implemented / approximate
+
+* v4.4 `mpet` (multiProcessElements, D2Bx/B2Dx) tags, named colour, device link and abstract
+  profiles as transform endpoints, `chad`-based adaptation of v2 absolute colorimetry.
+* BPC destination black uses the BToA/AToB round trip directly (Adobe's curve fit for
+  ill-behaved LUT profiles is not implemented); v2/v4 perceptual reference black mixing is not
+  modelled beyond the PRMG black for v4 LUT profiles.
+* Profile ID (MD5) is not computed when writing (left zero, which the spec allows).
+
+````
+
 ### `37376b983b780413240509c87520961fe1ab927bc09a96704e4fb783171b6149`
 
 Used by:
@@ -9491,270 +10051,164 @@ see that for related crates.
 
 ````
 
-### `3be727326332611977840d101e9cd326a5ceb542a19aa465791a2e5589214732`
+### `3cdd59e1020b0fdcffe4f97ea786c454ab051006ff8ee53ad85ffe3b21f5334a`
 
 Used by:
-- redrob-craft-ui 0.13.2 - README.md
+- redrob-photo-affinity 0.14.0 - README.md
 
-Original byte length: `14450`; trailing newline: `yes`.
+Original byte length: `10389`; trailing newline: `yes`.
 
 ````text
-# Craft UI
+# redrob-photo-affinity
 
-`redrob-craft-ui` provides small egui components with application-supplied styles. `icons` prepares
-embedded SVG catalogs; `buttons` paints accessible icon buttons; `tabs` handles tab fitting and
-interaction; `layout` provides toolbar fitting, split geometry and resize handles; `theme` shares widget-state styling.
-`docking` supplies transactional panel moves and an optional docking surface.
-`printing` supplies printer/job controls and asynchronous feedback used by WordCraft and GridCraft.
-The current delivery covers nine creative apps (DesignCraft, VectorCraft, PhotoCraft, FilmCraft, EffectCraft, CADCraft, PDFCraft, LightCraft and SoundCraft); prior basic and office adapters are separate. The [suite audit](../../docs/ui-components-audit.md#adoption-and-acceptance)
-records their scope and acceptance limits. Assets, complete themes, localization and command handling
-remain in each application. No icons, fonts or application engines are bundled.
+An independent, bounded Rust reader for native Affinity documents: `.af` from Affinity 3 and
+`.afdesign`, `.afphoto` and `.afpub` from Affinity 1 and 2 (container versions 8 to 12). It reads
+the archive, the tagged object stream in `doc.dat` and the part of the document model listed below,
+and hands `redrob-photo-io` a document in pixels with every transform composed. It does not write
+Affinity files.
 
-## SVG catalogs
+## What is imported
 
-```rust
-use std::sync::OnceLock;
-use redrob_craft_ui::icons::{SvgIconSet, SvgStyle};
+`redrob-photo-io` maps the model to an 8-bit RGB document at the Affinity document's resolution:
 
-// Supply the application's own attributed assets here.
-static ICONS: &[(&str, &[u8])] = &[];
+| Affinity | Photo |
+|---|---|
+| Pages, Publisher spreads | one artboard per spread, spreads side by side 64 px apart |
+| Artboards (legacy `ABEn`, or current `.af` `phrp`/`aprp` properties, including converted curves), with name, solid background, any transform | artboards (nested ones as groups with a vector mask; rotated/curved boards use their bounding rectangle) |
+| Layers (`Scop`), groups (`Grup`), pass-through or isolated | groups (pass-through or Normal) |
+| Curves (`PCrv`): cubic subpaths, closed flags, live corners (`CnrD`) | shape layers (multi-subpath curves fill even-odd) |
+| Rectangles with corner radii (relative or absolute, locked or per corner) and round or straight corners, ellipses, polygons (smooth too), stars, square stars, pies, triangles, trapezoids, clouds, hearts, cogs, rounded and elliptical callouts, arrows, double stars, tears, crescents, diamonds and circular segments | shape layers |
+| Compound shapes (`Comp`, add and subtract) | one even-odd shape |
+| A shape or curve with children clips them | group with the outline as vector mask, the shape at its bottom |
+| Vector masks (`AdCh` curves and shapes) | vector masks |
+| Pixel masks (`MRst`, attached or as a layer in a group) | layer masks |
+| Solid fills: RGBA, HSLA, CMYK, grey, Lab (D50) | shape fill (converted to RGB) |
+| Linear, elliptical, radial and conical gradients with Affinity's midpoint bias | gradient fills |
+| Strokes: weight, scale with object, dash pattern, alignment, caps, joins, miter limit | shape strokes |
+| Fill layers (`FRst`) | filled rectangles |
+| Artistic and frame text: characters, font family/weight/style, size, tracking, fixed leading, colour, paragraph alignment, first baseline | type layers (rendered with the fonts installed) |
+| Placed images (`ImgN`): the original JPEG/PNG embedded in the file | embedded smart objects |
+| Pixel layers (`Rstr`): RGBA 8/16-bit and CMYK 8-bit tiles, cropped to their content | pixel layers |
+| Embedded documents and symbols (`EmbN`) | the picture Affinity cached of them |
+| Opacity, visibility, lock, names, blend modes | the same (Add as Linear Dodge) |
 
-fn icons() -> &'static SvgIconSet {
-    static ICONS_SET: OnceLock<SvgIconSet> = OnceLock::new();
-    ICONS_SET.get_or_init(|| SvgIconSet::new(
-        ICONS,
-        SvgStyle { current_color: "#ffffff", stroke_width: Some("1.75") },
-        "bytes://my-app/icons/",
-        "square",
-    ))
-}
+Everything else is reported in the import warnings, one line per kind with a count, never
+dropped silently: layer effects, adjustment layers and live filters, brush and pressure strokes,
+transparency gradients, fill opacity, bitmap fills, master pages, unrecognized
+parametric shapes (imported as their bounding ellipses), corner types other than round or straight, stars with
+rounded points, several fills or strokes on one object (one of each is used), strokes behind the
+fill, outlined or scaled text, text fields such as page numbers, frames with columns or a curved
+outline, grey/Lab/32-bit pixels, CMYK and Lab colour (converted to RGB without the document's
+profile), facing pages and the Average, Negation, Reflect, Glow and Erase blend modes (as Normal).
 
-fn icon(name: &str) -> egui::Image<'static> {
-    egui::Image::new(icons().source(name))
-}
-```
+Opened Affinity documents start without a save path: Save asks for a new copy and never writes
+back over the Affinity file. When the native document can't be read at all, `redrob-photo-io` opens
+the embedded PNG preview instead, as one pixel layer named “Affinity preview”, with a warning
+that names the reason. That preview can't be placed or used by imports that can't show the
+warning (smart-object decoding, stacks, batch, displacement maps, variables).
 
-The application installs `egui_extras::install_image_loaders` with its `svg` feature before drawing.
-It sets tint and size on the returned image.
-The library does not install loaders or an egui theme.
+## Embedded preview
 
-The catalog is immutable. SVGs are prepared once and held in `Arc<[u8]>`; lookups share those bytes.
-The fallback uses the requested name in its URI, matching PhotoCraft and VectorCraft. Missing both
-the requested name and fallback produces empty bytes for the loader to report as an error, without
-indexed lookups or a panic. `contains` and `canonical_name` inspect only actual catalog entries. PdfCraft resolves an unknown
-name to `square` before calling `source`, preserving its fallback cache key.
+`preview(bytes)` reads only the thumbnail record the header's offset 24 points to (the same in
+container versions 8 to 12); it never scans for PNG signatures. All integers are little-endian.
 
-Use a different URI prefix for every catalog/style combination used in the same egui context.
-egui caches by URI; supplying different bytes under one URI would reuse stale content. Apps with
-their own contexts can retain their current prefixes. Unknown names do not add entries to this
-catalog, though the egui loader may cache a requested URI.
+| Record offset | Size | Observed value |
+|---|---:|---|
+| 0 | 8 | `ffffffff` followed by `Thmb` |
+| 8 | 4 | Record version 1 |
+| 12 | 4 | PNG byte length + 13 |
+| 16 | 4 | PNG start offset 29 |
+| 20 | 4 | Zero |
+| 24 | 4 | PNG byte length |
+| 28 | 1 | PNG encoding 1 |
+| 29 | declared length | Exactly one PNG |
 
-This is an adapter for trusted, compiled-in monochrome assets, not an SVG sanitizer. It performs
-literal `currentColor` and optional `stroke-width="2"` substitutions, keeps other widths and explicit
-colors untouched, and uses the existing lossy UTF-8 behavior. General SVG parsing and rasterization
-remain the responsibility of the existing loader.
+The PNG is limited to 16 MiB and 4096 pixels a side. IHDR must come first and be unique, IDAT
+chunks contiguous, an optional PLTE unique and before IDAT, every chunk CRC must match and IEND must
+end the file; compressed metadata (`zTXt`, `iTXt`, `iCCP`), APNG chunks and unknown critical chunks
+are rejected. The I/O adapter decodes it with a 128 MiB allocation limit.
 
-## Icon buttons
+## Provenance and clean-room
 
-`buttons::IconButton` accepts a label, size and `IconButtonStyle`, and returns `egui::Response`.
-`ButtonVisuals` describes fill, border and icon tint for normal, hovered, pressed and selected
-states. Selection wins over press and hover. `pressed: None` keeps ordinary hover/normal styling;
-`Some` supplies a separate press treatment. egui owns pointer capture and click cancellation.
+Affinity has no published file-format specification, so this reader is built only from a public
+description of the format and from public files, never from Affinity itself. This is how
+Photo already treats formats that are only partly documented: `redrob-photo-psd` fills the gaps
+in Adobe's specification from the MIT-licensed psd-tools and ag-psd, and `redrob-photo-raw` recovered
+Nikon's compression tables by black-box analysis of CC0 sample files (see their READMEs).
 
-```rust
-use redrob_craft_ui::buttons::{ButtonVisuals, IconButton, IconButtonStyle};
-use egui::{Color32, CornerRadius, Stroke, Vec2};
+* **No Affinity software.** Affinity was never downloaded, installed, run, scripted, screenshotted or
+  disassembled for this work, and nothing from an Affinity installation (program code, resources,
+  presets, fonts, colour profiles) was read. No file was made with Affinity for it: every sample
+  is a document its author published.
+* **A public, permissively licensed description.** The container and object-stream layout was
+  learned from [VMDevCpp/afread](https://github.com/VMDevCpp/afread) (MIT, at
+  `04b672334a43e3e37ded6b5ffc57af231d589774`, written for container versions 7–11) and re-described
+  in our own words before this Rust code was written; no code was translated. No GPL/AGPL code (such
+  as Inkscape's Affinity extension) was read.
+* **Every structure checked against public files.** afread doesn't say how its author learned the
+  format, so nothing here rests on it alone: each structure the reader relies on is confirmed by
+  the public documents. Every archive entry carries a CRC-32 that must match, and every field in
+  the object stream names its own type, so a misread layout fails loudly instead of producing
+  plausible wrong data.
+* **Meaning fitted to Affinity's own pictures.** What shapes, paints, text and pixel data mean was
+  worked out by comparing our render with the thumbnail every Affinity document embeds (Affinity's
+  render of itself), on 176 public documents saved by Affinity 1.x, 2.x and 3.0/3.1 on Windows,
+  macOS and iPad. The collection has since grown to 189 distinct documents, and the reader opens
+  all of them. Most are published under CC0, MIT, BSD, Apache-2.0 or CC BY (-SA); the others
+  (no licence stated, or GPL or non-commercial terms) were only opened locally to compare
+  pictures, never committed or redistributed. The corpus test keeps the comparison for the pinned
+  files, which are CC0, MIT or Apache-2.0 only.
+* **Nothing of Affinity's is in this repository**: no program code, assets or documents. The test
+  files are fetched at pinned commits and sha256-verified, never committed.
+* **Read-only.** Nothing is written in Affinity's format; export waits until someone can check
+  written files in Affinity itself.
 
-fn layer_button(ui: &mut egui::Ui, selected: bool) -> egui::Response {
-    let normal = ButtonVisuals {
-        fill: Color32::TRANSPARENT, stroke: Stroke::NONE, icon: Color32::WHITE,
-    };
-    let style = IconButtonStyle {
-        normal,
-        hovered: ButtonVisuals { fill: Color32::DARK_GRAY, ..normal },
-        pressed: None,
-        selected: ButtonVisuals { fill: Color32::BLUE, ..normal },
-        corner_radius: CornerRadius::same(4),
-        focus_stroke: Stroke::new(1.0, Color32::LIGHT_BLUE),
-    };
-    IconButton::new("Layers", Vec2::splat(28.0), &style).selected(selected)
-        .show(ui, |ui, rect, tint| {
-            // Use the application's SVG catalog or its existing painter icon here.
-            ui.painter().circle_filled(rect.center(), 5.0, tint);
-        })
-}
-```
+The same reader is shared, as an independent copy, with Vector's `redrob-vector-affinity`.
 
-Use actual theme colors in the style adapter and localized text for the label. The painter receives
-the full button rectangle and icon tint; the app chooses icon padding/size. Parent disabled state
-applies to painting, interaction and accessibility. The library reports label and selection to
-AccessKit and draws the supplied inset focus outline. Mouse, Enter and Space activation come from
-egui. The caller reads `clicked()`, runs its command and updates selection; the component neither
-dispatches nor toggles state. Attach tooltips to the returned response.
+## Validation
 
-Controls previously painted with one `egui::Painter::rect` can opt into `.single_shape_frame()`.
-This keeps their fill/border edge tessellation, especially for translucent disabled borders.
-The default paints fill and border separately, preserving existing consumers' rendering.
+* Unit tests on synthetic containers built by the `synth` feature (stored, zlib and zstd entries,
+  checksums, budgets, cycles, hostile streams, every truncation) and property tests of random
+  mutations, here and in `redrob-photo-io`'s `tests/affinity.rs`.
+* `cargo xtask corpus --affinity` fetches 21 public CC0/MIT documents, including the four
+  Affinity 3 `.af` files of [samuel-etver/vector-art](https://github.com/samuel-etver/vector-art)
+  (CC0), at pinned commits, each checked against `xtask/affinity-corpus.sha256`. `tests/real_files.rs`
+  parses them; `redrob-photo-io`'s `tests/affinity_corpus.rs` imports and flattens each one and
+  compares it with the thumbnail Affinity saved in it (mean difference 0–4.6 of 255, with a
+  ceiling per file).
+* `fuzz/` has `cargo-fuzz` targets for the whole reader (`preview`), the object stream (`stream`)
+  and the I/O import (`import_preview`); CI's fuzz job runs `preview` and `import_preview`:
 
-IDs come from the surrounding UI scope/position, independent of the translated label. Use
-`ui.push_id(stable_id, ...)` when items reorder. Dimensions must be finite, positive and no larger
-than 4096 points; other sizes produce an inert zero-size response. Invalid stroke widths are
-ignored and large strokes are bounded to half the smaller button dimension.
+  ```sh
+  cd crates/affinity/fuzz
+  cargo +nightly fuzz run stream -- -max_total_time=600
+  cargo +nightly fuzz run import_preview --features io -- -max_total_time=600
+  ```
 
-## Tabs
+What has not been verified: files from Affinity builds or platforms outside the public set, files
+written by other applications, rotated or skewed images against Affinity's render, mask polarity
+against a render with and without the mask, and anything listed as a warning above. The `synth`
+builders write only what this reader accepts; Affinity has never opened their output, so they are
+test fixtures, not an exporter.
 
-`tabs::fit(natural_widths, selected, available, minimum, overflow_width)` returns visible tab
-indices and widths, overflow indices, and the actual reserved overflow width. It shrinks wide
-tabs before hiding them, keeps input order and retains the selected tab. Tiny strips may reduce
-its width to zero. Negative/non-finite dimensions become zero and large dimensions are bounded.
-The work is linear in tab count with at most 32 fitting passes; the caller caps its own tab count.
+## Safety limits
 
-`tabs::Tab` registers a tab at a supplied rectangle and invokes the application's painter:
+Every size is checked before it is allocated: 256 MiB per archive entry, 1 GiB extracted per import
+and 1 GiB of decoded pixels per import by default (`Limits`: extracted bytes and materialized pixels
+are separate budgets, since a bitmap's declared size costs memory whatever its tiles hold), a 64 MiB
+zstd window, 4096 saved revisions, array lengths no longer than the
+bytes left, 16 777 216 decoded values per document stream (fields and array elements together, counted before
+anything is allocated: a value takes about 40 bytes in memory however few it took in the file; the largest of
+those 189 public documents uses 3.3 million), 384 levels of object nesting, 128 levels of layers, 500 000 layers, four million curve
+nodes per curve, 64 megapixels per pixel layer (cropped to its content first) and 1024 gradient
+stops; `redrob-photo-io` adds 300 000 pixels a side per document and 64 megapixels per image on the
+canvas. Every archive entry's CRC-32 and size must match. Malformed input returns an `Error`; the
+crate has no panics outside tests.
 
-```rust
-fn tab(ui: &mut egui::Ui, rect: egui::Rect, selected: bool) -> egui::Response {
-    redrob_craft_ui::tabs::Tab::new(ui.id().with("layers-tab"), "Layers", selected)
-        .sense(egui::Sense::click_and_drag())
-        .show_at(ui, rect, |ui, response| {
-            let fill = if response.hovered() { egui::Color32::GRAY } else { egui::Color32::DARK_GRAY };
-            ui.painter().rect_filled(response.rect, 0.0, fill);
-        })
-}
-```
+## Privacy
 
-Supply a stable ID independent of the translated label. The component reports the accessible
-Tab role, label and selection, handles egui keyboard activation, and paints a focus outline from
-the caller's theme. The caller keeps selection, labels, overflow menus, painting and drag actions;
-close buttons and tab context menus stay separate. Dock and floating-panel adapters use the same
-component without sharing window or workspace state.
-
-## Splits and resize handles
-
-`layout::split_rect` divides a rectangle along `SplitAxis::Horizontal` (left/right children) or
-`Vertical` (top/bottom). `SplitSize` accepts a ratio, fixed first pane, or fixed second pane in
-logical points. The result contains `first`, `divider` and `second` rectangles. Gap and minimum
-are supplied by the application. Tiny areas relax the minimum to half the space available;
-non-finite or inverted input returns `None` instead of panicking.
-
-```rust
-use redrob_craft_ui::layout::{split_rect, SplitAxis, SplitSize};
-
-fn two_panes(rect: egui::Rect) -> Option<(egui::Rect, egui::Rect)> {
-    let split = split_rect(rect, SplitAxis::Horizontal, SplitSize::Ratio(0.5), 4.0, 20.0)?;
-    Some((split.first, split.second))
-}
-```
-
-`layout::ResizeHandle` receives a stable ID, axis, divider rectangle, localized label and
-`ResizeHandleStyle` colors. `show` returns an egui response and a movement delta for that frame.
-Pointer drags, focused axis-arrow keys and AccessKit increment/decrement actions all produce
-that delta. `value(current, range)` adds accessible numeric bounds and SetValue support. Tab
-continues normal focus traversal. Invalid geometry or numeric parameters make the handle inert.
-
-Apply the delta through `SplitLayout::resized(size, delta, minimum)` to retain fixed/ratio sizing,
-or use an application-specific adapter. The library does not persist geometry, dispatch commands
-or create panes. Apps keep their existing dock trees, stacked panels, layout files, pane contents,
-cameras, document focus and native windows. Shared controls do not constitute a dock-tree migration.
-
-## Panel docking
-
-`docking::Layout<P>` owns panel placement independently of application content: a tree of split,
-tab and accordion nodes plus floating tab groups. `apply(Action)` validates the complete layout,
-applies a proposed change to a copy and commits only a valid result. Moves, tab insertion/reorder,
-side splits, detach, activate, close, reveal and resizing use this one transaction path. Panel IDs
-must be unique, stable values; labels and document state are supplied by the app.
-
-`Layout::location` captures a panel's placement before hiding it; `restore` returns it there if
-the remembered destination still exists. Apps choose an explicit fallback when it does not.
-Enable the optional `serde` feature to persist the shared layout, or convert to/from an existing
-workspace schema. Validate loaded input before rendering or recursively converting it.
-
-`DockArea` is an optional renderer. It takes a layout snapshot, styles, labels, panel permissions
-and body callbacks, then returns actions for the app's command handler. Its floating groups stay
-inside the current egui viewport. Protected document canvases have no tab header. Per-panel size
-limits constrain geometry without overwriting saved preferred widths when the window shrinks.
-Applications with established chrome can use the shared transaction model and `resolve_drop`
-without changing their renderer. See [the docking guide](../../docs/ui-docking.md) for details.
-
-## Toolbar overflow
-
-`layout::fit_toolbar(natural_widths, available, spacing, overflow_width)` keeps an ordered
-prefix of indivisible groups at their natural widths. When groups do not fit, it reserves the
-full overflow-control width and the preceding gap. `ToolbarFit` contains visible `(index, width)`
-pairs, overflow indices and the reserved width. It does not skip wide groups or compress controls.
-
-The application paints an enabled, focusable overflow control and makes every overflow index
-available in its menu through existing commands. Group identity, labels, selection and command
-dispatch remain local. An empty input produces an empty fit. Invalid dimensions, more than 4096
-groups, or an available width too small for the overflow control return `None`; the caller must
-then provide a scrollable row, wrapping or an existing application menu. Never turn that result
-into silently missing commands. See the API documentation for the accepted numeric bounds.
-
-## Theme mechanisms
-
-`theme::WidgetPalette` applies background colors to egui's five widget states, with a supplied
-corner radius and foreground stroke. VectorCraft, DesignCraft and LightCraft construct it from their existing
-local tokens. It updates each state's strong/weak background fill, radius and foreground; borders,
-expansion and all other visual settings are retained.
-
-```rust
-use redrob_craft_ui::theme::WidgetPalette;
-use egui::{Color32, CornerRadius, Stroke};
-
-fn style_widgets(visuals: &mut egui::Visuals, palette: WidgetPalette, text: Color32) {
-    palette.apply_to(&mut visuals.widgets, CornerRadius::same(4), Stroke::new(1.0, text));
-    // Optional app-specific exceptions belong after the shared operation.
-    visuals.widgets.inactive.weak_bg_fill = Color32::TRANSPARENT;
-}
-```
-
-This is a mechanism for coloring widgets, not a shared theme schema. Fonts, complete palettes,
-selection colors, shadows, spacing, context storage and preference serialization remain in each
-application. See the [eight-app comparison](../../docs/theme-infrastructure.md) for the exact
-common operation and the differences preserved by the adapters.
-
-## Print settings and feedback
-
-`printing::State` holds the transient printer selection, copies, duplex and grayscale settings,
-plus discovery and submission receivers. Hosts supply `Discover` and `Submit` workers; neither
-the state nor the controls invokes an OS spooler or generates PDF content. Apps map `Settings`
-to `redrob-craft-print::Job` and own the Print action, page selection, preview and export behavior.
-
-`State::show` takes a stable `egui::Id` and app-localized `Labels`. It draws the settings only;
-apps render typed `Feedback` using their own translations. `poll` requests occasional repaints
-while work is pending. Refresh disables submission until the new printer list arrives, preserves
-a still-present selection, and otherwise chooses the system default or first available printer.
-An empty or failed discovery cannot leave a stale printer ready to submit.
-
-`ready` is false while a job is pending. `begin` refuses replacing an active job receiver;
-dropping a receiver does not cancel a native job. Apps must test readiness before invoking the
-host submit callback and keep active work alive when closing a window. Queue-default duplex is
-represented by `None`, independently of explicit one-sided, long-edge or short-edge choices.
-Receipts and backend errors remain unmodified data for the app to display. These controls work
-on WASM too; browser PDF printing remains an app-owned service.
-
-## Compatibility and checks
-
-The crate uses egui 0.36 and Rust 1.95 or later. Its production dependency disables egui's default
-features so fonts and rendering features remain the application's choice. See the
-[suite audit](../../docs/ui-components-audit.md) for candidates, policies and adoption order.
-
-Validation:
-
-```sh
-cargo fmt --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
-cargo check --target wasm32-unknown-unknown -p redrob-craft-ui
-```
-
-The [visual regression suite](../../docs/ui-visual-regressions.md) compares the actual controls
-against independent reference painters, including exact mesh and RGBA checks, and proves that
-color, spacing and stroke changes fail those comparisons. To retain reviewable PNG pairs:
-
-```sh
-REDROB_CRAFT_UI_VISUAL_DIR=/absolute/path/to/visuals cargo test -p redrob-craft-ui --test visual_regression
-```
+Affinity documents can hold the folder they were saved in, user names, original image paths and
+XMP metadata. This reader never imports those fields.
 
 ````
 
@@ -10369,101 +10823,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
-
-````
-
-### `451de5fd712baafadc5aa8e95781e3daf5f4955857e8bdb21304be2068ed3ec3`
-
-Used by:
-- redrob-photo-cms 0.13.2 - README.md
-
-Original byte length: `4800`; trailing newline: `yes`.
-
-````text
-# redrob-photo-cms
-
-Pure-Rust ICC colour management for PhotoCraft. No workspace dependencies (L0, publishable),
-no C, no `unsafe`. Implemented from the public ICC.1:2010 (v4.3) and ICC.1:2001-04 (v2)
-specifications, CIE 15, and Adobe's published black point compensation paper.
-
-## API
-
-```rust
-use redrob_photo_cms::{Builtin, Intent, Profile, Transform};
-
-let src = Profile::parse(&icc_bytes)?;                    // v2/v4: matrix/TRC, gray TRC, mft1/mft2/mAB/mBA
-let dst = Builtin::CoatedCmyk.profile();
-let t = Transform::new(&src, dst, Intent::RelativeColorimetric, /*bpc*/ true)?;
-t.convert_u8(&rgba8, 4, &mut cmyka8, 5, /*copy alpha*/ true);   // also convert_u16 / convert_f32 / apply (in place)
-let mut out = [0.0; 4];
-t.eval(&[1.0, 0.0, 0.0], &mut out);                        // exact single colour
-```
-
-* `Transform::proof(src, proof, display, intent, bpc, simulate_paper)`: soft-proof chain.
-* `GamutCheck::new(src, proof, ΔE)`: out-of-gamut test (gamut warning).
-* `Lut3d::from_transform(&t, 33).to_rgba16f_bytes()`: display transform as a 3D texture.
-* `transform::cached(src, dst, opts)`: process-wide transform cache.
-* `Profile::to_bytes()`: original bytes of parsed profiles (byte-exact), or an ICC v4.3 encoding.
-* `Profile::same_colors(&other)`: the same colour space whatever the encoding (every sample of
-  a device grid within ΔE 0.5 through both), e.g. Photoshop's sRGB IEC61966-2.1 and the built-in
-  sRGB. `content_hash()` compares bytes and suits cache keys only.
-
-### Evaluation
-
-* Exact path: a float stage pipeline (curves, matrices, CLUTs, Lab↔XYZ, PCS encodings, BPC /
-  absolute scaling). Float buffers use it by default (`TransformOptions::precise_float`).
-* Integer buffers: matrix/TRC chains use per-code input tables + matrix + output tables indexed
-  by `x^(1/4)` (accurate near black even for pure gamma curves); chains containing a CLUT are
-  sampled into a device link (33³ for 3 inputs, 17⁴ for 4, 4096 for 1) evaluated with
-  tetrahedral interpolation (4D: linear on the first input between two tetrahedra); purely
-  analytic chains (e.g. Lab ↔ RGB) are evaluated exactly. Buffers ≥ 16k pixels run on rayon
-  (native only).
-* Rendering intents: AToB0/1/2 and BToA0/1/2 by intent with AToB0/BToA0 fallback; absolute
-  colorimetric scales by media white (`wtpt`; v2 display profiles treated as D50; a zero,
-  negative or non-finite white is refused with `CmsError::Invalid`); BPC uses
-  neutral black points (Y only) mapped linearly in XYZ.
-
-## Built-in profiles (all CC0-1.0, generated by this crate)
-
-| id | description |
-|---|---|
-| `srgb` | sRGB IEC61966-2.1 (Rec. 709 primaries, D65 Bradford-adapted, sRGB TRC) |
-| `display-p3` | Display P3 |
-| `adobe-rgb-compat` | Adobe RGB (1998)-compatible (published primaries, gamma 563/256) |
-| `prophoto-compat` | ProPhoto-compatible (ROMM primaries, D50, gamma 1.8) |
-| `linear-srgb` | sRGB primaries, linear |
-| `rec2020` | Rec. 2020 primaries, Rec. 709 OETF |
-| `gray-gamma-2.2`, `sgray` | gray gamma 2.2; gray with the sRGB curve (default gray working space) |
-| `lab-d50` | Lab identity (v4 encoding) |
-| `coated-cmyk` | **PhotoCraft Coated CMYK (synthetic, 300% TAC, medium GCR)** — default CMYK |
-
-### The CMYK profile
-
-Adobe's CMYK profiles (U.S. Web Coated SWOP, Coated FOGRA39) are proprietary, and the freely
-downloadable characterisation-based profiles (ECI/FOGRA, colord, Ghostscript) carry
-redistribution conditions or unclear licences, so PhotoCraft generates its own
-(`src/synth.rs`): a Yule–Nielsen modified Neugebauer model (n = 2) over the 16 overprints with
-ISO 12647-2 coated-paper Lab aims for paper/C/M/Y/RGB overprints, parabolic dot gain (14 % CMY,
-17 % K at 50 %), GCR black generation (starts at 20 % gray component, K max 95 %), total ink
-limit 300 %, perceptual tables with L* black-point scaling and soft chroma compression against a
-sampled gamut boundary. `profiles/photocraft-coated-cmyk.icc` (237 KB, AToB 11⁴ lut16, BToA
-21³ lut16) is that output, dedicated to the public domain (CC0-1.0). Regenerate with
-
-```sh
-REDROB_PHOTO_REGEN_PROFILES=1 cargo test -p redrob-photo-cms --release --test regen
-```
-
-It is a plausible coated-offset profile, not a measured characterisation: use your printer's
-profile for production print.
-
-## Not implemented / approximate
-
-* v4.4 `mpet` (multiProcessElements, D2Bx/B2Dx) tags, named colour, device link and abstract
-  profiles as transform endpoints, `chad`-based adaptation of v2 absolute colorimetry.
-* BPC destination black uses the BToA/AToB round trip directly (Adobe's curve fit for
-  ill-behaved LUT profiles is not implemented); v2/v4 perceptual reference black mixing is not
-  modelled beyond the PRMG black for v4 LUT profiles.
-* Profile ID (MD5) is not computed when writing (left zero, which the spec allows).
 
 ````
 
@@ -11213,6 +11572,156 @@ Permission is hereby granted, free of charge, to any person obtaining a copy of 
 The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+````
+
+### `4825eb3bb7942a7f36419b67298336f9fa4e21584c922333d692c9aea4358210`
+
+Used by:
+- redrob-canvas-atomic 0.14.0 - README.md
+
+Original byte length: `8627`; trailing newline: `yes`.
+
+````text
+# Craft Atomic
+
+`redrob-canvas-atomic` provides crash-safe atomic file writing and replacement for the Craft suite.
+
+Extracted from the storage engine in **Photo** (refs #2, #14), it guarantees that a failed save or abnormal termination never leaves user documents truncated, corrupted, or missing.
+
+## Core Guarantees: Atomicity vs. Durability
+ 
+1. **Atomicity (All-or-Nothing Replacement)**: `atomic_write` never truncates or overwrites the destination in place. It stages content in a hidden temporary file beside the destination (`.{stem}.{pid}-{n}.craft_tmp`), guaranteeing same-volume rename semantics (`EXDEV`-free). An external reader never sees a partial write. If an error occurs during staging or rename, the destination retains its prior bytes and the staging file is unlinked in user space. An abnormal process exit (e.g. `SIGKILL`, crash, or power loss) bypasses user-space cleanup and leaves the staging file on disk; sweeping orphaned staging files is delegated to consuming application recovery routines. The destination file itself is never corrupted.
+2. **Durability & Ordering Boundaries**:
+   - **Content Flush**: Before rename, staging file bytes are flushed to physical storage media (`sync_file`, issuing `F_FULLFSYNC` on macOS/APFS with SMB `fsync` fallback).
+   - **Directory Flush (Unix)**: After rename, syncing the parent directory table (`sync_dir`) is attempted on a best-effort basis. If directory sync fails, the error is ignored because the rename has already committed and the destination has already been replaced.
+   - **Hardware Durability Limits**: The sequence `sync_file < rename < sync_dir` proves ordering and kernel dispatch. Software tests do not prove survival across physical power interruption or unbuffered drive controller write caches.
+3. **Transient Lock Backoff (Windows)**: Antivirus scanners and search indexers hold newly written files momentarily. `RenameRetry` automatically retries renames encountering `PermissionDenied`, sharing violations (32), or lock violations (33) with exponential backoff capped at 200ms.
+4. **Permission & Symlink Invariants**: On Unix, new documents and exports use normal creation permissions (`0666`, subject to umask/default ACL), including their staging files. Private data must explicitly select `NewFilePermissions::Private` to create staging files with mode `0600`. Replacements always stage privately and restore the existing destination mode after the streaming callback. New files keep callback-selected modes with both hard links and the exclusive-copy fallback. Symlink chains are resolved with a hop limit, writing through the symlink to the ultimate target without replacing the link itself.
+5. **Safe Exclusive Creation (`write_new`)**: Uses hard links where supported, or exclusive create (`O_EXCL`), guaranteeing that an existing file is never replaced under race conditions.
+6. **Fault-Injection Testability**: The `AtomicFs` trait enables unit and integration test suites to simulate disk-full, locked files, and permission failures without physical disk I/O.
+
+A replaced file is a new file (a new inode), so its owner and group, extended attributes and ACLs, Finder tags, alternate data streams and hard links are not kept; a crash between the write and the rename can leave a `.<name>.<pid>-<n>.craft_tmp` file beside the destination.
+
+## Usage
+
+### One-Shot Atomic Write
+
+```rust
+use std::path::Path;
+use redrob_canvas_atomic::atomic_write;
+
+let path = Path::new("project.craft");
+let data = b"precious document state";
+
+// Atomically replaces project.craft. If writing fails, project.craft retains
+// its prior bytes and temporary staging files are unlinked in user space.
+atomic_write(path, data).expect("safe atomic write");
+```
+
+### Streaming Atomic Writer
+
+```rust
+use std::io::Write;
+use std::path::Path;
+use redrob_canvas_atomic::atomic_write_with;
+
+let path = Path::new("large_project.craft");
+
+atomic_write_with(path, |file| {
+    file.write_all(b"header...")?;
+    file.write_all(b"payload...")?;
+    Ok(())
+}).expect("streaming atomic write");
+```
+
+### Exclusive Creation (`write_new`)
+
+```rust
+use std::path::Path;
+use redrob_canvas_atomic::write_new;
+
+let path = Path::new("export.png");
+
+// Writes only if the destination does not already exist; fails with AlreadyExists
+// without modifying existing content.
+write_new(path, b"png bytes...").expect("exclusive write");
+```
+
+### Document Permissions and Private Data
+
+The free functions and `WriteOptions::default()` use `NewFilePermissions::PlatformDefault`.
+On Unix, a new document/export stage is created directly with mode `0666`; the OS applies the
+process umask, setgid directory group and default ACL. This matches ordinary file creation
+(for example, `0644` under umask `022`, or `0664` under `002`). No process-global umask changes,
+empty permission probe, or `chmod` is needed for an unchanged new-file mode. The same policy
+applies when exclusive creation falls back to copying on volumes without hard links.
+
+This is a deliberate change from the earlier untagged revision's private default. Settings,
+credentials and recovery data must opt into private creation **before writing any bytes**:
+
+```rust
+use std::path::Path;
+use redrob_canvas_atomic::{NewFilePermissions, WriteOptions};
+
+fn save_private_data() -> std::io::Result<()> {
+    let private = WriteOptions::default().with_new_file_permissions(NewFilePermissions::Private);
+    private.atomic_write(Path::new("settings.toml"), b"theme = 'dark'")?;
+    private.write_new(Path::new("recovery.bin"), b"recovery bytes")
+}
+```
+
+`WriteOptions` and `NewFilePermissions` are non-exhaustive: start with `default()` and select
+the policy with the builder, so future options do not break callers. Downstream matches on the
+enum must include a fallback arm. Byte and streaming methods support both policies.
+`redrob-canvas-settings` explicitly chooses `Private` for its config and backup writes.
+
+Normal stages can be readable (or writable) by others allowed by the directory, umask and ACL
+while the callback is running, and can remain after a crash. Choose `Private` up front for
+sensitive payloads; changing permissions inside a callback is too late to guarantee that no
+other process opened the stage. Private stages request `0600`; actual enforcement depends on
+the filesystem's permission support. Neither policy adds Windows ACL guarantees.
+
+Replacements still stage privately and restore the existing Unix mode after writing. A new
+file keeps any mode selected by its callback. In the normal exclusive-copy fallback, a changed
+mode is applied before copying bytes; explicit private copies stay private during copying and
+apply callback-selected modes afterward. A required mode change that fails is reported, not
+silently ignored. Existing-file replacements and deliberate callback changes can therefore
+still require `chmod`; this is not a claim that every save works on every external filesystem.
+
+These policies do not promise preservation of existing ACLs, ownership or other metadata
+across replacements. The copy fallback never overwrites an existing target, but a reader may
+see the newly created target while it is being copied. A failed copy is removed.
+
+### Fault Injection & Testing
+
+`AtomicFs` lets callers simulate disk-full, locked files and permission failures. Its
+`create_new(path, permissions)` operation receives the selected policy; there is no separate
+probe operation or unsupported-probe fallback. Custom implementations migrating from an earlier
+untagged revision must accept the policy argument and implement both creation modes.
+
+The options API supports the same injection for byte and streaming writes:
+
+```rust
+use std::path::Path;
+use redrob_canvas_atomic::{AtomicFs, NewFilePermissions, RenameRetry, WriteOptions};
+
+fn save_with_faults(fs: &dyn AtomicFs, path: &Path) -> std::io::Result<()> {
+    let options = WriteOptions::default().with_new_file_permissions(NewFilePermissions::Private);
+    let retry = RenameRetry { attempts: 0, first_delay_ms: 0 };
+    options.atomic_write_custom(fs, retry, path, b"private payload")
+}
+```
+
+Use `atomic_write_with_custom` for streaming replacements, or `write_new_custom` and
+`write_new_with_custom` for exclusive creation. The free `atomic_write_custom` and
+`write_new_custom` functions select the default document policy.
+
+## Guarantees & Doctrines
+
+- **Zero App Code**: Zero dependencies on application crates.
+- **Never Crash**: `#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]`.
+- **No Unsafe**: the workspace lints forbid `unsafe` code.
 
 ````
 
@@ -12978,6 +13487,51 @@ Original byte length: `11338`; trailing newline: `yes`.
 
 ````
 
+### `551e32be887c71247fda248a2238b5be9c9ae9c992604c261cf25ced5b715755`
+
+Used by:
+- redrob-photo-heif 0.14.0 - README.md
+
+Original byte length: `2097`; trailing newline: `yes`.
+
+````text
+# redrob-photo-heif
+
+The optional HEIF/HEIC decoder of Photo: iPhone and Mac photos. A thin, panic-guarded wrapper
+around [`heic-rs`](https://github.com/tbraun96/heic-rs), a pure-Rust HEVC still-picture decoder
+(no `unsafe`, MIT OR Apache-2.0): single pictures and grid-tiled photos, 8- and 10-bit (10-bit
+decodes to 16-bit), alpha auxiliary images, the container's rotation/mirror/crop, ICC, EXIF and XMP.
+Read-only: writing would need an HEVC encoder.
+
+```rust
+let info = redrob_photo_heif::probe(&bytes)?;             // size, depth, alpha: check limits first
+let img = redrob_photo_heif::decode(&bytes, &redrob_photo_heif::Options::default())?;
+// img.width, img.height, img.has_alpha, img.sixteen_bit, img.data (RGB/RGBA), img.icc, img.exif, img.xmp
+```
+
+Errors are `Error::Unsupported` (image sequences, overlays, …), `Error::Limit` or
+`Error::Malformed`. It never panics: every call into heic-rs runs under `catch_unwind`, and a panic
+inside it (fuzzing found two in 0.1.1) becomes `Error::Malformed`.
+
+## Why it is a separate, optional crate
+
+- **A young decoder.** heic-rs is new and has a single maintainer. It is pinned exactly
+  (`=0.1.1`); moving the pin is a reviewed change (re-run `cargo fuzz run decode_heif` in
+  `crates/codecs` and `cargo xtask test-corpus`).
+- **HEVC patents are a distributor's call.** HEVC is patent-encumbered in some jurisdictions, so
+  whether a build includes an HEVC decoder is a build-time choice. `redrob-photo-codecs` uses this
+  crate only behind its non-default `heif` feature; the apps forward it
+  (`cargo build -p photo --features heif`). Official Photo builds and CI enable it.
+  Without it, HEIC files are still recognised and opening one is a clear "HEIC/HEIF support isn't
+  included in this build" error.
+
+The crate depends on no other Photo crate and knows nothing of `redrob-photo-codecs`' types;
+`codecs` → `heif` is the one allowed dependency between standalone crates (`cargo xtask layers`).
+Tests on real files live in `redrob-photo-codecs` (`tests/heif.rs`, features `corpus,heif`, files
+fetched by `cargo xtask corpus --heif`).
+
+````
+
 ### `553fffcd9b1cb158bc3e9edc35da85ca5c3b3d7d2e61c883ebcfa8a65814b583`
 
 Used by:
@@ -13384,266 +13938,6 @@ SOFTWARE.
 
 ````
 
-### `5ccb43e3c0a9dcdd55edc6bd44b4e4e935b6ebebbb62bf1a69f26169a66ce0ab`
-
-Used by:
-- redrob-photo-codecs 0.13.2 - README.md
-
-Original byte length: `18808`; trailing newline: `yes`.
-
-````text
-# redrob-photo-codecs
-
-Codecs for flat raster image formats, written in pure Rust. The crate is standalone: it depends on no other
-workspace crate and defines its own `Image` type. It also builds for `wasm32-unknown-unknown` and
-does no I/O: decoders take `&[u8]` and encoders return `Vec<u8>`.
-
-It follows the "Avoiding GIMP's hole" rules in `docs/architecture.md` §1.1:
-
-* **Symmetric.** Every format we write, we can also read. The only exceptions are listed in
-  `ASYMMETRIC_EXCEPTIONS`, each with a reason. The test suite checks this.
-* **Depth-preserving.** An image can hold U8, U16, F16 or F32 samples, and each format keeps
-  what it can hold.
-* **Metadata-preserving.** ICC, EXIF, XMP, DPI and text are kept wherever the format supports
-  them.
-* **Honest.** `caps(format)` says what each format holds, and
-  `fidelity_warnings(&image, format)` lists what an export will lose before you write it. Both
-  functions use the same encode plan as `encode`, so a warning appears exactly when the file
-  changes. On the way in, `Image::warnings` lists what the decoded image doesn't show: frames or
-  pages left out, or data that ended early.
-
-```rust
-use redrob_photo_codecs::*;
-
-let img = decode(&bytes)?;                               // detect + decode (default Limits)
-for w in fidelity_warnings(&img, Format::Jpeg) {         // e.g. "16-bit will be reduced to 8-bit"
-    println!("{w}");
-}
-let out = encode(&img, Format::Tiff, &EncodeOptions::default())?;
-```
-
-## Capability matrix (default build)
-
-| Format | Read | Write | Depths (native) | Layouts (native) | Alpha | ICC | EXIF | XMP | DPI | Text | Lossy write | Backend |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| PNG | yes | yes | U8, U16 | Gray, GrayA, RGB, RGBA | yes | yes (iCCP) | yes (eXIf) | yes (iTXt `XML:com.adobe.xmp`) | yes (pHYs) | yes (tEXt/zTXt/iTXt) | no | `png` |
-| JPEG | yes | yes | U8 | Gray, RGB, CMYK | no | yes (multi-segment APP2) | yes (APP1) | yes (APP1) | yes (JFIF) | no | yes | `zune-jpeg` / `jpeg-encoder` |
-| TIFF | yes | yes | U8, U16, F32 | all six (CMYK, CMYK+A included) | yes | yes (tag 34675) | no | yes (tag 700) | yes | yes (Description, Make, Model, Software, DateTime, Artist, Copyright) | no | `tiff` |
-| WebP | yes | yes | U8 | RGB, RGBA | yes | yes | yes | yes | no | no | yes (VP8, when `webp_lossless` is off) | `image-webp` / built-in VP8 |
-| GIF | yes | yes | U8 | RGBA | 1-bit | no | no | no | no | no | yes (256-colour palette) | `image` |
-| BMP | yes | yes | U8 | RGB, RGBA | yes | no | no | no | no | no | no | `image` |
-| TGA | yes | yes | U8 | Gray, GrayA, RGB, RGBA | yes | no | no | no | no | no | no | `image` |
-| ICO | yes | yes | U8 | RGBA (at most 256×256) | yes | no | no | no | no | no | no | `image` |
-| DDS | yes | **no** | U8 | Gray, GrayA, RGB, RGBA | yes | no | no | no | no | no | n/a | built in |
-| Netpbm (PBM/PGM/PPM/PAM/PFM) | yes | yes | U8, U16, F32 (float: PFM gray/RGB only) | all six (PAM `CMYK`/`CMYK_ALPHA`) | yes (PAM) | no | no | no | no | no | no | built in |
-| QOI | yes | yes | U8 | RGB, RGBA | yes | no | no | no | no | no | no | `image` |
-| OpenEXR | yes | yes | F16, F32 | Y, YA, RGB, RGBA | yes | no | no | no | no | no | no | `exr` |
-| Radiance HDR | yes | yes | F32 | RGB | no | no | no | no | no | no | yes (RGBE) | `image` |
-| FITS | yes | yes | U8, U16, F32 | Gray, RGB | no | no | no | no | no | yes (header cards) | no | built in |
-| DPX | yes | yes | U8, U16 (10/12-bit code values read and written exactly through U16) | Gray, RGB, RGBA | yes | no | no | no | no | DPX header fields only (creator, project, copyright, creation time, transfer, colorimetric, frame position, frame rate, time code) | no | built in |
-| Cineon | yes | **no** | U16 (10-bit code values) | Gray, RGB | no | no | no | no | no | no | n/a | built in |
-| AVIF | **no** | only with feature `avif` | U8 | RGB, RGBA | yes | no | no | no | no | no | yes | `image` + `ravif` |
-| HEIF/HEIC | with feature `heif` | **no** | U8, U16 (10/12-bit decodes to U16) | RGB, RGBA | yes (auxiliary alpha) | yes (`colr` prof) | yes | yes | no | no | n/a | `heic-rs` |
-
-"Native" means the data is stored and read back without conversion. Anything else is converted by
-the encode plan, and `fidelity_warnings` reports the conversion when it loses information:
-
-* A float image written to an integer format goes to U16 where the format supports it. Values
-  outside 0..1 raise `RangeClipped`.
-* Integer data written to a float-only format (EXR, HDR) becomes F32 without loss.
-* CMYK is converted to RGB with a naive formula that is not colour-managed. `CmykConverted` is
-  raised and the ICC profile is dropped, because a CMYK profile does not describe RGB data.
-* Gray written to an RGB-only format is expanded to RGB without loss, so no warning is raised.
-
-`Image::convert` applies the same ICC rule: it keeps the profile only when the colour model stays
-the same.
-
-Palette BMP and PNG pixels decode as RGB(A) in `Image`; `bmp_palette` and `png_palette` expose the
-embedded table (and a PNG's transparent entry) so `redrob-photo-io` can open them in Indexed Color mode.
-
-## Documented asymmetries and limitations
-
-* **DDS.** The top mip level of a 2D texture: uncompressed pixels described by channel masks
-  (8, 16, 24 or 32 bits, RGB or luminance, with or without alpha) or BC1/BC2/BC3 (DXT1/DXT3/DXT5),
-  with the legacy header or the DX10 one. Everything opens as U8; the other mip levels are
-  ignored. Cubemaps, texture arrays, volume textures, premultiplied DXT2/DXT4 and other formats
-  (BC4–BC7, float) are refused with `CodecError::Unsupported`. Writing is not provided.
-
-* **FITS.** The image in the primary HDU, or the first `IMAGE` extension, is read; `NAXIS3 = 3`
-  opens as RGB and any other plane count opens the first plane with `DecodeWarning::MorePages`.
-  Rows follow `ROWORDER` (bottom-up by default, as Siril and DS9 do). Physical values that fit
-  stay exact as U8/U16 (a camera's `BITPIX = 16`, `BZERO = 32768`); the rest become F32, taken as
-  normalised when at most 2 and scaled by 65535 (or the maximum) otherwise. Header cards are
-  kept as text (`HIERARCH` for long names). Tile-compressed (fpack) files are refused with
-  `CodecError::Unsupported`; Bayer mosaics open undebayered.
-
-* **DPX.** SMPTE 268M frames in either byte order (`SDPX`, `XPDS`): the first image element,
-  descriptor 6 (luma), 50 (RGB) or 51 (RGBA), unsigned and unencoded, at 8, 10, 12 or 16 bits.
-  10-bit data may be packed (0) or filled three to a word (1, method A; 2, method B), 12-bit data
-  packed (0) or one to a 16-bit word (1, method A). 10- and 12-bit code values open as U16
-  `round(c × 65535 / (2^b − 1))`, so a frame written back at its depth keeps them exactly. No
-  colour transform is applied: `DecodeWarning::DpxEncoding` names the transfer characteristic and
-  colorimetric specification, so a log frame is reported as log. More elements than the first
-  give `DecodeWarning::MoreElements`; the image orientation is applied on import. Writing is
-  big-endian, one unencoded element, at `EncodeOptions::dpx_bits` (8/10/12/16; by default 8 for
-  U8 and 16 otherwise), packing 1 for 10 and 12 bits; gray with alpha is written as luma.
-  Other descriptors, signed or run-length-encoded data and other bit depths return
-  `CodecError::Unsupported` naming the field.
-
-* **Cineon (read-only).** Kodak's 10-bit logarithmic film-scan format (the one DPX grew from),
-  read from the same Kodak header family: the generic 1024-byte header, big-endian, one (Gray)
-  or three (RGB) channels, three 10-bit samples packed into each 32-bit word, lines on a word
-  boundary. The 10-bit code values open as U16 `round(c × 65535 / 1023)`; the file's black/white
-  reference points are a log-conversion choice and are not applied. A depth other than 10 bits or
-  a channel count other than 1/3 returns `CodecError::Unsupported`; truncation errors rather than
-  panicking. There is no Cineon writer (`ASYMMETRIC_EXCEPTIONS`); save as DPX, TIFF or EXR.
-
-* **Camera raw files** (DNG, CR2, NEF, ARW… which are TIFF-structured) are recognised and refused
-  with `CodecError::Unsupported`: they are sensor data, not flat images. `redrob-photo-raw` decodes
-  and develops them, and `redrob-photo-io` routes them there.
-
-* **HEIF/HEIC (read-only, feature `heif`).** Decoding lives in the optional `redrob-photo-heif` crate
-  behind the non-default `heif` feature (official PhotoCraft builds enable it; distributors choose).
-  Without it, HEIF is still detected and decoding returns `CodecError::Unsupported` ("HEIC/HEIF
-  support isn't included in this build"). iPhone and Mac photos decode with `heic-rs` (pure Rust, no `unsafe`):
-  single pictures and grid-tiled photos, 8 to 12 bits, auxiliary alpha, ICC, EXIF and XMP. The
-  container's `irot`/`imir`/`clap` are applied and EXIF Orientation is rewritten to 1 (HEIF's EXIF
-  tag only repeats the container's, and applying both would turn the photo twice). Grayscale
-  decodes to RGB. Image sequences, overlays and identity derivations, multilayer HEVC and some
-  4:2:2/4:4:4 streams return `CodecError::Unsupported` or `Malformed`, never wrong pixels. Writing
-  needs an HEVC encoder and every mature one is C, so HEIF is listed in `ASYMMETRIC_EXCEPTIONS`.
-* **AVIF.** Encoding uses `ravif`, which is pure Rust. Decoding
-  needs `dav1d`, which is C. AVIF is therefore read-unsupported, and write support is gated
-  behind the non-default `avif` feature. In a default build it is neither readable nor writable,
-  so the symmetric guarantee holds. It is listed in `ASYMMETRIC_EXCEPTIONS`.
-* **Lossy WebP.** Lossless (VP8L, via `image-webp`) is the default. `webp_lossless: false`
-  writes a lossy file with our own clean-room VP8 key-frame encoder (`codecs::vp8`, from
-  RFC 6386; `webp_quality` 0–100 on libwebp's scale sets the quantizer). Alpha travels losslessly
-  in an `ALPH` chunk and ICC/EXIF/XMP in their own chunks of the extended (`VP8X`) container. The
-  encoder makes no rate-distortion decisions yet, and a side longer than 16383 px (the VP8 frame
-  header's limit) is refused with `CodecError::Encode`. We read both lossy and lossless files.
-* **Animation and multi-page files** (APNG, animated GIF/WebP, multi-page TIFF): only the first
-  frame or page is decoded, and a single frame is written. `FormatCaps::animation` marks
-  containers that can hold more frames. The decoded image then carries a
-  `DecodeWarning::MoreFrames` / `MorePages` in `Image::warnings`, with the total when the file
-  states it (frames and TIFF directories are counted without decoding them; reduced-resolution
-  TIFF directories and transparency masks are not pages). Any TIFF page can still be opened
-  with `decode_tiff_page` (and `redrob_photo_io::import_tiff_page`). Every frame of a GIF comes
-  from `decode_gif_frames`: each frame composited onto the logical screen with the disposal
-  methods applied, as RGBA8 with its delay in milliseconds, within `Limits` and
-  `MAX_GIF_FRAMES`. The video-layer commands use it (`redrob_photo_io::import_gif_frames`).
-* **EXIF in TIFF** is stored as a sub-IFD rather than a blob, so it is not preserved yet.
-  `caps.exif = false` for TIFF, and a warning is raised.
-* **Orientation** (EXIF tag 274 in JPEG, PNG `eXIf` and WebP; the decoded page's tag in TIFF and
-  BigTIFF) is applied on
-  decode, like Photoshop: the pixels come back upright and the EXIF/XMP orientation is rewritten
-  to 1 (`DecodeOptions::keep_orientation` opts out). Encoders always write Orientation = 1
-  (`upright_exif`, `upright_xmp`, which change only the tag's value, kept in its own type), so upright pixels
-  are never rotated twice. Parsing is strict: an IFD0 inside the 8-byte header or cut off before
-  its next-IFD pointer, an Orientation that is not exactly one SHORT or LONG, or an out-of-range value
-  reads as 1; with duplicate entries the first wins. `Limits` are checked again on the upright
-  size (5–8 swap width and height), and the rotated buffer is allocated fallibly.
-  `Image::oriented` turns any layout and depth in parallel bands (about 10 ms for 24 MP RGB8 in
-  release).
-* **Resolution** (#1691, module `resolution`): a file without a resolution of its own format
-  (no PNG `pHYs`, a WebP, HEIF, …) takes it from its XMP `tiff:XResolution` / `YResolution` /
-  `ResolutionUnit`, else from EXIF IFD0 (RATIONAL X/YResolution, unit 2 inch — the default when
-  absent — or 3 cm; unit 1 or anything malformed counts as no resolution). A JPEG uses, like
-  Photoshop, the first usable of: APP13 Photoshop ResolutionInfo (0x03ED), XMP, EXIF, and only
-  then the JFIF density (cameras write EXIF only, many tools write a default JFIF 72). On export
-  the EXIF and XMP resolution are rewritten to the image's (`export_exif`, `export_xmp`): the
-  RATIONAL values in place, ResolutionUnit set to 2, an entry that can't be rewritten removed
-  from IFD0 without moving any other data. IFD1 (the thumbnail's) is left as it is.
-* **JPEG**
-  * 8-bit only. Neither decoder backend supports 12-bit.
-  * A file cut off inside its image data decodes leniently (a baseline JPEG's missing rows come
-    out grey) but never silently: the image carries `DecodeWarning::Truncated`. A file that ends
-    before any scan data is an error.
-  * CMYK is always written 4:4:4 (subsampled CMYK is not portable) as Adobe-inverted CMYK with an
-    APP14 marker.
-  * Text is not written because there is no COM-segment support.
-  * EXIF and XMP must each fit in one APP1 segment (65 533 bytes with its header). Metadata that
-    doesn't fit is dropped and the export still succeeds, with a
-    `MetadataTooLarge` warning ("EXIF (… bytes) is too large for the format; it will be dropped").
-    Before dropping XMP, the encoder first removes the layered-document properties
-    (`DocumentAncestors`, `TextLayers`) that mean nothing in a flat JPEG. Extended XMP is not
-    written.
-* **TIFF decode**
-  * Classic TIFF and BigTIFF (version 43, 8-byte offsets), both byte orders, strips or tiles,
-    planar configuration 1 or 2.
-  * Supports 1, 2 and 4-bit gray, 8/16/32/64-bit integers (32 and 64-bit are reduced to U16),
-    F16, F32 and F64 (converted to F32), WhiteIsZero (#691: the tones are no longer inverted),
-    palette images (opened as RGB), associated alpha (made straight) and extra samples (dropped
-    unless the first is alpha).
-  * Every directory is reachable: `tiff_info` lists the main IFD chain and its SubIFDs (tag 330)
-    with each page's size, kind (page, reduced-resolution copy, mask) and storage, walked with a
-    seen-set, a depth limit and a 10 000-directory cap; `decode_tiff_page` opens any of them.
-    `decode` opens the first full-resolution page, like Photoshop (thumbnails are skipped).
-  * Banded decoding: the image is allocated once at its final size and each strip or row of
-    tiles is decoded straight into it, in parallel on native targets, with at most one
-    strip/tile-sized scratch buffer per worker (30 MP RGB8: Deflate 345 → 32 ms, LZW 428 → 43
-    ms in release). Image data cut off by the end of the file decodes with
-    `DecodeWarning::Truncated`; a file far too small for its declared size (more than any
-    compression could expand) is refused before allocating.
-  * YCbCr, CIE Lab, signed integers and compressions that the `tiff` crate lacks (CCITT,
-    JPEG-in-TIFF) return `Unsupported`.
-* **TIFF encode** writes classic TIFF, or BigTIFF when `EncodeOptions::tiff_bigtiff` is set or
-  the file could pass 4 GiB.
-* **EXR**
-  * Multi-part files (a Maya/Arnold render writes one part per AOV) open the part that
-    looks most like a colour image — RGBA beats RGB beats YA beats a single channel, so a
-    depth-only part no longer fails the file — with `DecodeWarning::MoreParts` naming how
-    many parts exist. `exr_info` lists every part (name, view, size, channels, deep/tiled)
-    without decoding pixels, and `decode_exr_part` decodes a chosen one. Deep parts stay
-    with the deep decoder: a file that has any is refused here with a pointer to it.
-  * Reads at full resolution, from the data window.
-  * Channel names are matched by suffix, so `layer.R` counts as `R`.
-  * Subsampled channels are unsupported.
-  * Cryptomatte layers (specification 1.2, as written by Arnold, V-Ray, Redshift, Mantra/Karma
-    and Cycles) are listed and decoded structurally: `cryptomatte_layers` reads the header
-    attributes, channels and embedded manifest without pixels, `decode_cryptomatte` returns the
-    per-pixel (ID, coverage) pairs, and `cryptomatte_id`/`cryptomatte_key`/`cryptomatte_preview_color`
-    hash names to IDs the way the reference implementation does (official test vectors in the
-    test suite).
-  * Deep data (scanlines or single-level tiles, compressed NONE, RLE or ZIPS) opens as a flat
-    image: each pixel's samples are composited into one, with
-    `DecodeWarning::DeepFlattened` because per-pixel depth is not kept. Deep ZIP (16-line
-    blocks) and deep mip-map or rip-map tiles return `Unsupported`.
-  * Only lossless compressions are offered for writing: None, RLE, ZIP1, ZIP16 and PIZ.
-* **Netpbm writing** picks the subtype from the image: float gives PFM, gray gives P5, RGB gives
-  P6, and anything with alpha or CMYK gives P7 (PAM). Writing a `.pbm` file therefore produces
-  whichever of these fits the data.
-* **Colour conversions** (CMYK↔RGB, RGB→gray) are naive. Colour-managed conversion belongs in
-  `redrob-photo-color`.
-
-## Limits (decompression bombs)
-
-`DecodeOptions { limits: Limits { max_width, max_height, max_pixels, max_alloc }, .. }` guards
-decoding. Header dimensions are checked before the pixel buffer is allocated, and the budget is
-also passed to the underlying decoders. A violation returns `CodecError::LimitExceeded`. The
-defaults are 262144 px per side, 2^30 pixels and 8 GiB (2 GiB on 32-bit targets such as wasm).
-PNG also bounds the aggregate decoded text and XMP (UTF-8 keywords and values) by `max_alloc`,
-including chunks after IDAT. This budget is separate from pixels, not a total process-memory cap.
-
-## Tests
-
-`cargo test -p redrob-photo-codecs` covers:
-
-* the full round-trip matrix (every writable format × 4 sample types × 6 layouts), exact for
-  lossless formats and above a PSNR threshold for lossy ones;
-* metadata preservation per format, checked against `caps`;
-* magic-number detection, including negatives;
-* fidelity warnings, and a cross-check that the warnings match the actual round-trip result;
-* the symmetric-capability guarantee;
-* malformed input: truncation, bit flips and proptest random bytes;
-* Adam7 PNG against progressive PNG and against the `image` crate as an oracle;
-* limit enforcement.
-
-If `corpus/pngsuite/*.png` exists at the repo root, every file in it is compared against the
-`image` crate's decoder. Without it, that test is skipped.
-
-````
-
 ### `5da56f1508a87b982a23e6bad2ff09b329f7fcf9181ea15eac17788f8d1c6824`
 
 Used by:
@@ -13738,6 +14032,101 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+````
+
+### `5edc68110dad2f92bf013ce1add6f14a0996975ca2aa3d8d3b625c8d25fa13ac`
+
+Used by:
+- redrob-photo-cms 0.14.0 - README.md
+
+Original byte length: `4774`; trailing newline: `yes`.
+
+````text
+# redrob-photo-cms
+
+Pure-Rust ICC colour management for Photo. No workspace dependencies (L0, publishable),
+no C, no `unsafe`. Implemented from the public ICC.1:2010 (v4.3) and ICC.1:2001-04 (v2)
+specifications, CIE 15, and Adobe's published black point compensation paper.
+
+## API
+
+```rust
+use redrob_photo_cms::{Builtin, Intent, Profile, Transform};
+
+let src = Profile::parse(&icc_bytes)?;                    // v2/v4: matrix/TRC, gray TRC, mft1/mft2/mAB/mBA
+let dst = Builtin::CoatedCmyk.profile();
+let t = Transform::new(&src, dst, Intent::RelativeColorimetric, /*bpc*/ true)?;
+t.convert_u8(&rgba8, 4, &mut cmyka8, 5, /*copy alpha*/ true);   // also convert_u16 / convert_f32 / apply (in place)
+let mut out = [0.0; 4];
+t.eval(&[1.0, 0.0, 0.0], &mut out);                        // exact single colour
+```
+
+* `Transform::proof(src, proof, display, intent, bpc, simulate_paper)`: soft-proof chain.
+* `GamutCheck::new(src, proof, ΔE)`: out-of-gamut test (gamut warning).
+* `Lut3d::from_transform(&t, 33).to_rgba16f_bytes()`: display transform as a 3D texture.
+* `transform::cached(src, dst, opts)`: process-wide transform cache.
+* `Profile::to_bytes()`: original bytes of parsed profiles (byte-exact), or an ICC v4.3 encoding.
+* `Profile::same_colors(&other)`: the same colour space whatever the encoding (every sample of
+  a device grid within ΔE 0.5 through both), e.g. Photoshop's sRGB IEC61966-2.1 and the built-in
+  sRGB. `content_hash()` compares bytes and suits cache keys only.
+
+### Evaluation
+
+* Exact path: a float stage pipeline (curves, matrices, CLUTs, Lab↔XYZ, PCS encodings, BPC /
+  absolute scaling). Float buffers use it by default (`TransformOptions::precise_float`).
+* Integer buffers: matrix/TRC chains use per-code input tables + matrix + output tables indexed
+  by `x^(1/4)` (accurate near black even for pure gamma curves); chains containing a CLUT are
+  sampled into a device link (33³ for 3 inputs, 17⁴ for 4, 4096 for 1) evaluated with
+  tetrahedral interpolation (4D: linear on the first input between two tetrahedra); purely
+  analytic chains (e.g. Lab ↔ RGB) are evaluated exactly. Buffers ≥ 16k pixels run on rayon
+  (native only).
+* Rendering intents: AToB0/1/2 and BToA0/1/2 by intent with AToB0/BToA0 fallback; absolute
+  colorimetric scales by media white (`wtpt`; v2 display profiles treated as D50; a zero,
+  negative or non-finite white is refused with `CmsError::Invalid`); BPC uses
+  neutral black points (Y only) mapped linearly in XYZ.
+
+## Built-in profiles (all CC0-1.0, generated by this crate)
+
+| id | description |
+|---|---|
+| `srgb` | sRGB IEC61966-2.1 (Rec. 709 primaries, D65 Bradford-adapted, sRGB TRC) |
+| `display-p3` | Display P3 |
+| `adobe-rgb-compat` | Adobe RGB (1998)-compatible (published primaries, gamma 563/256) |
+| `prophoto-compat` | ProPhoto-compatible (ROMM primaries, D50, gamma 1.8) |
+| `linear-srgb` | sRGB primaries, linear |
+| `rec2020` | Rec. 2020 primaries, Rec. 709 OETF |
+| `gray-gamma-2.2`, `sgray` | gray gamma 2.2; gray with the sRGB curve (default gray working space) |
+| `lab-d50` | Lab identity (v4 encoding) |
+| `coated-cmyk` | **Photo Coated CMYK (synthetic, 300% TAC, medium GCR)** — default CMYK |
+
+### The CMYK profile
+
+Adobe's CMYK profiles (U.S. Web Coated SWOP, Coated FOGRA39) are proprietary, and the freely
+downloadable characterisation-based profiles (ECI/FOGRA, colord, Ghostscript) carry
+redistribution conditions or unclear licences, so Photo generates its own
+(`src/synth.rs`): a Yule–Nielsen modified Neugebauer model (n = 2) over the 16 overprints with
+ISO 12647-2 coated-paper Lab aims for paper/C/M/Y/RGB overprints, parabolic dot gain (14 % CMY,
+17 % K at 50 %), GCR black generation (starts at 20 % gray component, K max 95 %), total ink
+limit 300 %, perceptual tables with L* black-point scaling and soft chroma compression against a
+sampled gamut boundary. `profiles/coated-cmyk.icc` (237 KB, AToB 11⁴ lut16, BToA
+21³ lut16) is that output, dedicated to the public domain (CC0-1.0). Regenerate with
+
+```sh
+REDROB_PHOTO_REGEN_PROFILES=1 cargo test -p redrob-photo-cms --release --test regen
+```
+
+It is a plausible coated-offset profile, not a measured characterisation: use your printer's
+profile for production print.
+
+## Not implemented / approximate
+
+* v4.4 `mpet` (multiProcessElements, D2Bx/B2Dx) tags, named colour, device link and abstract
+  profiles as transform endpoints, `chad`-based adaptation of v2 absolute colorimetry.
+* BPC destination black uses the BToA/AToB round trip directly (Adobe's curve fit for
+  ill-behaved LUT profiles is not implemented); v2/v4 perceptual reference black mixing is not
+  modelled beyond the PRMG black for v4 LUT profiles.
+* Profile ID (MD5) is not computed when writing (left zero, which the spec allows).
 
 ````
 
@@ -14270,167 +14659,6 @@ Original byte length: `172`; trailing newline: `yes`.
 # AccessKit Windows adapter
 
 This is the Windows adapter for [AccessKit](https://accesskit.dev/). It exposes an AccessKit accessibility tree through the UI Automation API.
-
-````
-
-### `62589fc11862600571d597382badeafaf0901647957f4b6d7c322698209bc440`
-
-Used by:
-- redrob-photo-affinity 0.13.2 - README.md
-
-Original byte length: `10404`; trailing newline: `yes`.
-
-````text
-# redrob-photo-affinity
-
-An independent, bounded Rust reader for native Affinity documents: `.af` from Affinity 3 and
-`.afdesign`, `.afphoto` and `.afpub` from Affinity 1 and 2 (container versions 8 to 12). It reads
-the archive, the tagged object stream in `doc.dat` and the part of the document model listed below,
-and hands `redrob-photo-io` a document in pixels with every transform composed. It does not write
-Affinity files.
-
-## What is imported
-
-`redrob-photo-io` maps the model to an 8-bit RGB document at the Affinity document's resolution:
-
-| Affinity | PhotoCraft |
-|---|---|
-| Pages, Publisher spreads | one artboard per spread, spreads side by side 64 px apart |
-| Artboards (legacy `ABEn`, or current `.af` `phrp`/`aprp` properties, including converted curves), with name, solid background, any transform | artboards (nested ones as groups with a vector mask; rotated/curved boards use their bounding rectangle) |
-| Layers (`Scop`), groups (`Grup`), pass-through or isolated | groups (pass-through or Normal) |
-| Curves (`PCrv`): cubic subpaths, closed flags, live corners (`CnrD`) | shape layers (multi-subpath curves fill even-odd) |
-| Rectangles with corner radii (relative or absolute, locked or per corner) and round or straight corners, ellipses, polygons (smooth too), stars, square stars, pies, triangles, trapezoids, clouds, hearts, cogs, rounded and elliptical callouts, arrows, double stars, tears, crescents, diamonds and circular segments | shape layers |
-| Compound shapes (`Comp`, add and subtract) | one even-odd shape |
-| A shape or curve with children clips them | group with the outline as vector mask, the shape at its bottom |
-| Vector masks (`AdCh` curves and shapes) | vector masks |
-| Pixel masks (`MRst`, attached or as a layer in a group) | layer masks |
-| Solid fills: RGBA, HSLA, CMYK, grey, Lab (D50) | shape fill (converted to RGB) |
-| Linear, elliptical, radial and conical gradients with Affinity's midpoint bias | gradient fills |
-| Strokes: weight, scale with object, dash pattern, alignment, caps, joins, miter limit | shape strokes |
-| Fill layers (`FRst`) | filled rectangles |
-| Artistic and frame text: characters, font family/weight/style, size, tracking, fixed leading, colour, paragraph alignment, first baseline | type layers (rendered with the fonts installed) |
-| Placed images (`ImgN`): the original JPEG/PNG embedded in the file | embedded smart objects |
-| Pixel layers (`Rstr`): RGBA 8/16-bit and CMYK 8-bit tiles, cropped to their content | pixel layers |
-| Embedded documents and symbols (`EmbN`) | the picture Affinity cached of them |
-| Opacity, visibility, lock, names, blend modes | the same (Add as Linear Dodge) |
-
-Everything else is reported in the import warnings, one line per kind with a count, never
-dropped silently: layer effects, adjustment layers and live filters, brush and pressure strokes,
-transparency gradients, fill opacity, bitmap fills, master pages, unrecognized
-parametric shapes (imported as their bounding ellipses), corner types other than round or straight, stars with
-rounded points, several fills or strokes on one object (one of each is used), strokes behind the
-fill, outlined or scaled text, text fields such as page numbers, frames with columns or a curved
-outline, grey/Lab/32-bit pixels, CMYK and Lab colour (converted to RGB without the document's
-profile), facing pages and the Average, Negation, Reflect, Glow and Erase blend modes (as Normal).
-
-Opened Affinity documents start without a save path: Save asks for a new copy and never writes
-back over the Affinity file. When the native document can't be read at all, `redrob-photo-io` opens
-the embedded PNG preview instead, as one pixel layer named “Affinity preview”, with a warning
-that names the reason. That preview can't be placed or used by imports that can't show the
-warning (smart-object decoding, stacks, batch, displacement maps, variables).
-
-## Embedded preview
-
-`preview(bytes)` reads only the thumbnail record the header's offset 24 points to (the same in
-container versions 8 to 12); it never scans for PNG signatures. All integers are little-endian.
-
-| Record offset | Size | Observed value |
-|---|---:|---|
-| 0 | 8 | `ffffffff` followed by `Thmb` |
-| 8 | 4 | Record version 1 |
-| 12 | 4 | PNG byte length + 13 |
-| 16 | 4 | PNG start offset 29 |
-| 20 | 4 | Zero |
-| 24 | 4 | PNG byte length |
-| 28 | 1 | PNG encoding 1 |
-| 29 | declared length | Exactly one PNG |
-
-The PNG is limited to 16 MiB and 4096 pixels a side. IHDR must come first and be unique, IDAT
-chunks contiguous, an optional PLTE unique and before IDAT, every chunk CRC must match and IEND must
-end the file; compressed metadata (`zTXt`, `iTXt`, `iCCP`), APNG chunks and unknown critical chunks
-are rejected. The I/O adapter decodes it with a 128 MiB allocation limit.
-
-## Provenance and clean-room
-
-Affinity has no published file-format specification, so this reader is built only from a public
-description of the format and from public files, never from Affinity itself. This is how
-PhotoCraft already treats formats that are only partly documented: `redrob-photo-psd` fills the gaps
-in Adobe's specification from the MIT-licensed psd-tools and ag-psd, and `redrob-photo-raw` recovered
-Nikon's compression tables by black-box analysis of CC0 sample files (see their READMEs).
-
-* **No Affinity software.** Affinity was never downloaded, installed, run, scripted, screenshotted or
-  disassembled for this work, and nothing from an Affinity installation (program code, resources,
-  presets, fonts, colour profiles) was read. No file was made with Affinity for it: every sample
-  is a document its author published.
-* **A public, permissively licensed description.** The container and object-stream layout was
-  learned from [VMDevCpp/afread](https://github.com/VMDevCpp/afread) (MIT, at
-  `04b672334a43e3e37ded6b5ffc57af231d589774`, written for container versions 7–11) and re-described
-  in our own words before this Rust code was written; no code was translated. No GPL/AGPL code (such
-  as Inkscape's Affinity extension) was read.
-* **Every structure checked against public files.** afread doesn't say how its author learned the
-  format, so nothing here rests on it alone: each structure the reader relies on is confirmed by
-  the public documents. Every archive entry carries a CRC-32 that must match, and every field in
-  the object stream names its own type, so a misread layout fails loudly instead of producing
-  plausible wrong data.
-* **Meaning fitted to Affinity's own pictures.** What shapes, paints, text and pixel data mean was
-  worked out by comparing our render with the thumbnail every Affinity document embeds (Affinity's
-  render of itself), on 176 public documents saved by Affinity 1.x, 2.x and 3.0/3.1 on Windows,
-  macOS and iPad. The collection has since grown to 189 distinct documents, and the reader opens
-  all of them. Most are published under CC0, MIT, BSD, Apache-2.0 or CC BY (-SA); the others
-  (no licence stated, or GPL or non-commercial terms) were only opened locally to compare
-  pictures, never committed or redistributed. The corpus test keeps the comparison for the pinned
-  files, which are CC0, MIT or Apache-2.0 only.
-* **Nothing of Affinity's is in this repository**: no program code, assets or documents. The test
-  files are fetched at pinned commits and sha256-verified, never committed.
-* **Read-only.** Nothing is written in Affinity's format; export waits until someone can check
-  written files in Affinity itself.
-
-The same reader is shared, as an independent copy, with VectorCraft's `redrob-vector-affinity`.
-
-## Validation
-
-* Unit tests on synthetic containers built by the `synth` feature (stored, zlib and zstd entries,
-  checksums, budgets, cycles, hostile streams, every truncation) and property tests of random
-  mutations, here and in `redrob-photo-io`'s `tests/affinity.rs`.
-* `cargo xtask corpus --affinity` fetches 21 public CC0/MIT documents, including the four
-  Affinity 3 `.af` files of [samuel-etver/vector-art](https://github.com/samuel-etver/vector-art)
-  (CC0), at pinned commits, each checked against `xtask/affinity-corpus.sha256`. `tests/real_files.rs`
-  parses them; `redrob-photo-io`'s `tests/affinity_corpus.rs` imports and flattens each one and
-  compares it with the thumbnail Affinity saved in it (mean difference 0–4.6 of 255, with a
-  ceiling per file).
-* `fuzz/` has `cargo-fuzz` targets for the whole reader (`preview`), the object stream (`stream`)
-  and the I/O import (`import_preview`); CI's fuzz job runs `preview` and `import_preview`:
-
-  ```sh
-  cd crates/affinity/fuzz
-  cargo +nightly fuzz run stream -- -max_total_time=600
-  cargo +nightly fuzz run import_preview --features io -- -max_total_time=600
-  ```
-
-What has not been verified: files from Affinity builds or platforms outside the public set, files
-written by other applications, rotated or skewed images against Affinity's render, mask polarity
-against a render with and without the mask, and anything listed as a warning above. The `synth`
-builders write only what this reader accepts; Affinity has never opened their output, so they are
-test fixtures, not an exporter.
-
-## Safety limits
-
-Every size is checked before it is allocated: 256 MiB per archive entry, 1 GiB extracted per import
-and 1 GiB of decoded pixels per import by default (`Limits`: extracted bytes and materialized pixels
-are separate budgets, since a bitmap's declared size costs memory whatever its tiles hold), a 64 MiB
-zstd window, 4096 saved revisions, array lengths no longer than the
-bytes left, 16 777 216 decoded values per document stream (fields and array elements together, counted before
-anything is allocated: a value takes about 40 bytes in memory however few it took in the file; the largest of
-those 189 public documents uses 3.3 million), 384 levels of object nesting, 128 levels of layers, 500 000 layers, four million curve
-nodes per curve, 64 megapixels per pixel layer (cropped to its content first) and 1024 gradient
-stops; `redrob-photo-io` adds 300 000 pixels a side per document and 64 megapixels per image on the
-canvas. Every archive entry's CRC-32 and size must match. Malformed input returns an `Error`; the
-crate has no panics outside tests.
-
-## Privacy
-
-Affinity documents can hold the folder they were saved in, user names, original image paths and
-XMP metadata. This reader never imports those fields.
 
 ````
 
@@ -15470,110 +15698,6 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 
   This Source Code Form is "Incompatible With Secondary Licenses", as
   defined by the Mozilla Public License, v. 2.0.
-
-````
-
-### `66a9483fc1edeb17dc7631224f22b53a397c28dbf706e544bea1b42dfbea0965`
-
-Used by:
-- redrob-vector-pathops 0.13.2 - README.md
-
-Original byte length: `6173`; trailing newline: `yes`.
-
-````text
-# redrob-vector-pathops
-
-Path operations for VectorCraft: booleans, the Pathfinder panel, Shape Builder regions, Live Paint planar maps, offset path, outline stroke, simplify and the other Object → Path commands. Everything takes and returns `redrob_vector_geom::PathData`.
-
-## Booleans (curve-preserving)
-
-```rust
-pub enum BoolOp { Union, Intersect, Difference, Xor }
-pub fn boolean(a: &PathData, a_rule: FillRule, b: &PathData, b_rule: FillRule, op: BoolOp) -> PathData;
-pub fn try_boolean(.., precision: f64) -> Result<PathData, PathOpsError>; // errors on NaN/inf
-pub fn boolean_n(paths: &[(&PathData, FillRule)], pred: impl Fn(&[bool]) -> bool) -> PathData;
-pub fn unite_all(paths: &[(&PathData, FillRule)]) -> PathData;   // fast many-shape union
-pub fn normalize(path: &PathData, rule: FillRule) -> PathData;   // resolve self-overlaps
-pub fn area(path: &PathData, rule: FillRule) -> f64;             // exact filled area
-```
-
-The engine is `linesweeper` (a robust sweep line that works directly on cubic Béziers, so there's no polygon flattening). The sweep splits curves at intersections and y-extrema. Afterwards:
-
-- pieces that lie on one input cubic are rebuilt exactly as a single sub-curve of that cubic;
-- other smooth joints (for example, in stroker output) are refitted by least squares within `DEFAULT_PRECISION` (0.01 pt);
-- collinear line pieces are merged;
-- the inputs' own anchors are always kept;
-- slivers narrower than the precision are dropped.
-
-Output contours are simple and consistently oriented: outer contours and holes wind in opposite directions, so the result fills the same under either fill rule. Open subpaths are closed implicitly because they're treated as filled.
-
-## Pathfinder / Shape Builder
-
-```rust
-pub struct Shape { pub path: PathData, pub rule: FillRule, pub key: u64 } // key = paint identity
-pub enum PathfinderOp { Unite, MinusFront, Intersect, Exclude, Divide, Trim, Merge, Crop, Outline, MinusBack }
-pub fn pathfinder(op: PathfinderOp, shapes: &[Shape] /* back → front */) -> Vec<Shape>;
-
-pub struct Region { pub path: PathData, pub sources: Vec<usize> }
-pub fn regions(shapes: &[Shape]) -> Vec<Region>;            // all faces of the arrangement
-pub fn region_at(shapes: &[Shape], p: Point) -> Option<Region>;
-pub fn merge_regions(regions: &[&Region]) -> PathData;      // Shape Builder merge = union
-pub fn shape_builder(shapes: &[Shape]) -> (Vec<Region>, Vec<Shape>); // (regions, open-path pieces)
-```
-
-Each result takes its key as follows:
-
-| Operation | Result |
-|---|---|
-| Unite, Intersect, Exclude, Minus Back | Takes the front-most key |
-| Minus Front | Takes the back-most key |
-| Divide | One shape per face, keyed by the front-most shape that covers the face |
-| Trim | One shape for each object that is still visible |
-| Merge | Joins touching visible parts that share a key; each connected component becomes one shape |
-| Crop | Keeps the visible parts of the lower objects inside the front-most object |
-| Outline | Returns open edge paths, split at every junction; coincident edges are de-duplicated, and each keeps the front-most key |
-
-## Live Paint
-
-```rust
-pub fn live_paint(shapes: &[Shape] /* back → front */) -> (Vec<Region>, Vec<Shape>); // (faces, edges)
-pub fn interior_point(path: &PathData) -> Option<Point>;
-```
-
-Unlike `regions`, which splits the filled areas of closed shapes, `live_paint` treats every path as an edge, open paths included. Three crossing lines enclose a triangle, a line across a rectangle splits it in two, and an area enclosed by paths becomes a face even when nothing fills it. Each face lists the inputs whose fill covers it; the list is empty for an area that is only enclosed by paths. Each edge is a piece of a path, split wherever another path meets it, and keeps the key of the front-most input it lies on.
-
-`shape_builder` gives the Shape Builder's regions. With closed paths only, they are the `regions`. Once an open path is among them, they are the `live_paint` faces, so a stroke-only line across a shape splits it and lines can enclose a region of their own. The second list holds the pieces of each path that has no closed subpath, keyed by its index, so the Shape Builder can delete them one by one. The caller closes any open path whose fill should count. Inputs with more than `SHAPE_BUILDER_MAX_SEGMENTS` segments fall back to the filled areas.
-
-## Offset / stroke
-
-```rust
-pub use kurbo::{Cap, Join};
-pub fn offset_path(path: &PathData, delta: f64, join: Join, miter_limit: f64) -> PathData; // delta < 0 insets
-pub fn outline_stroke(path: &PathData, width: f64, cap: Cap, join: Join, miter_limit: f64) -> PathData;
-```
-
-`outline_stroke` passes the path to `kurbo::stroke` and then normalizes the result, which removes the overlaps at joins. `offset_path` computes `fill ∪ stroke(2|d|)` for a positive offset and `fill − stroke(2|d|)` for a negative one.
-
-## Path editing
-
-```rust
-pub fn simplify(path: &PathData, tolerance: f64) -> PathData;
-pub fn simplify_with(path: &PathData, opts: &SimplifyOptions) -> PathData; // tolerance, corner_angle_deg, straight_lines
-pub fn smooth(path: &PathData, amount: f64) -> PathData;
-pub fn remove_redundant_points(path: &PathData, tolerance: f64) -> PathData;
-pub fn add_anchor_points(path: &PathData) -> PathData;
-pub fn average(path: &PathData, selection: &[(usize, usize)], axis: AverageAxis) -> PathData;
-pub fn join(paths: &[PathData], tolerance: f64) -> PathData;
-pub fn split_into_grid(rect: Rect, rows: usize, cols: usize, gutter: f64) -> Vec<PathData>;
-```
-
-`simplify` fits least-squares cubics with fixed end tangents, then reparameterizes with Newton steps and splits at the point of worst error. Any anchor that turns more than the corner threshold (30° by default) stays a corner.
-
-## Caveats
-
-- linesweeper is still in beta. When two identical curves overlap, the sweep can leave a tiny lens between them; the sliver filter removes it.
-- The Outline op finds split points by snapping to arrangement junctions with a small tolerance.
-- The quality of offsets depends on kurbo's parallel-curve stroker. Its output is refitted, so offset results have more anchors than boolean results.
 
 ````
 
@@ -18928,6 +19052,266 @@ Original byte length: `11334`; trailing newline: `yes`.
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
+
+````
+
+### `7c64c5992a997da004b0c70b986e52586561ab3ddade244c314aeafb96b60444`
+
+Used by:
+- redrob-photo-codecs 0.14.0 - README.md
+
+Original byte length: `18803`; trailing newline: `yes`.
+
+````text
+# redrob-photo-codecs
+
+Codecs for flat raster image formats, written in pure Rust. The crate is standalone: it depends on no other
+workspace crate and defines its own `Image` type. It also builds for `wasm32-unknown-unknown` and
+does no I/O: decoders take `&[u8]` and encoders return `Vec<u8>`.
+
+It follows the "Avoiding GIMP's hole" rules in `docs/architecture.md` §1.1:
+
+* **Symmetric.** Every format we write, we can also read. The only exceptions are listed in
+  `ASYMMETRIC_EXCEPTIONS`, each with a reason. The test suite checks this.
+* **Depth-preserving.** An image can hold U8, U16, F16 or F32 samples, and each format keeps
+  what it can hold.
+* **Metadata-preserving.** ICC, EXIF, XMP, DPI and text are kept wherever the format supports
+  them.
+* **Honest.** `caps(format)` says what each format holds, and
+  `fidelity_warnings(&image, format)` lists what an export will lose before you write it. Both
+  functions use the same encode plan as `encode`, so a warning appears exactly when the file
+  changes. On the way in, `Image::warnings` lists what the decoded image doesn't show: frames or
+  pages left out, or data that ended early.
+
+```rust
+use redrob_photo_codecs::*;
+
+let img = decode(&bytes)?;                               // detect + decode (default Limits)
+for w in fidelity_warnings(&img, Format::Jpeg) {         // e.g. "16-bit will be reduced to 8-bit"
+    println!("{w}");
+}
+let out = encode(&img, Format::Tiff, &EncodeOptions::default())?;
+```
+
+## Capability matrix (default build)
+
+| Format | Read | Write | Depths (native) | Layouts (native) | Alpha | ICC | EXIF | XMP | DPI | Text | Lossy write | Backend |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| PNG | yes | yes | U8, U16 | Gray, GrayA, RGB, RGBA | yes | yes (iCCP) | yes (eXIf) | yes (iTXt `XML:com.adobe.xmp`) | yes (pHYs) | yes (tEXt/zTXt/iTXt) | no | `png` |
+| JPEG | yes | yes | U8 | Gray, RGB, CMYK | no | yes (multi-segment APP2) | yes (APP1) | yes (APP1) | yes (JFIF) | no | yes | `zune-jpeg` / `jpeg-encoder` |
+| TIFF | yes | yes | U8, U16, F32 | all six (CMYK, CMYK+A included) | yes | yes (tag 34675) | no | yes (tag 700) | yes | yes (Description, Make, Model, Software, DateTime, Artist, Copyright) | no | `tiff` |
+| WebP | yes | yes | U8 | RGB, RGBA | yes | yes | yes | yes | no | no | yes (VP8, when `webp_lossless` is off) | `image-webp` / built-in VP8 |
+| GIF | yes | yes | U8 | RGBA | 1-bit | no | no | no | no | no | yes (256-colour palette) | `image` |
+| BMP | yes | yes | U8 | RGB, RGBA | yes | no | no | no | no | no | no | `image` |
+| TGA | yes | yes | U8 | Gray, GrayA, RGB, RGBA | yes | no | no | no | no | no | no | `image` |
+| ICO | yes | yes | U8 | RGBA (at most 256×256) | yes | no | no | no | no | no | no | `image` |
+| DDS | yes | **no** | U8 | Gray, GrayA, RGB, RGBA | yes | no | no | no | no | no | n/a | built in |
+| Netpbm (PBM/PGM/PPM/PAM/PFM) | yes | yes | U8, U16, F32 (float: PFM gray/RGB only) | all six (PAM `CMYK`/`CMYK_ALPHA`) | yes (PAM) | no | no | no | no | no | no | built in |
+| QOI | yes | yes | U8 | RGB, RGBA | yes | no | no | no | no | no | no | `image` |
+| OpenEXR | yes | yes | F16, F32 | Y, YA, RGB, RGBA | yes | no | no | no | no | no | no | `exr` |
+| Radiance HDR | yes | yes | F32 | RGB | no | no | no | no | no | no | yes (RGBE) | `image` |
+| FITS | yes | yes | U8, U16, F32 | Gray, RGB | no | no | no | no | no | yes (header cards) | no | built in |
+| DPX | yes | yes | U8, U16 (10/12-bit code values read and written exactly through U16) | Gray, RGB, RGBA | yes | no | no | no | no | DPX header fields only (creator, project, copyright, creation time, transfer, colorimetric, frame position, frame rate, time code) | no | built in |
+| Cineon | yes | **no** | U16 (10-bit code values) | Gray, RGB | no | no | no | no | no | no | n/a | built in |
+| AVIF | **no** | only with feature `avif` | U8 | RGB, RGBA | yes | no | no | no | no | no | yes | `image` + `ravif` |
+| HEIF/HEIC | with feature `heif` | **no** | U8, U16 (10/12-bit decodes to U16) | RGB, RGBA | yes (auxiliary alpha) | yes (`colr` prof) | yes | yes | no | no | n/a | `heic-rs` |
+
+"Native" means the data is stored and read back without conversion. Anything else is converted by
+the encode plan, and `fidelity_warnings` reports the conversion when it loses information:
+
+* A float image written to an integer format goes to U16 where the format supports it. Values
+  outside 0..1 raise `RangeClipped`.
+* Integer data written to a float-only format (EXR, HDR) becomes F32 without loss.
+* CMYK is converted to RGB with a naive formula that is not colour-managed. `CmykConverted` is
+  raised and the ICC profile is dropped, because a CMYK profile does not describe RGB data.
+* Gray written to an RGB-only format is expanded to RGB without loss, so no warning is raised.
+
+`Image::convert` applies the same ICC rule: it keeps the profile only when the colour model stays
+the same.
+
+Palette BMP and PNG pixels decode as RGB(A) in `Image`; `bmp_palette` and `png_palette` expose the
+embedded table (and a PNG's transparent entry) so `redrob-photo-io` can open them in Indexed Color mode.
+
+## Documented asymmetries and limitations
+
+* **DDS.** The top mip level of a 2D texture: uncompressed pixels described by channel masks
+  (8, 16, 24 or 32 bits, RGB or luminance, with or without alpha) or BC1/BC2/BC3 (DXT1/DXT3/DXT5),
+  with the legacy header or the DX10 one. Everything opens as U8; the other mip levels are
+  ignored. Cubemaps, texture arrays, volume textures, premultiplied DXT2/DXT4 and other formats
+  (BC4–BC7, float) are refused with `CodecError::Unsupported`. Writing is not provided.
+
+* **FITS.** The image in the primary HDU, or the first `IMAGE` extension, is read; `NAXIS3 = 3`
+  opens as RGB and any other plane count opens the first plane with `DecodeWarning::MorePages`.
+  Rows follow `ROWORDER` (bottom-up by default, as Siril and DS9 do). Physical values that fit
+  stay exact as U8/U16 (a camera's `BITPIX = 16`, `BZERO = 32768`); the rest become F32, taken as
+  normalised when at most 2 and scaled by 65535 (or the maximum) otherwise. Header cards are
+  kept as text (`HIERARCH` for long names). Tile-compressed (fpack) files are refused with
+  `CodecError::Unsupported`; Bayer mosaics open undebayered.
+
+* **DPX.** SMPTE 268M frames in either byte order (`SDPX`, `XPDS`): the first image element,
+  descriptor 6 (luma), 50 (RGB) or 51 (RGBA), unsigned and unencoded, at 8, 10, 12 or 16 bits.
+  10-bit data may be packed (0) or filled three to a word (1, method A; 2, method B), 12-bit data
+  packed (0) or one to a 16-bit word (1, method A). 10- and 12-bit code values open as U16
+  `round(c × 65535 / (2^b − 1))`, so a frame written back at its depth keeps them exactly. No
+  colour transform is applied: `DecodeWarning::DpxEncoding` names the transfer characteristic and
+  colorimetric specification, so a log frame is reported as log. More elements than the first
+  give `DecodeWarning::MoreElements`; the image orientation is applied on import. Writing is
+  big-endian, one unencoded element, at `EncodeOptions::dpx_bits` (8/10/12/16; by default 8 for
+  U8 and 16 otherwise), packing 1 for 10 and 12 bits; gray with alpha is written as luma.
+  Other descriptors, signed or run-length-encoded data and other bit depths return
+  `CodecError::Unsupported` naming the field.
+
+* **Cineon (read-only).** Kodak's 10-bit logarithmic film-scan format (the one DPX grew from),
+  read from the same Kodak header family: the generic 1024-byte header, big-endian, one (Gray)
+  or three (RGB) channels, three 10-bit samples packed into each 32-bit word, lines on a word
+  boundary. The 10-bit code values open as U16 `round(c × 65535 / 1023)`; the file's black/white
+  reference points are a log-conversion choice and are not applied. A depth other than 10 bits or
+  a channel count other than 1/3 returns `CodecError::Unsupported`; truncation errors rather than
+  panicking. There is no Cineon writer (`ASYMMETRIC_EXCEPTIONS`); save as DPX, TIFF or EXR.
+
+* **Camera raw files** (DNG, CR2, NEF, ARW… which are TIFF-structured) are recognised and refused
+  with `CodecError::Unsupported`: they are sensor data, not flat images. `redrob-photo-raw` decodes
+  and develops them, and `redrob-photo-io` routes them there.
+
+* **HEIF/HEIC (read-only, feature `heif`).** Decoding lives in the optional `redrob-photo-heif` crate
+  behind the non-default `heif` feature (official Photo builds enable it; distributors choose).
+  Without it, HEIF is still detected and decoding returns `CodecError::Unsupported` ("HEIC/HEIF
+  support isn't included in this build"). iPhone and Mac photos decode with `heic-rs` (pure Rust, no `unsafe`):
+  single pictures and grid-tiled photos, 8 to 12 bits, auxiliary alpha, ICC, EXIF and XMP. The
+  container's `irot`/`imir`/`clap` are applied and EXIF Orientation is rewritten to 1 (HEIF's EXIF
+  tag only repeats the container's, and applying both would turn the photo twice). Grayscale
+  decodes to RGB. Image sequences, overlays and identity derivations, multilayer HEVC and some
+  4:2:2/4:4:4 streams return `CodecError::Unsupported` or `Malformed`, never wrong pixels. Writing
+  needs an HEVC encoder and every mature one is C, so HEIF is listed in `ASYMMETRIC_EXCEPTIONS`.
+* **AVIF.** Encoding uses `ravif`, which is pure Rust. Decoding
+  needs `dav1d`, which is C. AVIF is therefore read-unsupported, and write support is gated
+  behind the non-default `avif` feature. In a default build it is neither readable nor writable,
+  so the symmetric guarantee holds. It is listed in `ASYMMETRIC_EXCEPTIONS`.
+* **Lossy WebP.** Lossless (VP8L, via `image-webp`) is the default. `webp_lossless: false`
+  writes a lossy file with our own clean-room VP8 key-frame encoder (`codecs::vp8`, from
+  RFC 6386; `webp_quality` 0–100 on libwebp's scale sets the quantizer). Alpha travels losslessly
+  in an `ALPH` chunk and ICC/EXIF/XMP in their own chunks of the extended (`VP8X`) container. The
+  encoder makes no rate-distortion decisions yet, and a side longer than 16383 px (the VP8 frame
+  header's limit) is refused with `CodecError::Encode`. We read both lossy and lossless files.
+* **Animation and multi-page files** (APNG, animated GIF/WebP, multi-page TIFF): only the first
+  frame or page is decoded, and a single frame is written. `FormatCaps::animation` marks
+  containers that can hold more frames. The decoded image then carries a
+  `DecodeWarning::MoreFrames` / `MorePages` in `Image::warnings`, with the total when the file
+  states it (frames and TIFF directories are counted without decoding them; reduced-resolution
+  TIFF directories and transparency masks are not pages). Any TIFF page can still be opened
+  with `decode_tiff_page` (and `redrob_photo_io::import_tiff_page`). Every frame of a GIF comes
+  from `decode_gif_frames`: each frame composited onto the logical screen with the disposal
+  methods applied, as RGBA8 with its delay in milliseconds, within `Limits` and
+  `MAX_GIF_FRAMES`. The video-layer commands use it (`redrob_photo_io::import_gif_frames`).
+* **EXIF in TIFF** is stored as a sub-IFD rather than a blob, so it is not preserved yet.
+  `caps.exif = false` for TIFF, and a warning is raised.
+* **Orientation** (EXIF tag 274 in JPEG, PNG `eXIf` and WebP; the decoded page's tag in TIFF and
+  BigTIFF) is applied on
+  decode, like Photoshop: the pixels come back upright and the EXIF/XMP orientation is rewritten
+  to 1 (`DecodeOptions::keep_orientation` opts out). Encoders always write Orientation = 1
+  (`upright_exif`, `upright_xmp`, which change only the tag's value, kept in its own type), so upright pixels
+  are never rotated twice. Parsing is strict: an IFD0 inside the 8-byte header or cut off before
+  its next-IFD pointer, an Orientation that is not exactly one SHORT or LONG, or an out-of-range value
+  reads as 1; with duplicate entries the first wins. `Limits` are checked again on the upright
+  size (5–8 swap width and height), and the rotated buffer is allocated fallibly.
+  `Image::oriented` turns any layout and depth in parallel bands (about 10 ms for 24 MP RGB8 in
+  release).
+* **Resolution** (#1691, module `resolution`): a file without a resolution of its own format
+  (no PNG `pHYs`, a WebP, HEIF, …) takes it from its XMP `tiff:XResolution` / `YResolution` /
+  `ResolutionUnit`, else from EXIF IFD0 (RATIONAL X/YResolution, unit 2 inch — the default when
+  absent — or 3 cm; unit 1 or anything malformed counts as no resolution). A JPEG uses, like
+  Photoshop, the first usable of: APP13 Photoshop ResolutionInfo (0x03ED), XMP, EXIF, and only
+  then the JFIF density (cameras write EXIF only, many tools write a default JFIF 72). On export
+  the EXIF and XMP resolution are rewritten to the image's (`export_exif`, `export_xmp`): the
+  RATIONAL values in place, ResolutionUnit set to 2, an entry that can't be rewritten removed
+  from IFD0 without moving any other data. IFD1 (the thumbnail's) is left as it is.
+* **JPEG**
+  * 8-bit only. Neither decoder backend supports 12-bit.
+  * A file cut off inside its image data decodes leniently (a baseline JPEG's missing rows come
+    out grey) but never silently: the image carries `DecodeWarning::Truncated`. A file that ends
+    before any scan data is an error.
+  * CMYK is always written 4:4:4 (subsampled CMYK is not portable) as Adobe-inverted CMYK with an
+    APP14 marker.
+  * Text is not written because there is no COM-segment support.
+  * EXIF and XMP must each fit in one APP1 segment (65 533 bytes with its header). Metadata that
+    doesn't fit is dropped and the export still succeeds, with a
+    `MetadataTooLarge` warning ("EXIF (… bytes) is too large for the format; it will be dropped").
+    Before dropping XMP, the encoder first removes the layered-document properties
+    (`DocumentAncestors`, `TextLayers`) that mean nothing in a flat JPEG. Extended XMP is not
+    written.
+* **TIFF decode**
+  * Classic TIFF and BigTIFF (version 43, 8-byte offsets), both byte orders, strips or tiles,
+    planar configuration 1 or 2.
+  * Supports 1, 2 and 4-bit gray, 8/16/32/64-bit integers (32 and 64-bit are reduced to U16),
+    F16, F32 and F64 (converted to F32), WhiteIsZero (#691: the tones are no longer inverted),
+    palette images (opened as RGB), associated alpha (made straight) and extra samples (dropped
+    unless the first is alpha).
+  * Every directory is reachable: `tiff_info` lists the main IFD chain and its SubIFDs (tag 330)
+    with each page's size, kind (page, reduced-resolution copy, mask) and storage, walked with a
+    seen-set, a depth limit and a 10 000-directory cap; `decode_tiff_page` opens any of them.
+    `decode` opens the first full-resolution page, like Photoshop (thumbnails are skipped).
+  * Banded decoding: the image is allocated once at its final size and each strip or row of
+    tiles is decoded straight into it, in parallel on native targets, with at most one
+    strip/tile-sized scratch buffer per worker (30 MP RGB8: Deflate 345 → 32 ms, LZW 428 → 43
+    ms in release). Image data cut off by the end of the file decodes with
+    `DecodeWarning::Truncated`; a file far too small for its declared size (more than any
+    compression could expand) is refused before allocating.
+  * YCbCr, CIE Lab, signed integers and compressions that the `tiff` crate lacks (CCITT,
+    JPEG-in-TIFF) return `Unsupported`.
+* **TIFF encode** writes classic TIFF, or BigTIFF when `EncodeOptions::tiff_bigtiff` is set or
+  the file could pass 4 GiB.
+* **EXR**
+  * Multi-part files (a Maya/Arnold render writes one part per AOV) open the part that
+    looks most like a colour image — RGBA beats RGB beats YA beats a single channel, so a
+    depth-only part no longer fails the file — with `DecodeWarning::MoreParts` naming how
+    many parts exist. `exr_info` lists every part (name, view, size, channels, deep/tiled)
+    without decoding pixels, and `decode_exr_part` decodes a chosen one. Deep parts stay
+    with the deep decoder: a file that has any is refused here with a pointer to it.
+  * Reads at full resolution, from the data window.
+  * Channel names are matched by suffix, so `layer.R` counts as `R`.
+  * Subsampled channels are unsupported.
+  * Cryptomatte layers (specification 1.2, as written by Arnold, V-Ray, Redshift, Mantra/Karma
+    and Cycles) are listed and decoded structurally: `cryptomatte_layers` reads the header
+    attributes, channels and embedded manifest without pixels, `decode_cryptomatte` returns the
+    per-pixel (ID, coverage) pairs, and `cryptomatte_id`/`cryptomatte_key`/`cryptomatte_preview_color`
+    hash names to IDs the way the reference implementation does (official test vectors in the
+    test suite).
+  * Deep data (scanlines or single-level tiles, compressed NONE, RLE or ZIPS) opens as a flat
+    image: each pixel's samples are composited into one, with
+    `DecodeWarning::DeepFlattened` because per-pixel depth is not kept. Deep ZIP (16-line
+    blocks) and deep mip-map or rip-map tiles return `Unsupported`.
+  * Only lossless compressions are offered for writing: None, RLE, ZIP1, ZIP16 and PIZ.
+* **Netpbm writing** picks the subtype from the image: float gives PFM, gray gives P5, RGB gives
+  P6, and anything with alpha or CMYK gives P7 (PAM). Writing a `.pbm` file therefore produces
+  whichever of these fits the data.
+* **Colour conversions** (CMYK↔RGB, RGB→gray) are naive. Colour-managed conversion belongs in
+  `redrob-photo-color`.
+
+## Limits (decompression bombs)
+
+`DecodeOptions { limits: Limits { max_width, max_height, max_pixels, max_alloc }, .. }` guards
+decoding. Header dimensions are checked before the pixel buffer is allocated, and the budget is
+also passed to the underlying decoders. A violation returns `CodecError::LimitExceeded`. The
+defaults are 262144 px per side, 2^30 pixels and 8 GiB (2 GiB on 32-bit targets such as wasm).
+PNG also bounds the aggregate decoded text and XMP (UTF-8 keywords and values) by `max_alloc`,
+including chunks after IDAT. This budget is separate from pixels, not a total process-memory cap.
+
+## Tests
+
+`cargo test -p redrob-photo-codecs` covers:
+
+* the full round-trip matrix (every writable format × 4 sample types × 6 layouts), exact for
+  lossless formats and above a PSNR threshold for lossy ones;
+* metadata preservation per format, checked against `caps`;
+* magic-number detection, including negatives;
+* fidelity warnings, and a cross-check that the warnings match the actual round-trip result;
+* the symmetric-capability guarantee;
+* malformed input: truncation, bit flips and proptest random bytes;
+* Adam7 PNG against progressive PNG and against the `image` crate as an oracle;
+* limit enforcement.
+
+If `corpus/pngsuite/*.png` exists at the repo root, every file in it is compared against the
+`image` crate's decoder. Without it, that test is skipped.
 
 ````
 
@@ -23731,180 +24115,6 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-````
-
-### `9cfd886fb5f2ce20bf68b2ff83f5a76912a24e84823d04f9608e10acb16202c7`
-
-Used by:
-- redrob-photo-psd 0.13.2 - README.md
-
-Original byte length: `12847`; trailing newline: `yes`.
-
-````text
-# redrob-photo-psd
-
-A standalone reader and writer for Adobe Photoshop **PSD** (version 1) and **PSB** (version 2, "large document format") files. It keeps everything it reads, so an unmodified file writes back byte for byte. It depends on no other photocraft crate.
-
-* Clean-room implementation from Adobe's public *Photoshop File Formats Specification*. Where the spec is silent, behavior follows MIT-licensed psd-tools / ag-psd documentation, and the code comments say so.
-* `#![forbid(unsafe_code)]`. Builds for `wasm32-unknown-unknown`. The core API works on byte slices; the file helpers only exist on native targets.
-* Parsing never panics on malformed input. Limits: dimensions ≤ 300 000; allocations are checked against the remaining input; a single decode produces at most `MAX_DECODED_BYTES` (8 GiB on 64-bit targets, 2 GiB on 32-bit targets); descriptor nesting depth ≤ 64.
-
-## Guarantees
-
-| Property | How |
-|---|---|
-| `PsdFile::from_bytes(b)?.to_bytes()? == b` for unmodified files | Channel data keeps its original encoding. Unknown blocks and resources are stored raw. Exact padding is recorded wherever it can vary: tagged blocks, layer info, section trailers. |
-| `from_bytes(to_bytes(f)) == f` for any model `f` | Canonical defaults: `padding: None` means "zero-pad to even", and the parser yields `None` whenever the file used that default. |
-| Lazy decoding | The parser only copies encoded bytes. Channels are decoded when asked (`ChannelData::decode`, `ImageData::decode`). |
-| No compositing | `PsdBuilder` takes the merged image from the caller. Without one, it writes a white placeholder and sets `has_real_merged_data = false` in resource 1057. |
-
-## Public API (overview)
-
-```rust
-// Top level
-PsdFile::from_bytes(&[u8]) -> Result<PsdFile>
-PsdFile::from_bytes_and_merged(&[u8], want) -> Result<(PsdFile, Option<Result<Vec<u8>>>)>
-                                            // + decode_merged() when want(&file): ZIP inflated once
-PsdFile::to_bytes(&self) -> Result<Vec<u8>>
-PsdFile::open(path) / save(path)            // native only
-PsdFile { header, color_mode_data, resources, layer_info, layer_info_placement,
-          global_layer_mask, global_blocks, layer_mask_trailing, image_data }
-PsdFile::layers() -> &[LayerRecord]         // file order = bottom-most first
-PsdFile::layers_mut() -> &mut Vec<LayerRecord>
-PsdFile::layer(i) -> Option<Layer<'_>>;  iter_layers()
-PsdFile::layer_tree() -> Vec<LayerNode>     // nested groups, children bottom-to-top
-PsdFile::layer_tree_max_depth(n) -> Vec<LayerNode> // same, groups nested n deep keep no children
-PsdFile::decode_merged() -> Result<Vec<u8>> // planar big-endian samples
-PsdFile::composite_rgba8() -> Result<RgbaImage>
-PsdFile::resource(id), global_block(key), icc_profile(), resolution(),
-        has_real_merged_data(), merged_has_alpha(), validate()
-
-// Header
-Header { version: Version::{Psd,Psb}, channels, width, height, depth, color_mode, reserved }
-ColorMode::{Bitmap, Grayscale, Indexed, Rgb, Cmyk, Multichannel, Duotone, Lab, Unknown(u16)}
-
-// Layers
-LayerInfo { merged_alpha, layers: Vec<LayerRecord>, padding }
-LayerRecord { rect, channels: Vec<ChannelData>, blend_mode, opacity, clipping, flags,
-              filler, mask: MaskData, blending_ranges, name, blocks, extra_trailing }
-LayerRecord::name()            // prefers `luni`
-LayerRecord::section_divider(), section_type(), layer_id(), fill_opacity(), is_visible(),
-             block(key), block_mut(key), channel(id), channel_rect(id), decode_channel(id, depth, version)
-ChannelData { id, compression: Option<Compression>, data }   // encoded bytes kept verbatim
-ChannelData::encode(id, compression, decoded, w, h, depth, version)
-ChannelData::decode(w, h, depth, version); set_decoded(...)
-MaskData::{None, Mask(LayerMask), Raw(Vec<u8>)}
-LayerMask { rect, default_color, flags, parameters: Option<MaskParameters>, real: Option<RealMask>, trailing, real_first }
-BlendMode (27 modes + PassThrough + Unknown([u8;4])); BlendMode::key()/from_key()
-Layer<'_>::rgba8() -> Result<RgbaImage>; user_mask() -> Option<Result<GrayImage>>; channel_bytes(id)
-
-// Tagged blocks
-TaggedBlock { signature /* 8BIM | 8B64 */, key, data, padding: Option<Vec<u8>> }
-TaggedBlock::parsed() -> Option<Result<BlockData>>
-BlockData::{UnicodeName, SectionDivider, LayerId, NameSource, BlendClippedAsGroup,
-            BlendInteriorElements, Knockout, Protection, SheetColor, FillOpacity, MetadataSetting}
-constructors: unicode_name, section_divider, layer_id, name_source, blend_clipped_as_group,
-              blend_interior_elements, knockout, protection, sheet_color, fill_opacity
-TaggedBlock::check_structure() -> Result<()>   // strict inner re-parse of PlLd, SoLd, SoLE, lnk2/3/D, lfx2
-tagged::uses_long_length(version, key)   // PSB 8-byte length keys (the spec's 13 + lnk3, lnkE, pths, extd, extn, FELS, cinf, artd)
-LayerInfo::unpadded_len(version), LayerInfo::pad_to(version, 4)   // Photoshop pads the layer info to 4
-
-// Image resources
-ImageResource { signature, id, name, data };  ImageResource::parsed() -> Option<Result<ResourceData>>
-ResourceData::{ResolutionInfo, LayerState, LayerGroupInfo, Thumbnail, GlobalAngle, IccProfile,
-               GlobalAltitude, VersionInfo, Exif, Xmp}
-
-// Compression
-Compression::{Raw, Rle, Zip, ZipPrediction, Unknown(u16)}
-compression::{encode_planes, decode_planes, PlaneLayout, packbits::{encode, decode}, predict, unpredict}
-pixels::{samples_u16, samples_f32, u16_to_bytes, f32_to_bytes, unpack_bits, plane_to_u8}
-
-// Descriptors
-descriptor::{Descriptor, VersionedDescriptor, Value, Id, Class, ReferenceItem, UnicodeString, ObjectArray}
-Descriptor::from_bytes / to_bytes;  VersionedDescriptor::from_bytes / to_bytes (version 16)
-
-// Builder
-PsdBuilder::new(w, h).color_mode(..).depth(8|16).version(..).compression(..).resolution(dpi).icc_profile(..)
-builder.push_layer(LayerSpec) / begin_group(GroupSpec) / end_group()? / composite(PixelData)
-builder.build() -> Result<PsdFile>;  builder.to_bytes()
-PixelData::{Rgba8, Rgba16, GrayA8, GrayA16, Cmyka8, Cmyka16}   // CMYK given as ink, stored inverted
-
-// Test generator (feature `testgen`)
-testgen::{all_cases, merged_only, layered, small, sample_descriptor, pattern_plane}
-```
-
-## Feature matrix
-
-| Area | Read | Write | Typed | Notes |
-|---|:-:|:-:|:-:|---|
-| Header, PSD v1 / PSB v2 | ✓ | ✓ | ✓ | depth 1/8/16/32; all 8 color modes plus `Unknown` |
-| Color mode data | ✓ | ✓ | raw | indexed palette is used by `composite_rgba8` |
-| Image resources | ✓ | ✓ | partial | 1005, 1024, 1026, 1033/1036 (raw), 1037, 1039, 1049, 1057, 1058, 1060 |
-| Layer records | ✓ | ✓ | ✓ | flags, clipping, filler, blending ranges (raw + accessor) |
-| Layer masks | ✓ | ✓ | ✓ | 20 / 36-byte forms, mask parameters, real mask; unparseable masks stay raw |
-| Channel ids -1 / -2 / -3 | ✓ | ✓ | ✓ | per-channel rect via `channel_rect` |
-| Raw / RLE / ZIP / ZIP+prediction | ✓ | ✓ | – | prediction at 8/16/32 bits (32: byte-plane shuffle + delta); RLE counts are u16 in PSD, u32 in PSB |
-| Merged image data | ✓ | ✓ | – | validated at parse time (sizes, RLE counts, zlib stream incl. checksum); a zlib stream declaring more than `MAX_DECODED_BYTES` is kept verbatim without inflating it, and decoding it reports the limit |
-| Tagged blocks (raw passthrough) | ✓ | ✓ | – | keeps `8BIM` / `8B64` and exact padding |
-| PSB 8-byte-length keys | ✓ | ✓ | – | LMsk Lr16 Lr32 Layr Mt16 Mt32 Mtrn Alph FMsk lnk2 FEid FXid PxSD |
-| Lr16 / Lr32 / Layr layer info | ✓ | ✓ | ✓ | lifted into `layer_info`; re-inserted at its original position |
-| luni lsct lsdk lyid lnsr clbl infx knko lspf lclr iOpa shmd | ✓ | ✓ | ✓ | `TaggedBlock::parsed()` |
-| ActionDescriptor (all OSTypes) | ✓ | ✓ | ✓ | including references, `ObAr` (best effort), `UnFl`, `Pth `, version-16 wrapper |
-| Layer tree (groups) | ✓ | ✓ | ✓ | open/closed folders plus bounding dividers; tolerant of malformed nesting |
-| RGBA8 extraction | ✓ | – | – | RGB / gray / CMYK layers; merged image also supports indexed / bitmap / duotone |
-| Builder | – | ✓ | – | RGB / gray / CMYK at 8/16 bit, masks, groups, blend modes, opacity, fill, visibility, clipping |
-| Patterns | ✓ | ✓ | ✓ | `Patt` / `Pat2` / `Pat3`, `.pat`, and `.abr` embedded patterns; non-empty tiles allow in-bounds channel subrectangles, decoded size is capped and PackBits expansion is input-bounded |
-| Actions (`.atn`) | ✓ | ✓ | ✓ | `atn::parse` / `atn::write`: version-16 sets (Photoshop 6+): actions with function key, modifiers and colour; steps with event code or string name, panel name, enabled/dialog flags and their descriptor. Exact round trip; version-12 (Photoshop 5) files are rejected as unsupported |
-
-Pattern channel subrectangles are padded with zeroes to the tile rectangle. All channel
-metadata is checked before any plane is decoded, against one `PatternBudget` shared by every
-pattern of a parse (a block, a `.pat` file): `MAX_DECODED_BYTES` decoded and 512 MiB of zero
-padding in total. `parse_pattern_block_with` lets several blocks of one document share a budget;
-`.abr` patterns are charged to the file's sample budget. All channels of a pattern must have the
-same depth. Fully populated channels reuse their decoded buffer without a second copy;
-allocations for padded channels return an error on failure.
-
-### Preserved raw, not yet typed (parsers planned for M8)
-
-* Layer effects: `lfx2`, `lrFX`, `lmfx`. The descriptors inside can be parsed on demand with `VersionedDescriptor::from_bytes(&block.data[4..])`.
-* Type layers: `TySh`, `tySh`, and the EngineData inside them.
-* Smart objects: `SoLd`, `PlLd`, `SoLE`, `lnk2`, `lnkD`, `lnk3`.
-* Vector masks and shapes: `vmsk`, `vsms`, `vogk`, `vscg`.
-* Adjustment and fill layers: `curv`, `levl`, `hue2`, `SoCo`, `GdFl`, `PtFl`, …, plus `Patt`, `Txt2`, `FMsk`, 3D and video blocks.
-* Global layer mask info (raw, with accessors), thumbnails (raw), slices, guides, paths, and every other resource id.
-
-## Testing
-
-`cargo test -p redrob-photo-psd --all-features` runs the unit tests, integration tests and proptests:
-
-* Byte stability and model round-trips for every generated case: all depths, color modes and compressions, PSD and PSB.
-* PackBits edge cases.
-* Known vectors for 8/16/32-bit prediction.
-* PSD vs PSB length handling.
-* Truncation sweeps: every prefix of several small files must return `Err`.
-* Random-mutation and random-byte proptests: never panic.
-* Layer tree cases.
-* Builder → `rgba8` correctness.
-* Unknown blend modes and unknown blocks pass through unchanged.
-
-`tests/corpus.rs` walks `corpus/psd/**/*.{psd,psb}` at the workspace root when that directory exists. For each file it asserts that parsing succeeds and the file round-trips byte for byte, and it prints a result per file. Without the directory it skips silently.
-
-A `cargo-fuzz` skeleton lives in `fuzz/`. It is its own workspace and is excluded from photocraft's. Run it with `cargo +nightly fuzz run parse` (or `descriptor`) from `crates/psd`.
-
-## Spec ambiguities and decisions
-
-* **Tagged block padding.** The spec says lengths are "rounded up to an even byte count". In practice writers either include the padding in the length or append it after the data, and pad to 2 or 4. The parser detects the padding that actually follows each block: the smallest k ≤ 3 after which the next signature or the end of the region appears. It stores that padding unless it matches the default.
-* **Layer info padding** (2 vs 4) is recorded the same way.
-* **16/32-bit layers** are read from global `Lr16` / `Lr32` blocks when the main layer info is empty. The block data is a layer-info body with no inner length field.
-* **Mask record layout.** The order is: rect, default color, flags, parameters (when flag bit 4 is set), then the real flags, background and rect whenever at least 18 bytes remain. Anything left over (for example the 2 padding bytes of the 20-byte form) is kept in `trailing`.
-* **Mask channel rects.** Channel -2 uses the mask rect. Channel -3 uses the real mask rect.
-* **Merged ZIP data** is a single zlib stream over all planes. Prediction is applied per row across all planes.
-* **ZIP prediction at depth 1** is treated as byte-wise delta.
-* **`ObAr`** is read as a u32 prefix followed by a descriptor-shaped body, following ag-psd's reading. The spec does not document it.
-* **Descriptor `bool`** bytes other than 0/1 are normalized to 1 on write.
-* **Pascal names** have their pad bytes written as zeros. A layer & mask section that contains only a zero layer-info length is normalized to an empty section. These are the only known non-byte-exact cases, and both are pathological.
-* **Header limits.** The parser accepts up to 300 000 × 300 000 for both versions. `PsdFile::validate()` enforces the spec's 30 000 limit for PSD.
 
 ````
 
@@ -30250,7 +30460,7 @@ The current MSRV is 1.69.0. For this project, it is primarily driven by the few 
 ### `c132a1c34a60f72a4bdc0107e57e644e3cc8f5222df5d92623e03376c2f99b73`
 
 Used by:
-- redrob-photo-raw 0.13.2 - README.md
+- redrob-photo-raw 0.14.0 - README.md
 
 Original byte length: `13736`; trailing newline: `yes`.
 
@@ -31402,209 +31612,6 @@ DEALINGS IN THE SOFTWARE.
 
 ````
 
-### `c7d57e9f7841bec62a0bf157475c5af4e07a76a766bbea3c0431cb780d1c121a`
-
-Used by:
-- redrob-craft-cms 0.13.2 - README.md
-
-Original byte length: `11133`; trailing newline: `yes`.
-
-````text
-# Craft CMS
-
-`redrob-craft-cms` is a pure-Rust ICC colour management module for the Craft suite: profile parsing
-and writing, transforms between profiles, rendering intents, black point compensation, soft
-proofing, gamut checks, 3D LUTs and a set of built-in profiles. No C, no `unsafe`, and no
-dependency on other craft-libs crates. Implemented from the public ICC.1:2010 (v4.3) and
-ICC.1:2001-04 (v2) specifications, CIE 15, and Adobe's published black point compensation paper.
-
-Extracted from PhotoCraft's `crates/cms` at
-[`b3222ee`](https://github.com/storytold/photocraft/tree/b3222ee8e7e6bcb4799c37f904c595f20f9baf5e/crates/cms)
-(refs #36).
-
-## API
-
-```rust
-use redrob_craft_cms::{Builtin, Intent, Profile, Transform};
-
-let src = Profile::parse(&icc_bytes)?;                    // v2/v4: matrix/TRC, gray TRC, mft1/mft2/mAB/mBA
-let dst = Builtin::CoatedCmyk.profile();
-let t = Transform::new(&src, dst, Intent::RelativeColorimetric, /*bpc*/ true)?;
-t.convert_u8(&rgba8, 4, &mut cmyka8, 5, /*copy alpha*/ true)?;  // also convert_u16 / convert_f32 / apply (in place)
-let mut out = [0.0; 4];
-t.eval(&[1.0, 0.0, 0.0], &mut out)?;                       // exact single colour
-```
-
-Calls never panic on caller input: strides below the channel count, buffers that are not
-whole pixels, a destination with fewer pixels than the source, slices shorter than the
-channel count and out-of-range table or LUT dimensions return `CmsError::InvalidArgument`.
-Buffers are checked once per call, before any pixel is written.
-
-* `Transform::proof(src, proof, display, intent, bpc, simulate_paper)`: soft-proof chain.
-* `GamutCheck::new(src, proof, ΔE)`: out-of-gamut test (gamut warning).
-* `Lut3d::from_transform(&t, 33)?.to_rgba16f_bytes()`: display transform as a 3D texture.
-* `transform::cached(src, dst, opts)`: process-wide transform cache.
-* `lutfile::parse(name, bytes)` / `lutfile::write_cube(&lut)`: `.cube`, `.3dl` and `.look` LUT
-  files; `lutfile::builtin(id)` returns generated looks (`lutfile::BUILTIN`).
-* `Profile::to_bytes()`: original bytes of parsed profiles (byte-exact), or an ICC v4.3 encoding.
-* `Builtin::from_profile_name(desc)`: the built-in with that description (exact match);
-  `Builtin::stand_in_for(desc)`: the built-in that approximates a profile a document names
-  when its ICC bytes are not available (see [Selecting by profile name](#selecting-by-profile-name)).
-* `Profile::same_colors(&other)`: the same colour space whatever the encoding (every sample of
-  a device grid within ΔE 0.5 through both), e.g. Photoshop's sRGB IEC61966-2.1 and the built-in
-  sRGB. `content_hash()` compares bytes and suits cache keys only.
-
-### Evaluation
-
-* Exact path: a float stage pipeline (curves, matrices, CLUTs, Lab↔XYZ, PCS encodings, BPC /
-  absolute scaling). Float buffers use it by default (`TransformOptions::precise_float`).
-* Integer buffers: matrix/TRC chains use per-code input tables + matrix + output tables indexed
-  by `x^(1/4)` (accurate near black even for pure gamma curves); chains containing a CLUT are
-  sampled into a device link (33³ for 3 inputs, 17⁴ for 4, 4096 for 1) evaluated with
-  tetrahedral interpolation (4D: linear on the first input between two tetrahedra); purely
-  analytic chains (e.g. Lab ↔ RGB) are evaluated exactly. Buffers ≥ 16k pixels run on rayon
-  (native only).
-* Rendering intents: AToB0/1/2 and BToA0/1/2 by intent with AToB0/BToA0 fallback; absolute
-  colorimetric scales by media white (`wtpt`; v2 display profiles treated as D50; a zero,
-  negative or non-finite white is refused with `CmsError::Invalid`); BPC uses
-  neutral black points (Y only) mapped linearly in XYZ.
-* White: except in absolute colorimetric (and soft proofs that simulate paper), the source's
-  device white comes out as exactly the destination's (no ink, or 1.0) on every path. LUT
-  profiles rarely put white on a grid node, so the device link's white node is set to it and
-  the exact and float paths compare each pixel with white; all other colours are left as the
-  profiles give them. With a profile whose white falls between its nodes (`coated-cmyk`: 0.4 %
-  C), the last step to white is that much larger than its neighbours.
-
-## Built-in profiles (all CC0-1.0, generated by this crate)
-
-The profile descriptions and copyright text keep the PhotoCraft names they were first
-published with, so profiles embedded in existing files still match byte for byte.
-
-| id | description |
-|---|---|
-| `srgb` | sRGB IEC61966-2.1 (Rec. 709 primaries, D65 Bradford-adapted, sRGB TRC) |
-| `display-p3` | Display P3 |
-| `adobe-rgb-compat` | Adobe RGB (1998)-compatible (published primaries, gamma 563/256) |
-| `prophoto-compat` | ProPhoto-compatible (ROMM primaries, D50, gamma 1.8) |
-| `linear-srgb` | sRGB primaries, linear |
-| `rec2020` | Rec. 2020 primaries, Rec. 709 OETF |
-| `gray-gamma-2.2`, `sgray` | gray gamma 2.2; gray with the sRGB curve (default gray working space) |
-| `lab-d50` | Lab identity (v4 encoding) |
-| `coated-cmyk` | **Photocraft Coated CMYK (synthetic, 300% TAC, medium GCR)**: default CMYK |
-| `coated-fogra39` | Coated FOGRA39 (fitted, redrob-craft-cms): fitted to Fogra's FOGRA39 data, 330% TAC, medium GCR |
-
-### The CMYK profiles
-
-Adobe's CMYK profiles (U.S. Web Coated SWOP, Coated FOGRA39) are proprietary, and the freely
-downloadable characterisation-based profiles (ECI/FOGRA, colord, Ghostscript) carry
-redistribution conditions or unclear licences, so this crate generates its own. Both share the
-separation code in `src/synth.rs`: GCR black generation (starts at 20 % gray component, K max
-95 %), a bounded least-squares CMY solve under the total ink limit, and perceptual tables with
-L* black-point scaling and soft chroma compression against a sampled gamut boundary.
-
-**`coated-cmyk`** (`profiles/photocraft-coated-cmyk.icc`, 237 KB, AToB 11⁴ lut16, BToA 21³
-lut16) comes from a Yule–Nielsen modified Neugebauer model (n = 2) over the 16 overprints with
-ISO 12647-2 coated-paper Lab aims for paper/C/M/Y/RGB overprints, parabolic dot gain (14 % CMY,
-17 % K at 50 %) and a 300 % ink limit. It is a plausible coated-offset profile, not a measured
-characterisation: its midtones are darker than FOGRA39 (mean ΔE00 6.7 against the FOGRA39
-patches, oranges such as 0/50/100/0 about 5 ΔE00 off).
-
-**`coated-fogra39`** (`profiles/craft-coated-fogra39.icc`, 713 KB, AToB 11⁴ lut16, BToA 33³
-lut16, 330 % ink limit) reproduces the colours of documents set up for Coated FOGRA39 or ISO
-Coated v2. It is fitted to Fogra's FOGRA39 characterisation data (`tests/data/FOGRA39.txt`,
-1617 IT8.7/4 patches, CMYK with D50 XYZ and Lab; ISO 12647-2:2004 Amd 1 offset on paper type
-1/2): a Yule–Nielsen modified Neugebauer model with free overprints, per-ink tone curves and a
-fitted n (1.45) is solved by least squares against all patches (mean ΔE00 1.1 on its own), then
-a Gaussian-kernel ridge regression of the remaining Lab errors over CMYK (σ = 0.2, λ = 0.01)
-corrects it before the AToB table is sampled, with no ink mapped to exactly L* 100,
-a* = b* = 0. The BToA tables invert that AToB table; their input curves put that white on a
-grid node holding no ink (`CmykParams::white_on_node`), so the profile separates PCS white to
-within 2·10⁻⁵ ink on its own.
-
-| Through the AToB, relative colorimetric, against the 1617 FOGRA39 patches | mean ΔE00 | p95 | max |
-|---|---|---|---|
-| `coated-fogra39` | 0.07 | 0.18 | 0.53 |
-| `coated-fogra39` fit, against the 10 % of patches held out of it | 0.11 | 0.32 | 0.79 |
-| `coated-cmyk` | 6.67 | 13.4 | 16.1 |
-
-Lab → CMYK → Lab through the profile (relative colorimetric) returns colours inside the gamut
-within mean ΔE00 0.24 (p95 1.07, max 2.55). Converted to sRGB (relative colorimetric with black
-point compensation), process solids, overprints and oranges land within 0.8 ΔE00 of reference
-values for Coated FOGRA39 (`tests/fogra39.rs`).
-
-"FOGRA39" identifies the reference data the profile is fitted to; it does not imply
-certification, approval or endorsement by Fogra. The data file is Fogra's, distributed
-unmodified with Fogra identified as the source as Fogra's terms require (see `NOTICE`); it is
-left out of the published crate, as only the tests read it.
-
-Regenerate the profiles with
-
-```sh
-REDROB_CRAFT_CMS_REGEN_PROFILES=1 cargo test -p redrob-craft-cms --release --test regen --test fogra39
-```
-
-Use your printer's profile for production print.
-
-### Selecting by profile name
-
-Use the ICC bytes a document embeds or a user loads whenever there are any. When a document
-only names its profile (its `desc` tag), two functions map the name to a built-in, ignoring
-case and whitespace:
-
-* `Builtin::from_profile_name`: exact matches only, a built-in's own description.
-* `Builtin::stand_in_for`: the exact match, else a built-in that approximates the named
-  profile.
-
-| Name in the document | `from_profile_name` | `stand_in_for` |
-|---|---|---|
-| each built-in's own description (e.g. sRGB IEC61966-2.1) | that built-in | that built-in |
-| Coated FOGRA39 (ISO 12647-2:2004), Coated FOGRA39 | `None` | `coated-fogra39` |
-| ISO Coated v2 (ECI) | `None` | `coated-fogra39` |
-| ISO Coated v2 300% (ECI) | `None` | `None` |
-| anything else | `None` | `None` |
-
-The stand-ins are made from the same characterisation data as the named profiles: ECI's ISO
-Coated v2 is made from FOGRA39L, the data of Adobe's Coated FOGRA39. They describe the same
-printed colours. The built-in separates to at most 330 % total ink, the limit of ISO Coated v2
-(Adobe doesn't publish Coated FOGRA39's). Black generation and ink distribution differ, so
-separations through a stand-in are not the named profile's. ISO Coated v2 300% (ECI) has no
-stand-in: the built-in separates to up to 330 % total ink.
-
-### Display transforms
-
-Page-layout and image editors usually convert CMYK for display with relative colorimetric and
-black point compensation. To match them, keep BPC on (the `TransformOptions` default):
-
-```rust
-use redrob_craft_cms::{Builtin, Intent, Profile, Transform};
-
-// The document's own profile first; a stand-in only when it carries no ICC bytes.
-let parsed;
-let cmyk: &Profile = match doc_icc_bytes {
-    Some(bytes) => {
-        parsed = Profile::parse(bytes)?;
-        &parsed
-    }
-    None => match Builtin::stand_in_for(&doc_profile_name) {
-        Some(b) => b.profile(),
-        None => return Err(UnknownProfile(doc_profile_name)), // e.g. ask the user for the profile
-    },
-};
-let t = Transform::new(cmyk, Builtin::Srgb.profile(), Intent::RelativeColorimetric, /*bpc*/ true)?;
-// or: transform::cached(src, dst, TransformOptions::default())
-```
-
-## Not implemented / approximate
-
-* v4.4 `mpet` (multiProcessElements, D2Bx/B2Dx) tags, named colour, device link and abstract
-  profiles as transform endpoints, `chad`-based adaptation of v2 absolute colorimetry.
-* BPC destination black uses the BToA/AToB round trip directly (Adobe's curve fit for
-  ill-behaved LUT profiles is not implemented); v2/v4 perceptual reference black mixing is not
-  modelled beyond the PRMG black for v4 LUT profiles.
-* Profile ID (MD5) is not computed when writing (left zero, which the spec allows).
-
-````
-
 ### `c816a0749cdc6bf062a5111c159723de51b2bfac66a1dac2655abd9e6b1583eb`
 
 Used by:
@@ -32750,6 +32757,110 @@ details.
 
 This crate is part of the [`objc2` project](https://github.com/madsmtm/objc2),
 see that for related crates.
+
+````
+
+### `d1e402f98b4aab4d1b4b952cce157a8365bdec8247e7dd8e08fcb3424ae0cd69`
+
+Used by:
+- redrob-vector-pathops 0.14.0 - README.md
+
+Original byte length: `6168`; trailing newline: `yes`.
+
+````text
+# redrob-vector-pathops
+
+Path operations for Vector: booleans, the Pathfinder panel, Shape Builder regions, Live Paint planar maps, offset path, outline stroke, simplify and the other Object → Path commands. Everything takes and returns `redrob_vector_geom::PathData`.
+
+## Booleans (curve-preserving)
+
+```rust
+pub enum BoolOp { Union, Intersect, Difference, Xor }
+pub fn boolean(a: &PathData, a_rule: FillRule, b: &PathData, b_rule: FillRule, op: BoolOp) -> PathData;
+pub fn try_boolean(.., precision: f64) -> Result<PathData, PathOpsError>; // errors on NaN/inf
+pub fn boolean_n(paths: &[(&PathData, FillRule)], pred: impl Fn(&[bool]) -> bool) -> PathData;
+pub fn unite_all(paths: &[(&PathData, FillRule)]) -> PathData;   // fast many-shape union
+pub fn normalize(path: &PathData, rule: FillRule) -> PathData;   // resolve self-overlaps
+pub fn area(path: &PathData, rule: FillRule) -> f64;             // exact filled area
+```
+
+The engine is `linesweeper` (a robust sweep line that works directly on cubic Béziers, so there's no polygon flattening). The sweep splits curves at intersections and y-extrema. Afterwards:
+
+- pieces that lie on one input cubic are rebuilt exactly as a single sub-curve of that cubic;
+- other smooth joints (for example, in stroker output) are refitted by least squares within `DEFAULT_PRECISION` (0.01 pt);
+- collinear line pieces are merged;
+- the inputs' own anchors are always kept;
+- slivers narrower than the precision are dropped.
+
+Output contours are simple and consistently oriented: outer contours and holes wind in opposite directions, so the result fills the same under either fill rule. Open subpaths are closed implicitly because they're treated as filled.
+
+## Pathfinder / Shape Builder
+
+```rust
+pub struct Shape { pub path: PathData, pub rule: FillRule, pub key: u64 } // key = paint identity
+pub enum PathfinderOp { Unite, MinusFront, Intersect, Exclude, Divide, Trim, Merge, Crop, Outline, MinusBack }
+pub fn pathfinder(op: PathfinderOp, shapes: &[Shape] /* back → front */) -> Vec<Shape>;
+
+pub struct Region { pub path: PathData, pub sources: Vec<usize> }
+pub fn regions(shapes: &[Shape]) -> Vec<Region>;            // all faces of the arrangement
+pub fn region_at(shapes: &[Shape], p: Point) -> Option<Region>;
+pub fn merge_regions(regions: &[&Region]) -> PathData;      // Shape Builder merge = union
+pub fn shape_builder(shapes: &[Shape]) -> (Vec<Region>, Vec<Shape>); // (regions, open-path pieces)
+```
+
+Each result takes its key as follows:
+
+| Operation | Result |
+|---|---|
+| Unite, Intersect, Exclude, Minus Back | Takes the front-most key |
+| Minus Front | Takes the back-most key |
+| Divide | One shape per face, keyed by the front-most shape that covers the face |
+| Trim | One shape for each object that is still visible |
+| Merge | Joins touching visible parts that share a key; each connected component becomes one shape |
+| Crop | Keeps the visible parts of the lower objects inside the front-most object |
+| Outline | Returns open edge paths, split at every junction; coincident edges are de-duplicated, and each keeps the front-most key |
+
+## Live Paint
+
+```rust
+pub fn live_paint(shapes: &[Shape] /* back → front */) -> (Vec<Region>, Vec<Shape>); // (faces, edges)
+pub fn interior_point(path: &PathData) -> Option<Point>;
+```
+
+Unlike `regions`, which splits the filled areas of closed shapes, `live_paint` treats every path as an edge, open paths included. Three crossing lines enclose a triangle, a line across a rectangle splits it in two, and an area enclosed by paths becomes a face even when nothing fills it. Each face lists the inputs whose fill covers it; the list is empty for an area that is only enclosed by paths. Each edge is a piece of a path, split wherever another path meets it, and keeps the key of the front-most input it lies on.
+
+`shape_builder` gives the Shape Builder's regions. With closed paths only, they are the `regions`. Once an open path is among them, they are the `live_paint` faces, so a stroke-only line across a shape splits it and lines can enclose a region of their own. The second list holds the pieces of each path that has no closed subpath, keyed by its index, so the Shape Builder can delete them one by one. The caller closes any open path whose fill should count. Inputs with more than `SHAPE_BUILDER_MAX_SEGMENTS` segments fall back to the filled areas.
+
+## Offset / stroke
+
+```rust
+pub use kurbo::{Cap, Join};
+pub fn offset_path(path: &PathData, delta: f64, join: Join, miter_limit: f64) -> PathData; // delta < 0 insets
+pub fn outline_stroke(path: &PathData, width: f64, cap: Cap, join: Join, miter_limit: f64) -> PathData;
+```
+
+`outline_stroke` passes the path to `kurbo::stroke` and then normalizes the result, which removes the overlaps at joins. `offset_path` computes `fill ∪ stroke(2|d|)` for a positive offset and `fill − stroke(2|d|)` for a negative one.
+
+## Path editing
+
+```rust
+pub fn simplify(path: &PathData, tolerance: f64) -> PathData;
+pub fn simplify_with(path: &PathData, opts: &SimplifyOptions) -> PathData; // tolerance, corner_angle_deg, straight_lines
+pub fn smooth(path: &PathData, amount: f64) -> PathData;
+pub fn remove_redundant_points(path: &PathData, tolerance: f64) -> PathData;
+pub fn add_anchor_points(path: &PathData) -> PathData;
+pub fn average(path: &PathData, selection: &[(usize, usize)], axis: AverageAxis) -> PathData;
+pub fn join(paths: &[PathData], tolerance: f64) -> PathData;
+pub fn split_into_grid(rect: Rect, rows: usize, cols: usize, gutter: f64) -> Vec<PathData>;
+```
+
+`simplify` fits least-squares cubics with fixed end tangents, then reparameterizes with Newton steps and splits at the point of worst error. Any anchor that turns more than the corner threshold (30° by default) stays a corner.
+
+## Caveats
+
+- linesweeper is still in beta. When two identical curves overlap, the sweep can leave a tiny lens between them; the sliver filter removes it.
+- The Outline op finds split points by snapping to arrangement junctions with a small tolerance.
+- The quality of offsets depends on kurbo's parallel-curve stroker. Its output is refitted, so offset results have more anchors than boolean results.
 
 ````
 
@@ -35120,6 +35231,273 @@ according to those terms.
 
 ````
 
+### `ee869cc73ffdd624a4ad85e864566b1226719954b0b59f4695b84b5664f59fc6`
+
+Used by:
+- redrob-canvas-ui 0.14.0 - README.md
+
+Original byte length: `14424`; trailing newline: `yes`.
+
+````text
+# Craft UI
+
+`redrob-canvas-ui` provides small egui components with application-supplied styles. `icons` prepares
+embedded SVG catalogs; `buttons` paints accessible icon buttons; `tabs` handles tab fitting and
+interaction; `layout` provides toolbar fitting, split geometry and resize handles; `theme` shares widget-state styling.
+`docking` supplies transactional panel moves and an optional docking surface.
+`printing` supplies printer/job controls and asynchronous feedback used by WordCraft and GridCraft.
+The current delivery covers nine creative apps (Layout, Vector, Photo, FilmCraft, EffectCraft, CADCraft, PDFCraft, LightCraft and SoundCraft); prior basic and office adapters are separate. The [suite audit](../../docs/ui-components-audit.md#adoption-and-acceptance)
+records their scope and acceptance limits. Assets, complete themes, localization and command handling
+remain in each application. No icons, fonts or application engines are bundled.
+
+## SVG catalogs
+
+```rust
+use std::sync::OnceLock;
+use redrob_canvas_ui::icons::{SvgIconSet, SvgStyle};
+
+// Supply the application's own attributed assets here.
+static ICONS: &[(&str, &[u8])] = &[];
+
+fn icons() -> &'static SvgIconSet {
+    static ICONS_SET: OnceLock<SvgIconSet> = OnceLock::new();
+    ICONS_SET.get_or_init(|| SvgIconSet::new(
+        ICONS,
+        SvgStyle { current_color: "#ffffff", stroke_width: Some("1.75") },
+        "bytes://my-app/icons/",
+        "square",
+    ))
+}
+
+fn icon(name: &str) -> egui::Image<'static> {
+    egui::Image::new(icons().source(name))
+}
+```
+
+The application installs `egui_extras::install_image_loaders` with its `svg` feature before drawing.
+It sets tint and size on the returned image.
+The library does not install loaders or an egui theme.
+
+The catalog is immutable. SVGs are prepared once and held in `Arc<[u8]>`; lookups share those bytes.
+The fallback uses the requested name in its URI, matching Photo and Vector. Missing both
+the requested name and fallback produces empty bytes for the loader to report as an error, without
+indexed lookups or a panic. `contains` and `canonical_name` inspect only actual catalog entries. PdfCraft resolves an unknown
+name to `square` before calling `source`, preserving its fallback cache key.
+
+Use a different URI prefix for every catalog/style combination used in the same egui context.
+egui caches by URI; supplying different bytes under one URI would reuse stale content. Apps with
+their own contexts can retain their current prefixes. Unknown names do not add entries to this
+catalog, though the egui loader may cache a requested URI.
+
+This is an adapter for trusted, compiled-in monochrome assets, not an SVG sanitizer. It performs
+literal `currentColor` and optional `stroke-width="2"` substitutions, keeps other widths and explicit
+colors untouched, and uses the existing lossy UTF-8 behavior. General SVG parsing and rasterization
+remain the responsibility of the existing loader.
+
+## Icon buttons
+
+`buttons::IconButton` accepts a label, size and `IconButtonStyle`, and returns `egui::Response`.
+`ButtonVisuals` describes fill, border and icon tint for normal, hovered, pressed and selected
+states. Selection wins over press and hover. `pressed: None` keeps ordinary hover/normal styling;
+`Some` supplies a separate press treatment. egui owns pointer capture and click cancellation.
+
+```rust
+use redrob_canvas_ui::buttons::{ButtonVisuals, IconButton, IconButtonStyle};
+use egui::{Color32, CornerRadius, Stroke, Vec2};
+
+fn layer_button(ui: &mut egui::Ui, selected: bool) -> egui::Response {
+    let normal = ButtonVisuals {
+        fill: Color32::TRANSPARENT, stroke: Stroke::NONE, icon: Color32::WHITE,
+    };
+    let style = IconButtonStyle {
+        normal,
+        hovered: ButtonVisuals { fill: Color32::DARK_GRAY, ..normal },
+        pressed: None,
+        selected: ButtonVisuals { fill: Color32::BLUE, ..normal },
+        corner_radius: CornerRadius::same(4),
+        focus_stroke: Stroke::new(1.0, Color32::LIGHT_BLUE),
+    };
+    IconButton::new("Layers", Vec2::splat(28.0), &style).selected(selected)
+        .show(ui, |ui, rect, tint| {
+            // Use the application's SVG catalog or its existing painter icon here.
+            ui.painter().circle_filled(rect.center(), 5.0, tint);
+        })
+}
+```
+
+Use actual theme colors in the style adapter and localized text for the label. The painter receives
+the full button rectangle and icon tint; the app chooses icon padding/size. Parent disabled state
+applies to painting, interaction and accessibility. The library reports label and selection to
+AccessKit and draws the supplied inset focus outline. Mouse, Enter and Space activation come from
+egui. The caller reads `clicked()`, runs its command and updates selection; the component neither
+dispatches nor toggles state. Attach tooltips to the returned response.
+
+Controls previously painted with one `egui::Painter::rect` can opt into `.single_shape_frame()`.
+This keeps their fill/border edge tessellation, especially for translucent disabled borders.
+The default paints fill and border separately, preserving existing consumers' rendering.
+
+IDs come from the surrounding UI scope/position, independent of the translated label. Use
+`ui.push_id(stable_id, ...)` when items reorder. Dimensions must be finite, positive and no larger
+than 4096 points; other sizes produce an inert zero-size response. Invalid stroke widths are
+ignored and large strokes are bounded to half the smaller button dimension.
+
+## Tabs
+
+`tabs::fit(natural_widths, selected, available, minimum, overflow_width)` returns visible tab
+indices and widths, overflow indices, and the actual reserved overflow width. It shrinks wide
+tabs before hiding them, keeps input order and retains the selected tab. Tiny strips may reduce
+its width to zero. Negative/non-finite dimensions become zero and large dimensions are bounded.
+The work is linear in tab count with at most 32 fitting passes; the caller caps its own tab count.
+
+`tabs::Tab` registers a tab at a supplied rectangle and invokes the application's painter:
+
+```rust
+fn tab(ui: &mut egui::Ui, rect: egui::Rect, selected: bool) -> egui::Response {
+    redrob_canvas_ui::tabs::Tab::new(ui.id().with("layers-tab"), "Layers", selected)
+        .sense(egui::Sense::click_and_drag())
+        .show_at(ui, rect, |ui, response| {
+            let fill = if response.hovered() { egui::Color32::GRAY } else { egui::Color32::DARK_GRAY };
+            ui.painter().rect_filled(response.rect, 0.0, fill);
+        })
+}
+```
+
+Supply a stable ID independent of the translated label. The component reports the accessible
+Tab role, label and selection, handles egui keyboard activation, and paints a focus outline from
+the caller's theme. The caller keeps selection, labels, overflow menus, painting and drag actions;
+close buttons and tab context menus stay separate. Dock and floating-panel adapters use the same
+component without sharing window or workspace state.
+
+## Splits and resize handles
+
+`layout::split_rect` divides a rectangle along `SplitAxis::Horizontal` (left/right children) or
+`Vertical` (top/bottom). `SplitSize` accepts a ratio, fixed first pane, or fixed second pane in
+logical points. The result contains `first`, `divider` and `second` rectangles. Gap and minimum
+are supplied by the application. Tiny areas relax the minimum to half the space available;
+non-finite or inverted input returns `None` instead of panicking.
+
+```rust
+use redrob_canvas_ui::layout::{split_rect, SplitAxis, SplitSize};
+
+fn two_panes(rect: egui::Rect) -> Option<(egui::Rect, egui::Rect)> {
+    let split = split_rect(rect, SplitAxis::Horizontal, SplitSize::Ratio(0.5), 4.0, 20.0)?;
+    Some((split.first, split.second))
+}
+```
+
+`layout::ResizeHandle` receives a stable ID, axis, divider rectangle, localized label and
+`ResizeHandleStyle` colors. `show` returns an egui response and a movement delta for that frame.
+Pointer drags, focused axis-arrow keys and AccessKit increment/decrement actions all produce
+that delta. `value(current, range)` adds accessible numeric bounds and SetValue support. Tab
+continues normal focus traversal. Invalid geometry or numeric parameters make the handle inert.
+
+Apply the delta through `SplitLayout::resized(size, delta, minimum)` to retain fixed/ratio sizing,
+or use an application-specific adapter. The library does not persist geometry, dispatch commands
+or create panes. Apps keep their existing dock trees, stacked panels, layout files, pane contents,
+cameras, document focus and native windows. Shared controls do not constitute a dock-tree migration.
+
+## Panel docking
+
+`docking::Layout<P>` owns panel placement independently of application content: a tree of split,
+tab and accordion nodes plus floating tab groups. `apply(Action)` validates the complete layout,
+applies a proposed change to a copy and commits only a valid result. Moves, tab insertion/reorder,
+side splits, detach, activate, close, reveal and resizing use this one transaction path. Panel IDs
+must be unique, stable values; labels and document state are supplied by the app.
+
+`Layout::location` captures a panel's placement before hiding it; `restore` returns it there if
+the remembered destination still exists. Apps choose an explicit fallback when it does not.
+Enable the optional `serde` feature to persist the shared layout, or convert to/from an existing
+workspace schema. Validate loaded input before rendering or recursively converting it.
+
+`DockArea` is an optional renderer. It takes a layout snapshot, styles, labels, panel permissions
+and body callbacks, then returns actions for the app's command handler. Its floating groups stay
+inside the current egui viewport. Protected document canvases have no tab header. Per-panel size
+limits constrain geometry without overwriting saved preferred widths when the window shrinks.
+Applications with established chrome can use the shared transaction model and `resolve_drop`
+without changing their renderer. See [the docking guide](../../docs/ui-docking.md) for details.
+
+## Toolbar overflow
+
+`layout::fit_toolbar(natural_widths, available, spacing, overflow_width)` keeps an ordered
+prefix of indivisible groups at their natural widths. When groups do not fit, it reserves the
+full overflow-control width and the preceding gap. `ToolbarFit` contains visible `(index, width)`
+pairs, overflow indices and the reserved width. It does not skip wide groups or compress controls.
+
+The application paints an enabled, focusable overflow control and makes every overflow index
+available in its menu through existing commands. Group identity, labels, selection and command
+dispatch remain local. An empty input produces an empty fit. Invalid dimensions, more than 4096
+groups, or an available width too small for the overflow control return `None`; the caller must
+then provide a scrollable row, wrapping or an existing application menu. Never turn that result
+into silently missing commands. See the API documentation for the accepted numeric bounds.
+
+## Theme mechanisms
+
+`theme::WidgetPalette` applies background colors to egui's five widget states, with a supplied
+corner radius and foreground stroke. Vector, Layout and LightCraft construct it from their existing
+local tokens. It updates each state's strong/weak background fill, radius and foreground; borders,
+expansion and all other visual settings are retained.
+
+```rust
+use redrob_canvas_ui::theme::WidgetPalette;
+use egui::{Color32, CornerRadius, Stroke};
+
+fn style_widgets(visuals: &mut egui::Visuals, palette: WidgetPalette, text: Color32) {
+    palette.apply_to(&mut visuals.widgets, CornerRadius::same(4), Stroke::new(1.0, text));
+    // Optional app-specific exceptions belong after the shared operation.
+    visuals.widgets.inactive.weak_bg_fill = Color32::TRANSPARENT;
+}
+```
+
+This is a mechanism for coloring widgets, not a shared theme schema. Fonts, complete palettes,
+selection colors, shadows, spacing, context storage and preference serialization remain in each
+application. See the [eight-app comparison](../../docs/theme-infrastructure.md) for the exact
+common operation and the differences preserved by the adapters.
+
+## Print settings and feedback
+
+`printing::State` holds the transient printer selection, copies, duplex and grayscale settings,
+plus discovery and submission receivers. Hosts supply `Discover` and `Submit` workers; neither
+the state nor the controls invokes an OS spooler or generates PDF content. Apps map `Settings`
+to `redrob-canvas-print::Job` and own the Print action, page selection, preview and export behavior.
+
+`State::show` takes a stable `egui::Id` and app-localized `Labels`. It draws the settings only;
+apps render typed `Feedback` using their own translations. `poll` requests occasional repaints
+while work is pending. Refresh disables submission until the new printer list arrives, preserves
+a still-present selection, and otherwise chooses the system default or first available printer.
+An empty or failed discovery cannot leave a stale printer ready to submit.
+
+`ready` is false while a job is pending. `begin` refuses replacing an active job receiver;
+dropping a receiver does not cancel a native job. Apps must test readiness before invoking the
+host submit callback and keep active work alive when closing a window. Queue-default duplex is
+represented by `None`, independently of explicit one-sided, long-edge or short-edge choices.
+Receipts and backend errors remain unmodified data for the app to display. These controls work
+on WASM too; browser PDF printing remains an app-owned service.
+
+## Compatibility and checks
+
+The crate uses egui 0.36 and Rust 1.95 or later. Its production dependency disables egui's default
+features so fonts and rendering features remain the application's choice. See the
+[suite audit](../../docs/ui-components-audit.md) for candidates, policies and adoption order.
+
+Validation:
+
+```sh
+cargo fmt --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+cargo check --target wasm32-unknown-unknown -p redrob-canvas-ui
+```
+
+The [visual regression suite](../../docs/ui-visual-regressions.md) compares the actual controls
+against independent reference painters, including exact mesh and RGBA checks, and proves that
+color, spacing and stroke changes fail those comparisons. To retain reviewable PNG pairs:
+
+```sh
+REDROB_CRAFT_UI_VISUAL_DIR=/absolute/path/to/visuals cargo test -p redrob-canvas-ui --test visual_regression
+```
+
+````
+
 ### `eec9d4461de2e1e0f26251a98fd53feaad8582e6614a5a23be17a5b0c9491637`
 
 Used by:
@@ -35325,6 +35703,199 @@ at your option.
 
 ````
 
+### `f0c4b12907575732e3ec7076cd0d4535ade2c6db1c0fd40ed7a3e82aed143129`
+
+Used by:
+- redrob-canvas-settings 0.14.0 - README.md
+
+Original byte length: `8510`; trailing newline: `yes`.
+
+````text
+# Craft Settings
+
+`redrob-canvas-settings` stores an application's settings in `config.toml`: it picks the folder, loads
+without ever failing, saves atomically while the application runs, keeps a backup, moves damaged
+files aside and runs schema migrations. Each application keeps its own settings type and
+defaults. The suite-wide policy (what belongs where) is in
+[docs/settings-storage.md](../../docs/settings-storage.md).
+
+Atomic writes come from [`redrob-canvas-atomic`](../atomic/README.md).
+
+## Boundaries
+
+- Never crashes: every error comes back in a `LoadReport`, `TickResult` or `Result`; the crate
+  denies `unwrap`, `expect`, `panic` and friends, and the workspace forbids `unsafe`.
+- No application code: it depends only on `redrob-canvas-atomic`, `serde`, `toml_edit` and `dirs`, and
+  knows nothing about any app's settings, defaults, UI or file formats. Apps supply their type
+  and their own parsers for older files.
+- No UI: it reports; the application decides what to show.
+
+## Defining settings
+
+```rust
+use redrob_canvas_settings::{DocumentMut, MigrateError, Settings};
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
+#[serde(default)]
+struct Prefs {
+    general: General,
+    appearance: Appearance,
+}
+
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
+#[serde(default)]
+struct General { language: String, autosave_minutes: u32 }
+
+#[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
+#[serde(default)]
+struct Appearance { theme: String, ui_scale: f64 }
+
+impl Settings for Prefs {
+    const APP_ID: &'static str = "photo";
+    const SCHEMA_VERSION: u32 = 1;
+
+    fn migrate(from: u32, doc: &mut DocumentMut) -> Result<(), MigrateError> {
+        // Called once per step for files older than SCHEMA_VERSION, before typed parsing.
+        Ok(())
+    }
+}
+```
+
+Rules for the type:
+
+- Put `#[serde(default)]` on every struct, so a missing key falls back to its default.
+- Do not use `#[serde(deny_unknown_fields)]`: keys the application does not know are kept in
+  the file on purpose.
+- Each top-level field becomes a `[section]`. A value that does not fit resets only its section.
+
+## Using the store
+
+```rust,ignore
+use redrob_canvas_settings::{Location, SaveStatus, SettingsStore};
+
+// Once at startup. Never fails; look at the report for anything to show the user.
+let (mut store, report) = SettingsStore::<Prefs>::open(Location::Auto);
+if report.has_problems() {
+    // report.broken_moved_to, report.section_errors, report.read_only
+}
+
+// Every frame: read is in-memory.
+let scale = store.get().appearance.ui_scale;
+
+// On change: only marks the store dirty if the value actually changed.
+store.update(|p| p.appearance.theme = "dark".into());
+
+// Every frame: saves 500 ms after the last change, retries failures with backoff.
+let tick = store.tick(std::time::Instant::now());
+if let SaveStatus::Failed(err) = &tick.status {
+    // show it; the store keeps retrying
+}
+if let Some(deadline) = tick.next_deadline {
+    // eframe only repaints on input, so ask for one at the deadline or an idle app never saves:
+    ctx.request_repaint_after(deadline.saturating_duration_since(std::time::Instant::now()));
+}
+
+// On exit.
+let _ = store.flush();
+```
+
+`SettingsStore::open_at(dir)` opens a store in a given folder, for settings that travel with a
+library or project. `SettingsStore::open(Location::Memory)` keeps settings in memory only and
+reads and writes nothing, for tests, demos and switches like `REDROB_LAYOUT_NO_PREFS`; the app
+uses the same `get`/`update`/`tick`/`flush` calls either way. `OpenOptions` adds older files to
+import, a different debounce, and a `Probe` for tests.
+
+## Where the file goes
+
+`Location::Auto` applies these rules in order; the report says which one won:
+
+1. `Location::Dir(path)`: an application override, such as a `--config-dir` flag.
+2. `<APP>_CONFIG_DIR` (`REDROB_PHOTO_CONFIG_DIR`). Set but **empty** means isolated: the store
+   is in memory only and nothing is read or written, so tests and agents never touch the real
+   profile.
+3. A portable marker next to the executable (next to the `.app` bundle on macOS): by default a
+   file named `portable`, with settings in `config/` beside it. An app with an existing portable
+   layout keeps it by overriding `Settings::PORTABLE_MARKERS` and `Settings::PORTABLE_DIR`:
+
+   ```rust,ignore
+   const PORTABLE_MARKERS: &'static [&'static str] = &["portable.txt", "Photo.portable"];
+   const PORTABLE_DIR: &'static str = "PhotoData";
+   ```
+4. The platform config folder: `$XDG_CONFIG_HOME/<app>/` or `~/.config/<app>/` on Linux,
+   `~/Library/Application Support/<app>/` on macOS, `%APPDATA%\<app>\` on Windows.
+
+With no folder (isolated or `Location::Memory`), `store.dir()` and `store.path()` are `None`,
+`is_persistent()` is false, legacy files are not imported, and `flush()` returns `Ok`.
+
+Otherwise the folder is created at open. If it cannot be created or written, the store opens read-only
+and the report says so, so the application can tell the user at startup rather than on the
+first save. `paths::cache_dir` and `paths::data_dir` give the matching cache and data folders for
+things that do not belong in `config.toml`.
+
+## Files
+
+- `config.toml`: the settings, starting with `schema_version = N`. Written on the first
+  `flush()` even when nothing changed, so users can find it. Created `0600` on Unix; a mode the
+  user changes by hand is kept on later saves.
+- `config.toml.bak`: the previous version, refreshed before each save. On Unix it always has
+  the same mode as `config.toml`; an older, broader backup is tightened on the next save.
+- `config.broken-<unix-ts>.toml`: a file that was not valid TOML, moved aside. Never deleted.
+
+## What happens when loading
+
+| File state | Result |
+|---|---|
+| Missing | Defaults, or the first `LegacyFile` that parses. The old file is left in place so a rollback still works. |
+| Not valid TOML | Moved aside; defaults; `report.broken_moved_to`. If it cannot be moved, read-only. |
+| Valid TOML, a section does not fit | That section's defaults; the rest kept; `report.section_errors`. |
+| Older `schema_version` | `Settings::migrate` once per step, then saved; `report.migrated_from`. |
+| Newer `schema_version` | Values shown, store read-only, so an older build never overwrites a newer file. |
+| Migration step fails | Store read-only, file untouched. |
+
+## What happens when saving
+
+Values are merged into the document that was loaded: tables merge key by key, arrays and
+scalars are replaced whole, comments, key order, unknown keys and each replaced line's trailing
+comment stay. Each write goes through `redrob-canvas-atomic`, so a failed save leaves the old file intact.
+
+Just before each write the store reads the file and compares its **contents** (not its mtime,
+which can stay the same on FAT, HFS+ or network shares) with what it last read or wrote:
+
+| File on disk | What the save does |
+|---|---|
+| Unchanged | Backs it up to `config.toml.bak`, then writes. |
+| Changed, parses | Adopts it so its comments and unknown keys survive, backs it up, then writes this store's values over its known keys. |
+| Changed, does not parse | Moves it to `config.broken-<ts>.toml` (the edit is kept; `take_moved_aside()` returns the path to show), leaves the previous backup alone, then writes. |
+| Blank | Leaves the previous backup alone, then writes. |
+| From a newer build, or its migration fails | Writes nothing; the store becomes read-only and the save returns `SettingsError::ReadOnly`, the same as at startup. |
+
+### Concurrency contract
+
+Saving is **best effort, last writer wins**, not multi-process locking. Hand edits and a
+second instance's unknown keys and comments are preserved as above, but two processes saving
+within the same moment can still race: the later write wins on known keys. Settings are small
+and change rarely, so this is the contract apps should assume. An app that needs strict
+coordination between processes (for example a launcher writing another app's settings) should
+add its own lock around `flush()`.
+
+## Validation
+
+Before merging (from `AGENTS.md`), plus the wasm check:
+
+```sh
+cargo fmt --check
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+cargo check --target wasm32-unknown-unknown -p redrob-canvas-settings
+```
+
+The tests in `tests/` write only to temporary folders and never touch the real config folder.
+
+On `wasm32` only the `Settings` trait, the document helpers and the error types are available.
+
+````
+
 ### `f1b2855ae21da69e0a02499e13f57f3be92db7abbbffe9a89f33e04e9e21ec81`
 
 Used by:
@@ -35392,196 +35963,144 @@ SOFTWARE.
 
 ````
 
-### `f23849cce108c0d894838046a0e0d22a33080b638ef9999ba28c7246f85b9ff5`
+### `f2d0b729cf0d0709091cf6f1eec7d939a5b499a21b3f5df1cd94a408565d20b8`
 
 Used by:
-- redrob-craft-settings 0.13.2 - README.md
+- redrob-canvas-print 0.14.0 - README.md
 
-Original byte length: `8518`; trailing newline: `yes`.
+Original byte length: `10418`; trailing newline: `yes`.
 
 ````text
-# Craft Settings
+# redrob-canvas-print
 
-`redrob-craft-settings` stores an application's settings in `config.toml`: it picks the folder, loads
-without ever failing, saves atomically while the application runs, keeps a backup, moves damaged
-files aside and runs schema migrations. Each application keeps its own settings type and
-defaults. The suite-wide policy (what belongs where) is in
-[docs/settings-storage.md](../../docs/settings-storage.md).
+Submit a print-ready PDF to the system spooler. Used by PdfCraft and Layout;
+there are no dependencies on either app or on a UI framework. Requires Rust 1.95.
 
-Atomic writes come from [`redrob-craft-atomic`](../atomic/README.md).
-
-## Boundaries
-
-- Never crashes: every error comes back in a `LoadReport`, `TickResult` or `Result`; the crate
-  denies `unwrap`, `expect`, `panic` and friends, and the workspace forbids `unsafe`.
-- No application code: it depends only on `redrob-craft-atomic`, `serde`, `toml_edit` and `dirs`, and
-  knows nothing about any app's settings, defaults, UI or file formats. Apps supply their type
-  and their own parsers for older files.
-- No UI: it reports; the application decides what to show.
-
-## Defining settings
-
-```rust
-use redrob_craft_settings::{DocumentMut, MigrateError, Settings};
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
-#[serde(default)]
-struct Prefs {
-    general: General,
-    appearance: Appearance,
-}
-
-#[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
-#[serde(default)]
-struct General { language: String, autosave_minutes: u32 }
-
-#[derive(Serialize, Deserialize, Default, Clone, PartialEq)]
-#[serde(default)]
-struct Appearance { theme: String, ui_scale: f64 }
-
-impl Settings for Prefs {
-    const APP_ID: &'static str = "photocraft";
-    const SCHEMA_VERSION: u32 = 1;
-
-    fn migrate(from: u32, doc: &mut DocumentMut) -> Result<(), MigrateError> {
-        // Called once per step for files older than SCHEMA_VERSION, before typed parsing.
-        Ok(())
-    }
-}
+```rust,no_run
+let job = redrob_canvas_print::Job { title: "Report".into(), ..Default::default() };
+let receipt = redrob_canvas_print::submit(&pdf_bytes, &job)?;
 ```
 
-Rules for the type:
+The caller generates the PDF, checks document permissions, and handles page selection,
+imposition, marks and bleed. This crate discovers printers, exposes CUPS driver options,
+opens Windows printer preferences and submits jobs with copies, collation, duplex and colour.
+`command_preview` returns diagnostics without creating files or starting a process.
 
-- Put `#[serde(default)]` on every struct, so a missing key falls back to its default.
-- Do not use `#[serde(deny_unknown_fields)]`: keys the application does not know are kept in
-  the file on purpose.
-- Each top-level field becomes a `[section]`. A value that does not fit resets only its section.
+- **macOS/Linux:** CUPS `lpstat`, `lpoptions` and `lp`. Jobs stream through stdin. Exact-size
+  sheets use `fit-to-page=false`; shrink-to-fit uses IPP `print-scaling=auto-fit`.
+- **Windows:** in this process, with no PowerShell, script or other program started, so
+  printing works where App Control for Business or AppLocker enforce script rules. Printers
+  come from `EnumPrinters` (local queues and `\\server\queue` connections) and the default from
+  `GetDefaultPrinter`. A job is drawn as vectors by the in-box `Windows.Data.Pdf` with Direct2D
+  into the XPS print API (the `winprint` crate), and copies, collation, duplex, colour, paper,
+  orientation and "no scaling" travel in a PrintTicket that the driver validates first; a
+  driver that would change the paper, orientation or scaling is refused before anything is
+  sent. Paper is the driver's own option for the sheet's size (to 0.25 mm), preferring the one
+  named like the standard size ("ARCH D" over a custom 24 × 36 in entry). This backend comes
+  from storytold/pdfcraft#599 and #1132.
+  A job has one ticket, so one paper and orientation. Sheets of the other orientation are
+  turned back with `/Rotate`, so portrait and landscape sheets still print as one job. Exact
+  size refuses sheets of different sizes and paper the driver lacks. Shrink-to-fit uses the
+  driver's matching paper, else its default paper, and puts every sheet on it: a sheet that
+  doesn't fit inside the paper's widest hardware margin is shrunk, a smaller one keeps its
+  size, and both are centred. Both are done by appending an incremental update to the PDF
+  (new versions of the pages that need it, the original bytes untouched); the crate reads
+  only cross-reference sections, object streams and the page tree for this, leniently and
+  with every size bounded. Encrypted PDFs can be turned but not reframed. Annotations on a
+  reframed page are dropped; print-ready PDFs have them flattened. Nondefault or invalid
+  `/UserUnit` is refused because the native renderer does not reliably honor physical units.
+  Parsing caps cumulative cross-reference/object-stream records at 500,000, decoded streams
+  at 16 MiB each and 32 MiB per job, and parsed nodes/tokens at 250,000/16 MiB per job and
+  32,000/1 MiB per object. Files exceeding these limits return a clear error.
+  Long-edge duplex is `TwoSidedLongEdge` and short-edge `TwoSidedShortEdge`; `duplex: None`
+  leaves duplex out of the ticket. Driver-specific defaults remain in Windows printer
+  preferences (`rundll32 printui.dll`, the one process this crate starts, and only when asked).
+- **Browser/other targets:** discovery is empty and submission reports an unsupported
+  platform; callers can offer PDF export instead.
 
-## Using the store
+Windows jobs briefly use a file in a private temporary folder (random name, this user's only),
+named after the job's title because the spooler shows it as the document name; the folder is
+removed once the spooler has the job, on success and failure. Failed and canceled terminal
+package statuses are errors, including failures received after every sheet was processed.
+A missing completion notification times out after two minutes after the native print control
+is closed and requests cancellation. Calls into a driver and interactive output-file dialogs
+are not covered by this notification timeout. Windows answers when the job is in
+the queue ("spooled 3 sheet(s)"): a paused queue or an offline printer keeps it there. CUPS jobs
+never use a PDF temporary file. Printing is synchronous; UI callers should submit on a worker.
+`submit_with_progress` reports `(processed, sheets)` before the first Windows sheet and after
+each sheet is successfully added to the native print job. These are source PDF sheets, excluding
+copies and duplex; the events describe sheet processing, and do not confirm physical output.
+The callback runs on the thread calling submission, can capture non-`Send` state, and should
+return promptly. It is never retained. Keep waiting for the final `Result` even at full progress:
+the job can still fail. The API does not provide cancellation. CUPS reports no progress.
+UI callers must forward events to their own progress state; adopting the API alone does not
+change an application's UI.
+Receipts are backend messages, not portable job IDs. `Job::duplex = None` preserves the queue's
+duplex default; `Some(Duplex::Off)` forces simplex. `Job::scaling` defaults to `Scaling::Exact`;
+callers exporting arbitrary document sizes can choose `Scaling::ShrinkToFit`. Exact mode reports
+a driver paper-size mismatch. On Windows `command_preview` describes the in-process job
+(`xps-print`, then the printer and options as `key=value`) instead of a command line. The crate
+does not provide PostScript output, separations, trapping or colour-managed device rendering.
 
-```rust,ignore
-use redrob_craft_settings::{Location, SaveStatus, SettingsStore};
+Windows shrink-to-fit refuses pages with annotations when their geometry needs fitting.
+Callers must flatten annotation appearances into page content first. Exact-size printing and
+rotation retain the annotations. This avoids losing printed comments, forms or other marks.
+The Windows renderer uses viewer visibility. Native submission therefore accepts only plain
+visible printable annotation flags (`F=4`); annotations without Print, with NoView, or with
+other visibility/rotation flags require caller flattening. This prevents printing comments
+that were marked nonprinting or omitting print-only marks. A visible Square appearance with
+`F=4` was rendered in the Windows qualification fixture; other appearance types still need
+their own fidelity checks.
 
-// Once at startup. Never fails; look at the report for anything to show the user.
-let (mut store, report) = SettingsStore::<Prefs>::open(Location::Auto);
-if report.has_problems() {
-    // report.broken_moved_to, report.section_errors, report.read_only
-}
+Native Windows PDF submission checks the driver's validated copy count and explicit
+simplex/duplex and grayscale requests before sending. Collation must be retained when both
+the page count and copy count exceed one. A driver that drops or changes these options is
+refused; select supported options or flatten grayscale into the print-ready page content.
+Without an explicit duplex request, the queue default applies. Normal color output retains
+the driver's color policy. Single-page or single-copy jobs have no collating order to check.
 
-// Every frame: read is in-memory.
-let scale = store.get().appearance.ui_scale;
+`cargo test -p redrob-canvas-print` tests CUPS transport (including pipe-sized jobs and refusal),
+printer parsing, PPD options and argument mapping, and on every platform the Windows pieces that
+need no printer: the PrintTicket, the checks on the driver's validated ticket and capabilities,
+paper matching, job file names, and the PDF sheet reader and its update (classic and compressed
+cross-references, turning, reframing, refusal, and thousands of truncated and corrupted files
+that must fail without a panic). On Windows it also submits a mixed-orientation exact-size job
+and a shrink-to-fit job to a temporary paused queue (inbox "Generic / Text Only" driver on
+`LPT1:`) and checks each arrives as one job with all its sheets. The queue portion explicitly
+skips if the driver or administrative rights are absent. Windows CI installs the inbox test
+driver and sets `REDROB_CRAFT_PRINT_REQUIRE_QUEUE=1`, making queue preparation/submission mandatory on
+its runner. Two ignored tests check a real printer by hand: `an_installed_driver_validates_the_ticket`
+(`REDROB_CRAFT_PRINT_TEST_PRINTER`; sends no job) and `an_installed_printer_prints_a_file`
+(`REDROB_CRAFT_PRINT_TEST_PRINTER`, `REDROB_CRAFT_PRINT_TEST_FILE`, optional `REDROB_CRAFT_PRINT_TEST_SCALING=shrink`
+and `REDROB_CRAFT_PRINT_TEST_DUPLEX=long`). Physical printer fidelity remains a hardware check.
 
-// On change: only marks the store dirty if the value actually changed.
-store.update(|p| p.appearance.theme = "dark".into());
+The cross-platform GitHub Actions workflow is defined in `.github/workflows/print.yml`.
+It runs formatting, Clippy and this crate's own tests on Windows, Linux and macOS when print
+code changes, and supports manual runs. The Windows job executes the spooler regression above;
+physical printer fidelity still requires hardware verification.
 
-// Every frame: saves 500 ms after the last change, retries failures with backoff.
-let tick = store.tick(std::time::Instant::now());
-if let SaveStatus::Failed(err) = &tick.status {
-    // show it; the store keeps retrying
-}
-if let Some(deadline) = tick.next_deadline {
-    // eframe only repaints on input, so ask for one at the deadline or an idle app never saves:
-    ctx.request_repaint_after(deadline.saturating_duration_since(std::time::Instant::now()));
-}
+Windows discovery reports driver duplex support in `Printer::two_sided` (a two-sided option in
+the driver's PrintCapabilities); CUPS leaves it unknown. Explicit simplex/duplex choices that the driver
+drops are refused before submission.
 
-// On exit.
-let _ = store.flush();
-```
+Windows dependencies: the maintained [`winprint` fork](https://github.com/storytold/winprint.rs)
+(BSD-3-Clause, pinned to an immutable Git revision, its PDFium-downloading `pdfium` feature off) and `winsafe` (MIT) hold every Win32 and WinRT call, so the crate keeps `unsafe` forbidden;
+`roxmltree` reads PrintTickets and `miniz_oxide` inflates PDF streams. `winprint` 0.2.1 lists
+reqwest (with rustls) and sigstore crates as non-optional build-dependencies, used only by its
+`pdfium` feature: they compile into its build script on Windows but not into the library. Apps
+running `cargo deny` need a licence exception for `webpki-root-certs` (CDLA-Permissive-2.0, CA
+list data reqwest brings) and an advisory ignore for RUSTSEC-2024-0370 (`proc-macro-error`
+unmaintained, a compile-time proc macro of winprint's `fmt-derive`).
 
-`SettingsStore::open_at(dir)` opens a store in a given folder, for settings that travel with a
-library or project. `SettingsStore::open(Location::Memory)` keeps settings in memory only and
-reads and writes nothing, for tests, demos and switches like `REDROB_LAYOUT_NO_PREFS`; the app
-uses the same `get`/`update`/`tick`/`flush` calls either way. `OpenOptions` adds older files to
-import, a different debounce, and a `Probe` for tests.
-
-## Where the file goes
-
-`Location::Auto` applies these rules in order; the report says which one won:
-
-1. `Location::Dir(path)`: an application override, such as a `--config-dir` flag.
-2. `<APP>_CONFIG_DIR` (`REDROB_PHOTO_CONFIG_DIR`). Set but **empty** means isolated: the store
-   is in memory only and nothing is read or written, so tests and agents never touch the real
-   profile.
-3. A portable marker next to the executable (next to the `.app` bundle on macOS): by default a
-   file named `portable`, with settings in `config/` beside it. An app with an existing portable
-   layout keeps it by overriding `Settings::PORTABLE_MARKERS` and `Settings::PORTABLE_DIR`:
-
-   ```rust,ignore
-   const PORTABLE_MARKERS: &'static [&'static str] = &["portable.txt", "PhotoCraft.portable"];
-   const PORTABLE_DIR: &'static str = "PhotoCraftData";
-   ```
-4. The platform config folder: `$XDG_CONFIG_HOME/<app>/` or `~/.config/<app>/` on Linux,
-   `~/Library/Application Support/<app>/` on macOS, `%APPDATA%\<app>\` on Windows.
-
-With no folder (isolated or `Location::Memory`), `store.dir()` and `store.path()` are `None`,
-`is_persistent()` is false, legacy files are not imported, and `flush()` returns `Ok`.
-
-Otherwise the folder is created at open. If it cannot be created or written, the store opens read-only
-and the report says so, so the application can tell the user at startup rather than on the
-first save. `paths::cache_dir` and `paths::data_dir` give the matching cache and data folders for
-things that do not belong in `config.toml`.
-
-## Files
-
-- `config.toml`: the settings, starting with `schema_version = N`. Written on the first
-  `flush()` even when nothing changed, so users can find it. Created `0600` on Unix; a mode the
-  user changes by hand is kept on later saves.
-- `config.toml.bak`: the previous version, refreshed before each save. On Unix it always has
-  the same mode as `config.toml`; an older, broader backup is tightened on the next save.
-- `config.broken-<unix-ts>.toml`: a file that was not valid TOML, moved aside. Never deleted.
-
-## What happens when loading
-
-| File state | Result |
-|---|---|
-| Missing | Defaults, or the first `LegacyFile` that parses. The old file is left in place so a rollback still works. |
-| Not valid TOML | Moved aside; defaults; `report.broken_moved_to`. If it cannot be moved, read-only. |
-| Valid TOML, a section does not fit | That section's defaults; the rest kept; `report.section_errors`. |
-| Older `schema_version` | `Settings::migrate` once per step, then saved; `report.migrated_from`. |
-| Newer `schema_version` | Values shown, store read-only, so an older build never overwrites a newer file. |
-| Migration step fails | Store read-only, file untouched. |
-
-## What happens when saving
-
-Values are merged into the document that was loaded: tables merge key by key, arrays and
-scalars are replaced whole, comments, key order, unknown keys and each replaced line's trailing
-comment stay. Each write goes through `redrob-craft-atomic`, so a failed save leaves the old file intact.
-
-Just before each write the store reads the file and compares its **contents** (not its mtime,
-which can stay the same on FAT, HFS+ or network shares) with what it last read or wrote:
-
-| File on disk | What the save does |
-|---|---|
-| Unchanged | Backs it up to `config.toml.bak`, then writes. |
-| Changed, parses | Adopts it so its comments and unknown keys survive, backs it up, then writes this store's values over its known keys. |
-| Changed, does not parse | Moves it to `config.broken-<ts>.toml` (the edit is kept; `take_moved_aside()` returns the path to show), leaves the previous backup alone, then writes. |
-| Blank | Leaves the previous backup alone, then writes. |
-| From a newer build, or its migration fails | Writes nothing; the store becomes read-only and the save returns `SettingsError::ReadOnly`, the same as at startup. |
-
-### Concurrency contract
-
-Saving is **best effort, last writer wins**, not multi-process locking. Hand edits and a
-second instance's unknown keys and comments are preserved as above, but two processes saving
-within the same moment can still race: the later write wins on known keys. Settings are small
-and change rarely, so this is the contract apps should assume. An app that needs strict
-coordination between processes (for example a launcher writing another app's settings) should
-add its own lock around `flush()`.
-
-## Validation
-
-Before merging (from `AGENTS.md`), plus the wasm check:
-
-```sh
-cargo fmt --check
-cargo clippy --workspace --all-targets -- -D warnings
-cargo test --workspace
-cargo check --target wasm32-unknown-unknown -p redrob-craft-settings
-```
-
-The tests in `tests/` write only to temporary folders and never touch the real config folder.
-
-On `wasm32` only the `Settings` trait, the document helpers and the error types are available.
+`redrob_canvas_print::rgb` exposes the safe `craft-winprint-gdi` API for native driver settings,
+printable geometry, RGB pages and caller-composed vector strokes. Applications retain ICC
+conversion, document layout, labels and print-mark composition. The shared transport validates
+single-copy DEVMODE settings before emitting manual copies and checks GDI errors. Color policy
+is explicit: application-managed/unmanaged RGB disables DC and old-style halftone correction
+with `ICM_DONE_OUTSIDEDC`, reapplied after `StartPage`; driver-managed RGB uses `ICM_OFF`.
+Vendor driver automatic color correction remains a driver setting and requires qualification.
+Other platforms return `rgb::PrintError::Unsupported`. The Windows PDF backend and its existing
+completion dependency pin are independent of this additional MIT OR Apache-2.0 API.
 
 ````
 
@@ -35692,147 +36211,6 @@ SPDX-License-Identifier: Unicode-3.0
 
 Portions of ICU4X may have been adapted from ICU4C and/or ICU4J.
 ICU 1.8.1 to ICU 57.1 © 1995-2016 International Business Machines Corporation and others.
-
-````
-
-### `f39ce60244ba2e0651d722968fac8b00f7807f495d3f9d6386d947cb0cc64e8b`
-
-Used by:
-- redrob-craft-print 0.13.2 - README.md
-
-Original byte length: `10418`; trailing newline: `yes`.
-
-````text
-# redrob-craft-print
-
-Submit a print-ready PDF to the system spooler. Used by PdfCraft and DesignCraft;
-there are no dependencies on either app or on a UI framework. Requires Rust 1.95.
-
-```rust,no_run
-let job = redrob_craft_print::Job { title: "Report".into(), ..Default::default() };
-let receipt = redrob_craft_print::submit(&pdf_bytes, &job)?;
-```
-
-The caller generates the PDF, checks document permissions, and handles page selection,
-imposition, marks and bleed. This crate discovers printers, exposes CUPS driver options,
-opens Windows printer preferences and submits jobs with copies, collation, duplex and colour.
-`command_preview` returns diagnostics without creating files or starting a process.
-
-- **macOS/Linux:** CUPS `lpstat`, `lpoptions` and `lp`. Jobs stream through stdin. Exact-size
-  sheets use `fit-to-page=false`; shrink-to-fit uses IPP `print-scaling=auto-fit`.
-- **Windows:** in this process, with no PowerShell, script or other program started, so
-  printing works where App Control for Business or AppLocker enforce script rules. Printers
-  come from `EnumPrinters` (local queues and `\\server\queue` connections) and the default from
-  `GetDefaultPrinter`. A job is drawn as vectors by the in-box `Windows.Data.Pdf` with Direct2D
-  into the XPS print API (the `winprint` crate), and copies, collation, duplex, colour, paper,
-  orientation and "no scaling" travel in a PrintTicket that the driver validates first; a
-  driver that would change the paper, orientation or scaling is refused before anything is
-  sent. Paper is the driver's own option for the sheet's size (to 0.25 mm), preferring the one
-  named like the standard size ("ARCH D" over a custom 24 × 36 in entry). This backend comes
-  from storytold/pdfcraft#599 and #1132.
-  A job has one ticket, so one paper and orientation. Sheets of the other orientation are
-  turned back with `/Rotate`, so portrait and landscape sheets still print as one job. Exact
-  size refuses sheets of different sizes and paper the driver lacks. Shrink-to-fit uses the
-  driver's matching paper, else its default paper, and puts every sheet on it: a sheet that
-  doesn't fit inside the paper's widest hardware margin is shrunk, a smaller one keeps its
-  size, and both are centred. Both are done by appending an incremental update to the PDF
-  (new versions of the pages that need it, the original bytes untouched); the crate reads
-  only cross-reference sections, object streams and the page tree for this, leniently and
-  with every size bounded. Encrypted PDFs can be turned but not reframed. Annotations on a
-  reframed page are dropped; print-ready PDFs have them flattened. Nondefault or invalid
-  `/UserUnit` is refused because the native renderer does not reliably honor physical units.
-  Parsing caps cumulative cross-reference/object-stream records at 500,000, decoded streams
-  at 16 MiB each and 32 MiB per job, and parsed nodes/tokens at 250,000/16 MiB per job and
-  32,000/1 MiB per object. Files exceeding these limits return a clear error.
-  Long-edge duplex is `TwoSidedLongEdge` and short-edge `TwoSidedShortEdge`; `duplex: None`
-  leaves duplex out of the ticket. Driver-specific defaults remain in Windows printer
-  preferences (`rundll32 printui.dll`, the one process this crate starts, and only when asked).
-- **Browser/other targets:** discovery is empty and submission reports an unsupported
-  platform; callers can offer PDF export instead.
-
-Windows jobs briefly use a file in a private temporary folder (random name, this user's only),
-named after the job's title because the spooler shows it as the document name; the folder is
-removed once the spooler has the job, on success and failure. Failed and canceled terminal
-package statuses are errors, including failures received after every sheet was processed.
-A missing completion notification times out after two minutes after the native print control
-is closed and requests cancellation. Calls into a driver and interactive output-file dialogs
-are not covered by this notification timeout. Windows answers when the job is in
-the queue ("spooled 3 sheet(s)"): a paused queue or an offline printer keeps it there. CUPS jobs
-never use a PDF temporary file. Printing is synchronous; UI callers should submit on a worker.
-`submit_with_progress` reports `(processed, sheets)` before the first Windows sheet and after
-each sheet is successfully added to the native print job. These are source PDF sheets, excluding
-copies and duplex; the events describe sheet processing, and do not confirm physical output.
-The callback runs on the thread calling submission, can capture non-`Send` state, and should
-return promptly. It is never retained. Keep waiting for the final `Result` even at full progress:
-the job can still fail. The API does not provide cancellation. CUPS reports no progress.
-UI callers must forward events to their own progress state; adopting the API alone does not
-change an application's UI.
-Receipts are backend messages, not portable job IDs. `Job::duplex = None` preserves the queue's
-duplex default; `Some(Duplex::Off)` forces simplex. `Job::scaling` defaults to `Scaling::Exact`;
-callers exporting arbitrary document sizes can choose `Scaling::ShrinkToFit`. Exact mode reports
-a driver paper-size mismatch. On Windows `command_preview` describes the in-process job
-(`xps-print`, then the printer and options as `key=value`) instead of a command line. The crate
-does not provide PostScript output, separations, trapping or colour-managed device rendering.
-
-Windows shrink-to-fit refuses pages with annotations when their geometry needs fitting.
-Callers must flatten annotation appearances into page content first. Exact-size printing and
-rotation retain the annotations. This avoids losing printed comments, forms or other marks.
-The Windows renderer uses viewer visibility. Native submission therefore accepts only plain
-visible printable annotation flags (`F=4`); annotations without Print, with NoView, or with
-other visibility/rotation flags require caller flattening. This prevents printing comments
-that were marked nonprinting or omitting print-only marks. A visible Square appearance with
-`F=4` was rendered in the Windows qualification fixture; other appearance types still need
-their own fidelity checks.
-
-Native Windows PDF submission checks the driver's validated copy count and explicit
-simplex/duplex and grayscale requests before sending. Collation must be retained when both
-the page count and copy count exceed one. A driver that drops or changes these options is
-refused; select supported options or flatten grayscale into the print-ready page content.
-Without an explicit duplex request, the queue default applies. Normal color output retains
-the driver's color policy. Single-page or single-copy jobs have no collating order to check.
-
-`cargo test -p redrob-craft-print` tests CUPS transport (including pipe-sized jobs and refusal),
-printer parsing, PPD options and argument mapping, and on every platform the Windows pieces that
-need no printer: the PrintTicket, the checks on the driver's validated ticket and capabilities,
-paper matching, job file names, and the PDF sheet reader and its update (classic and compressed
-cross-references, turning, reframing, refusal, and thousands of truncated and corrupted files
-that must fail without a panic). On Windows it also submits a mixed-orientation exact-size job
-and a shrink-to-fit job to a temporary paused queue (inbox "Generic / Text Only" driver on
-`LPT1:`) and checks each arrives as one job with all its sheets. The queue portion explicitly
-skips if the driver or administrative rights are absent. Windows CI installs the inbox test
-driver and sets `REDROB_CRAFT_PRINT_REQUIRE_QUEUE=1`, making queue preparation/submission mandatory on
-its runner. Two ignored tests check a real printer by hand: `an_installed_driver_validates_the_ticket`
-(`REDROB_CRAFT_PRINT_TEST_PRINTER`; sends no job) and `an_installed_printer_prints_a_file`
-(`REDROB_CRAFT_PRINT_TEST_PRINTER`, `REDROB_CRAFT_PRINT_TEST_FILE`, optional `REDROB_CRAFT_PRINT_TEST_SCALING=shrink`
-and `REDROB_CRAFT_PRINT_TEST_DUPLEX=long`). Physical printer fidelity remains a hardware check.
-
-The cross-platform GitHub Actions workflow is defined in `.github/workflows/print.yml`.
-It runs formatting, Clippy and this crate's own tests on Windows, Linux and macOS when print
-code changes, and supports manual runs. The Windows job executes the spooler regression above;
-physical printer fidelity still requires hardware verification.
-
-Windows discovery reports driver duplex support in `Printer::two_sided` (a two-sided option in
-the driver's PrintCapabilities); CUPS leaves it unknown. Explicit simplex/duplex choices that the driver
-drops are refused before submission.
-
-Windows dependencies: the maintained [`winprint` fork](https://github.com/storytold/winprint.rs)
-(BSD-3-Clause, pinned to an immutable Git revision, its PDFium-downloading `pdfium` feature off) and `winsafe` (MIT) hold every Win32 and WinRT call, so the crate keeps `unsafe` forbidden;
-`roxmltree` reads PrintTickets and `miniz_oxide` inflates PDF streams. `winprint` 0.2.1 lists
-reqwest (with rustls) and sigstore crates as non-optional build-dependencies, used only by its
-`pdfium` feature: they compile into its build script on Windows but not into the library. Apps
-running `cargo deny` need a licence exception for `webpki-root-certs` (CDLA-Permissive-2.0, CA
-list data reqwest brings) and an advisory ignore for RUSTSEC-2024-0370 (`proc-macro-error`
-unmaintained, a compile-time proc macro of winprint's `fmt-derive`).
-
-`redrob_craft_print::rgb` exposes the safe `craft-winprint-gdi` API for native driver settings,
-printable geometry, RGB pages and caller-composed vector strokes. Applications retain ICC
-conversion, document layout, labels and print-mark composition. The shared transport validates
-single-copy DEVMODE settings before emitting manual copies and checks GDI errors. Color policy
-is explicit: application-managed/unmanaged RGB disables DC and old-style halftone correction
-with `ICM_DONE_OUTSIDEDC`, reapplied after `StartPage`; driver-managed RGB uses `ICM_OFF`.
-Vendor driver automatic color correction remains a driver setting and requires qualification.
-Other platforms return `rgb::PrintError::Unsupported`. The Windows PDF backend and its existing
-completion dependency pin are independent of this additional MIT OR Apache-2.0 API.
 
 ````
 
@@ -36017,234 +36395,6 @@ This README is kept intentionally small to consolidate the documentation, see
 
 This crate is part of the [`objc2` project](https://github.com/madsmtm/objc2),
 see that for related crates.
-
-````
-
-### `f53fe018b7f736a75eff9483c1d8d4cbcb2021c19018839fa7aa02faba322299`
-
-Used by:
-- redrob-craft-pdf 0.13.2 - README.md
-
-Original byte length: `14327`; trailing newline: `yes`.
-
-````text
-# redrob-craft-pdf
-
-Shared PDF infrastructure with independent optional features. Applications own document
-models, editing, layout, font policy, worker scheduling, output presets and printing.
-No feature is enabled by default.
-
-| Feature | Provides |
-| --- | --- |
-| `read` | Bounded opening and the patched Hayro syntax types |
-| `interpret` | `read` plus an app-owned Device interpreter, fonts and CMaps |
-| `raster` | `interpret` plus premultiplied RGBA8 rendering |
-| `write` | Guarded Krilla authoring; no shared reader dependency |
-| `write-pdf` | `write` plus Krilla's embedded-PDF support |
-| `write-simple-text` | `write` plus Krilla's optional text shaper and `draw_text` |
-
-## Reading and rendering
-
-`open` accepts shared bytes without copying. `open_slice` reserves storage fallibly before
-copying. Both preserve typed password errors. Their `_with_options` variants accept
-`OpenOptions`: a caller-owned input limit and immutable per-document `syntax::DecodeLimits`.
-The default input limit is 512 MiB; callers can preserve their own accepted-file policy.
-Ordinary Flate/LZW/RunLength expansion defaults to 256 MiB per stream and can be lowered,
-including during initial xref reads, object streams, repair and fallback. Known-size image
-pixels and streaming page content have separate backend budgets. These controls do not bound
-total parser memory or execution time.
-
-For a bare Flate page, `Page::page_stream` materializes content under the ordinary limit,
-while `Page::content_reader` decodes incrementally under the separate streaming budget.
-Interpretation and rasterization use that incremental path. Lowering the ordinary limit
-(even to zero) therefore does not limit streamed Flate page content or cause a truncation
-warning by itself. Whole-stream fallback decoders still use the ordinary limit.
-
-`interpret_page` guards an app-owned Device. `raster::render` and `render_into` accept explicit
-background, scale, viewport, offset and optional solid-colour replacement. Output is
-premultiplied RGBA8. Geometry is cropped, rotated and scaled for UserUnit by the backend.
-Dimensions without an explicit viewport floor to at least one pixel per side; callers can
-request rounded-up sizes for partial edge pixels. Output is limited to 8192 pixels per side
-and 64,000,000 pixels total. Invalid geometry and buffer lengths fail before drawing.
-
-`InterpreterSettings` preserves caller font resolution, annotation policy, OCG object
-identities, cancellation, preview quality and warning callbacks. Preview caches remain
-separate from final-quality image entries. Reading-colour presets and print bypass policy
-belong to the app; the shared layer only maps the requested colours.
-
-Diagnostics report known image failures and incomplete page or nested painting content,
-including omitted streams, failed decoding and exhausted content budgets. They are not a fidelity certificate: the
-backend may approximate unsupported content, does not currently emit `UnsupportedFont`,
-and cached objects need not repeat previous warnings. Structural xref repair and objects
-omitted by a decode limit have no separate warning; a successful open does not certify
-that all objects survived. Some tolerant whole-stream decoders can return an incomplete
-prefix without a failure status. Use fresh caches for checks, while retaining these limitations.
-Native unwinding panics become errors; discard partial devices, buffers, parsers and caches
-after backend failure. WASM aborts and process-wide allocation failure cannot be caught.
-Cancellation is polled between operators, so a decoder may finish before noticing it.
-
-## Backend provenance and consumer pins
-
-The shared reader vendors the current patched Hayro trees from PdfCraft revision
-`7437bde378f43856eada40af25b983812e615e8a`. See
-[`vendor/README.craft-reader.md`](../../vendor/README.craft-reader.md) for the transfer and
-local patches. Lopdf, COS editing, inspection fallback and application caches remain app-owned.
-
-The patched 0.7 reader also carries focused compatibility changes from Hayro 0.8:
-whole-dictionary resource scopes, a 64-level direct-container limit, whole-run text
-fill/stroke order and byte transfer-function sampling. It retains the existing Lab
-Bradford and floating-color behavior, Type 3 handling, decoding limits and streaming
-completion diagnostics. Iterative page-tree traversal preserves deep valid trees and
-valid siblings around cycles, with a 100,000-entry work budget that fails closed rather
-than exposing a partial page list. These changes do not imply full equivalence to the 0.8 backend;
-the vendor notes record the boundaries. Existing consumers remain on their immutable
-revision until they explicitly adopt a new one.
-
-Consumers pin `redrob-craft-pdf` and their required root `[patch.crates-io]` entries to the same full
-`https://github.com/storytold/craft-libs` revision. Cargo ignores dependency-local patches.
-Reader consumers patch `hayro-syntax`, `hayro-interpret` and `hayro-jbig2`; raster consumers
-also patch `hayro`. Writer consumers patch `krilla`. A plain `write` consumer does not need
-reader patches. Keep unrelated redrob-craft-ui/redrob-craft-print versions unchanged when adopting PDF.
-A pinned commit must be available remotely before a fresh public checkout can resolve it.
-
-Synthetic native and WASM contracts cover opening, caller limits, alpha, geometry, settings,
-preview/final caching, diagnostics, cancellation and native panic recovery. Vendored syntax
-unit tests additionally cover decoder limits and incomplete streams. App-owned regression
-suites retain higher-level fidelity, editing, text and worker contracts. Real-file corpora
-stay outside this repository; dependency assets and licences are in the root attribution.
-
-## Reader verification
-
-The Shared PDF workflow runs native and WebAssembly facade contracts, an independent
-`read-only-contract` consumer, and the transferred backend tests. The independent consumer
-keeps interpreter-bearing dev-dependencies out of the shipping `read` feature graph.
-Run `bash scripts/test-pdf-backends.sh` from the repository root to test all four vendored
-backends, the syntax doctest and the syntax-only configuration. The script uses temporary
-source copies and the complete local patch set, preserving the vendored lockfiles.
-Run `cargo test --manifest-path crates/pdf/read-only-contract/Cargo.toml --locked` for the
-read-only consumer, then repeat with `--target wasm32-unknown-unknown` and the test runner.
-These backend checks supplement the root workspace gates; excluded vendor crates are not
-covered by `cargo test --workspace` alone.
-
-## Writing
-
-Plain `write` retains Krilla raster images without its optional text shaper. Applications
-that supply shaped glyphs do not need that shaper. Adapters that call `draw_text`, such as
-DeckCraft, also need `write-simple-text` when adopting this revision. `write-pdf` adds
-embedded-PDF support independently of text shaping.
-
-The writer pins Krilla 0.8.2, with a local unwind-cleanup patch documented in
-[`vendor/krilla/README.craft.md`](../../vendor/krilla/README.craft.md). Successful
-serialization uses the same backend version as before extraction. It provides:
-
-- `write::configuration`: version and archival validation configuration with typed failures.
-- `write::Metadata` and `write::Writer`: common metadata setup and consuming serialization;
-  compression, colour profiles and other serialization settings pass through unchanged.
-  `Writer::new_with_language` also accepts an optional document language for the catalog
-  and XMP metadata; empty language is treated as absent, while callers retain
-  selection and validation policy for nonempty tags.
-- `write::font`: fallible font copying/preparation for subset embedding, with a 512 MiB limit
-  per font, at most 256 variation coordinates, and rejection of non-finite coordinates.
-- `write::guard`: a native unwind guard for the whole app export, including drawing and
-  postprocessing. App errors pass through; serialization errors retain backend diagnostics.
-  Caught panic messages retain up to 1024 Unicode scalar values; the installed panic hook
-  remains responsible for logging source locations and full diagnostics.
-
-`Writer::document_mut` and `write::backend` deliberately expose Krilla's page, resource and
-painting APIs. The apps keep their document walks, pagination, font selection/licensing,
-outline fallbacks and warnings, colour policy, PDF/X postprocessing, tagging semantics,
-links, export presets and native editing payloads. Shared writing does not introduce a
-universal document model or claim additional format conformance. Dates and branding are
-provided by callers; the shared writer does not read a clock.
-
-`Writer::finish` consumes its document even on error. When `guard` returns an internal failure,
-discard any writer or drawing state captured by the closure; construct it inside the closure
-where possible. Failed page/surface cleanup poisons the backend document, so retaining it
-after a narrow catch cannot silently serialize a missing page. This also rejects failure
-during explicit surface finalization. Other captured app state must still be discarded.
-Native unwind recovery cannot catch WASM aborts or process-wide out-of-memory
-failures. Font preparation bounds do not impose a total memory, output-size or time budget on
-PDF serialization. Individual unsupported fonts still follow each app's existing outline
-fallback and warning behavior.
-
-Run `cargo test -p redrob-craft-pdf --no-default-features --features write`, and repeat with
-`--features write-pdf` and `--all-features`. The same writer contracts run with
-`--target wasm32-unknown-unknown` and a matching `wasm-bindgen-test-runner`. They exercise
-metadata, page sizes, versions, reproducibility, typed validation failures, malformed fonts,
-application error preservation, embedded pages, and native-only panic recovery.
-
-
-## Source pinning and local development
-
-Consumers pin both the facade and patched writer to the same full commit:
-
-```toml
-[workspace.dependencies]
-redrob-craft-pdf = { git = "https://github.com/storytold/craft-libs", rev = "<full-commit-id>", version = "=0.1.0", default-features = false, features = ["write"] }
-
-[patch.crates-io]
-krilla = { git = "https://github.com/storytold/craft-libs", rev = "<full-commit-id>", version = "=0.8.2" }
-```
-
-Choose `write-pdf` only when embedding PDF pages. Cargo ignores dependency workspaces'
-root patches; copy the Krilla patch into the consuming workspace. A compile-time marker
-rejects unpatched Krilla. Check the normal dependency graph separately from the test graph
-and ensure there is one Krilla source, including uses through `krilla-svg`. This writer
-migration does not change an application's reader backend or its other craft-libs pins.
-The selected revision must be remotely available before fresh consumers can resolve it.
-Local path replacements are development-only and should not be committed to an app.
-
-Run `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings` and
-`cargo test --workspace`, then test `redrob-craft-pdf` with `--features write` and
-`--features write-pdf` (the default feature set intentionally enables no PDF operations).
-Run the same writer contracts on `wasm32-unknown-unknown` with a matching
-`wasm-bindgen-test-runner`. Native recovery tests are subprocess or unwind checks;
-WASM tests exercise successful paths and typed input errors, not recovery from aborts.
-
-## Unicode and font contracts
-
-The writer embeds the font and glyph run supplied by the application. Applications
-must select a font that covers the requested characters, shape text and resolve
-bidirectional layout before drawing. Passing correct Unicode only in document
-metadata does not preserve page text. A selectable-text export must retain the
-actual glyph outlines and a matching ToUnicode map, and applications must report
-unsupported font preparation rather than silently dropping characters. Existing
-app-specific outline fallback remains an explicit policy choice.
-
-`tests/unicode_writing.rs` adds opt-in, externally supplied font fixtures. It exports,
-reopens and interprets real page text without putting the source text in metadata,
-checks nonzero glyph IDs, embedded fonts and visible non-space outlines, and asserts
-exact extraction for Latin accents, Greek, Cyrillic, Vietnamese, Arabic and Thai.
-A variable-font test checks default/empty coordinates and distinct light/bold
-embedded outlines while preserving extraction. These are embedding/mapping
-contracts; they do not qualify Arabic joining, RTL caret behavior, shaping quality,
-or lossless text editing in an application's separate COS editor.
-
-No PDF test fonts are stored in this repository. Obtain the licensed fixtures listed in
-[`tests/fonts.json`](tests/fonts.json), verify their SHA-256 hashes, place them in
-one directory using the listed names, then run:
-
-```sh
-REDROB_CRAFT_PDF_TEST_FONT_DIR=/absolute/path/to/licensed-fonts \
-RUSTFLAGS="--cfg craft_pdf_unicode_fixtures" \
-cargo test -p redrob-craft-pdf --all-features --test unicode_writing
-```
-
-Repeat with `--target wasm32-unknown-unknown` and the matching test runner for
-runtime WASM coverage. Ordinary builds and tests do not require these fonts or the
-fixture environment variable. With write enabled, the complete test code is
-compiled even without fixtures; its two runtime tests are explicitly ignored with a
-provisioning reason. Running ignored tests without fixtures fails with setup instructions.
-The Shared PDF CI workflow fetches and hash-verifies these fonts outside the checkout
-and enables the contracts on native and WASM. Locally, run
-`python3 scripts/fetch-pdf-test-fonts.py /absolute/path/to/licensed-fonts` to provision
-them. `tests/upstream_reading.rs` uses the same Inter fixture to verify TrueType
-WinAnsi fallback with missing or partial ToUnicode maps, explicit Encoding and
-Differences precedence, and a ToUnicode override. The fallback changes extraction
-only: existing nonsymbolic glyph selection can still choose StandardEncoding glyphs
-or `.notdef`. Tests pin that distinction and the upstream WinAnsi unused-code bullet
-mapping; fallback text is not proof of the original author's text. Without fixtures those reader
-contracts are also compiled and explicitly ignored; provisioned CI executes them.
 
 ````
 
@@ -38419,156 +38569,6 @@ CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR
 IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 DEALINGS IN THE SOFTWARE.
-
-````
-
-### `fb67c10761d3ffb3ee394e0cb3a055ba040da32d78207291e72f6c8bc1a4ddb5`
-
-Used by:
-- redrob-craft-atomic 0.13.2 - README.md
-
-Original byte length: `8625`; trailing newline: `yes`.
-
-````text
-# Craft Atomic
-
-`redrob-craft-atomic` provides crash-safe atomic file writing and replacement for the Craft suite.
-
-Extracted from the storage engine in **PhotoCraft** (refs #2, #14), it guarantees that a failed save or abnormal termination never leaves user documents truncated, corrupted, or missing.
-
-## Core Guarantees: Atomicity vs. Durability
- 
-1. **Atomicity (All-or-Nothing Replacement)**: `atomic_write` never truncates or overwrites the destination in place. It stages content in a hidden temporary file beside the destination (`.{stem}.{pid}-{n}.craft_tmp`), guaranteeing same-volume rename semantics (`EXDEV`-free). An external reader never sees a partial write. If an error occurs during staging or rename, the destination retains its prior bytes and the staging file is unlinked in user space. An abnormal process exit (e.g. `SIGKILL`, crash, or power loss) bypasses user-space cleanup and leaves the staging file on disk; sweeping orphaned staging files is delegated to consuming application recovery routines. The destination file itself is never corrupted.
-2. **Durability & Ordering Boundaries**:
-   - **Content Flush**: Before rename, staging file bytes are flushed to physical storage media (`sync_file`, issuing `F_FULLFSYNC` on macOS/APFS with SMB `fsync` fallback).
-   - **Directory Flush (Unix)**: After rename, syncing the parent directory table (`sync_dir`) is attempted on a best-effort basis. If directory sync fails, the error is ignored because the rename has already committed and the destination has already been replaced.
-   - **Hardware Durability Limits**: The sequence `sync_file < rename < sync_dir` proves ordering and kernel dispatch. Software tests do not prove survival across physical power interruption or unbuffered drive controller write caches.
-3. **Transient Lock Backoff (Windows)**: Antivirus scanners and search indexers hold newly written files momentarily. `RenameRetry` automatically retries renames encountering `PermissionDenied`, sharing violations (32), or lock violations (33) with exponential backoff capped at 200ms.
-4. **Permission & Symlink Invariants**: On Unix, new documents and exports use normal creation permissions (`0666`, subject to umask/default ACL), including their staging files. Private data must explicitly select `NewFilePermissions::Private` to create staging files with mode `0600`. Replacements always stage privately and restore the existing destination mode after the streaming callback. New files keep callback-selected modes with both hard links and the exclusive-copy fallback. Symlink chains are resolved with a hop limit, writing through the symlink to the ultimate target without replacing the link itself.
-5. **Safe Exclusive Creation (`write_new`)**: Uses hard links where supported, or exclusive create (`O_EXCL`), guaranteeing that an existing file is never replaced under race conditions.
-6. **Fault-Injection Testability**: The `AtomicFs` trait enables unit and integration test suites to simulate disk-full, locked files, and permission failures without physical disk I/O.
-
-A replaced file is a new file (a new inode), so its owner and group, extended attributes and ACLs, Finder tags, alternate data streams and hard links are not kept; a crash between the write and the rename can leave a `.<name>.<pid>-<n>.craft_tmp` file beside the destination.
-
-## Usage
-
-### One-Shot Atomic Write
-
-```rust
-use std::path::Path;
-use redrob_craft_atomic::atomic_write;
-
-let path = Path::new("project.craft");
-let data = b"precious document state";
-
-// Atomically replaces project.craft. If writing fails, project.craft retains
-// its prior bytes and temporary staging files are unlinked in user space.
-atomic_write(path, data).expect("safe atomic write");
-```
-
-### Streaming Atomic Writer
-
-```rust
-use std::io::Write;
-use std::path::Path;
-use redrob_craft_atomic::atomic_write_with;
-
-let path = Path::new("large_project.craft");
-
-atomic_write_with(path, |file| {
-    file.write_all(b"header...")?;
-    file.write_all(b"payload...")?;
-    Ok(())
-}).expect("streaming atomic write");
-```
-
-### Exclusive Creation (`write_new`)
-
-```rust
-use std::path::Path;
-use redrob_craft_atomic::write_new;
-
-let path = Path::new("export.png");
-
-// Writes only if the destination does not already exist; fails with AlreadyExists
-// without modifying existing content.
-write_new(path, b"png bytes...").expect("exclusive write");
-```
-
-### Document Permissions and Private Data
-
-The free functions and `WriteOptions::default()` use `NewFilePermissions::PlatformDefault`.
-On Unix, a new document/export stage is created directly with mode `0666`; the OS applies the
-process umask, setgid directory group and default ACL. This matches ordinary file creation
-(for example, `0644` under umask `022`, or `0664` under `002`). No process-global umask changes,
-empty permission probe, or `chmod` is needed for an unchanged new-file mode. The same policy
-applies when exclusive creation falls back to copying on volumes without hard links.
-
-This is a deliberate change from the earlier untagged revision's private default. Settings,
-credentials and recovery data must opt into private creation **before writing any bytes**:
-
-```rust
-use std::path::Path;
-use redrob_craft_atomic::{NewFilePermissions, WriteOptions};
-
-fn save_private_data() -> std::io::Result<()> {
-    let private = WriteOptions::default().with_new_file_permissions(NewFilePermissions::Private);
-    private.atomic_write(Path::new("settings.toml"), b"theme = 'dark'")?;
-    private.write_new(Path::new("recovery.bin"), b"recovery bytes")
-}
-```
-
-`WriteOptions` and `NewFilePermissions` are non-exhaustive: start with `default()` and select
-the policy with the builder, so future options do not break callers. Downstream matches on the
-enum must include a fallback arm. Byte and streaming methods support both policies.
-`redrob-craft-settings` explicitly chooses `Private` for its config and backup writes.
-
-Normal stages can be readable (or writable) by others allowed by the directory, umask and ACL
-while the callback is running, and can remain after a crash. Choose `Private` up front for
-sensitive payloads; changing permissions inside a callback is too late to guarantee that no
-other process opened the stage. Private stages request `0600`; actual enforcement depends on
-the filesystem's permission support. Neither policy adds Windows ACL guarantees.
-
-Replacements still stage privately and restore the existing Unix mode after writing. A new
-file keeps any mode selected by its callback. In the normal exclusive-copy fallback, a changed
-mode is applied before copying bytes; explicit private copies stay private during copying and
-apply callback-selected modes afterward. A required mode change that fails is reported, not
-silently ignored. Existing-file replacements and deliberate callback changes can therefore
-still require `chmod`; this is not a claim that every save works on every external filesystem.
-
-These policies do not promise preservation of existing ACLs, ownership or other metadata
-across replacements. The copy fallback never overwrites an existing target, but a reader may
-see the newly created target while it is being copied. A failed copy is removed.
-
-### Fault Injection & Testing
-
-`AtomicFs` lets callers simulate disk-full, locked files and permission failures. Its
-`create_new(path, permissions)` operation receives the selected policy; there is no separate
-probe operation or unsupported-probe fallback. Custom implementations migrating from an earlier
-untagged revision must accept the policy argument and implement both creation modes.
-
-The options API supports the same injection for byte and streaming writes:
-
-```rust
-use std::path::Path;
-use redrob_craft_atomic::{AtomicFs, NewFilePermissions, RenameRetry, WriteOptions};
-
-fn save_with_faults(fs: &dyn AtomicFs, path: &Path) -> std::io::Result<()> {
-    let options = WriteOptions::default().with_new_file_permissions(NewFilePermissions::Private);
-    let retry = RenameRetry { attempts: 0, first_delay_ms: 0 };
-    options.atomic_write_custom(fs, retry, path, b"private payload")
-}
-```
-
-Use `atomic_write_with_custom` for streaming replacements, or `write_new_custom` and
-`write_new_with_custom` for exclusive creation. The free `atomic_write_custom` and
-`write_new_custom` functions select the default document policy.
-
-## Guarantees & Doctrines
-
-- **Zero App Code**: Zero dependencies on application crates.
-- **Never Crash**: `#![deny(clippy::unwrap_used, clippy::expect_used, clippy::panic, clippy::unimplemented, clippy::todo, clippy::unreachable)]`.
-- **No Unsafe**: the workspace lints forbid `unsafe` code.
 
 ````
 

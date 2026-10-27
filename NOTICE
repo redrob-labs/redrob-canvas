@@ -3,22 +3,21 @@ Copyright (c) 2026 Janghoon Lee (Redrob) and contributors.
 Licensed under the MIT License or the Apache License, Version 2.0, at your option
 (LICENSE-MIT, LICENSE-APACHE).
 
-Redrob Canvas hosts four editors vendored as git subtrees under crafts/, each MIT OR
-Apache-2.0: PhotoCraft (crafts/photocraft), VectorCraft (crafts/vectorcraft), DesignCraft
-(crafts/designcraft) and craft-libs (crafts/craft-libs), all from https://github.com/storytold.
-The pinned commits are in upstream-base.json and UPSTREAM.md. Their NOTICE files are reproduced
+Redrob Canvas's editors started as four projects, each MIT OR Apache-2.0: PhotoCraft
+(now editors/photo), VectorCraft (editors/vector), DesignCraft (editors/layout) and craft-libs
+(editors/shared), all from https://github.com/storytold. They are no longer synced with those
+projects; the commits they came from are in SOURCE_ORIGINS.md. Their NOTICE files are reproduced
 verbatim below, unchanged; their LICENSE-MIT, LICENSE-APACHE and NOTICE files also remain in
-place under crafts/<name>/.
+place under editors/<name>/.
 
-The ArtCraft name, wordmark and logos under crafts/*/docs/brand/ are trademarks of the ArtCraft
-Team. They are not open source, are not covered by any licence above, and are not used by Redrob
-Canvas; their terms are in crafts/<name>/docs/brand/LICENSE-brand.txt.
+The ArtCraft name, wordmark and logos are trademarks of the ArtCraft Team. They are not open
+source, are not covered by any licence above, and are neither used nor shipped by Redrob Canvas.
 
 The complete inventory of Rust packages this build resolves, with their licence texts, is the
 generated THIRD_PARTY_NOTICES.md.
 
 ================================================================================
-crafts/photocraft/NOTICE (verbatim)
+editors/photo/NOTICE (verbatim)
 ================================================================================
 
 PhotoCraft
@@ -46,7 +45,7 @@ BIZ UDMincho; not the web build), under the SIL Open Font License 1.1. Their lic
 ship with the package as OFL-<family>.txt.
 
 ================================================================================
-crafts/vectorcraft/NOTICE (verbatim)
+editors/vector/NOTICE (verbatim)
 ================================================================================
 
 VectorCraft
@@ -145,7 +144,7 @@ Assets already bundled through Hayro's default features retain their licences:
 Per-file hashes and sources are recorded in ASSETS.md.
 
 ================================================================================
-crafts/designcraft/NOTICE (verbatim)
+editors/layout/NOTICE (verbatim)
 ================================================================================
 
 DesignCraft
@@ -226,7 +225,7 @@ licensed (MIT/Apache-2.0/BSD/ISC/Zlib) and fetched through crates.io.
 No Adobe icons, images or artwork are included.
 
 ================================================================================
-crafts/craft-libs/NOTICE (verbatim)
+editors/shared/NOTICE (verbatim)
 ================================================================================
 
 craft-libs
