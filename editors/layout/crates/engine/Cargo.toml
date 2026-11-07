@@ -24,6 +24,7 @@ redrob-layout-textimport = { workspace = true }
 redrob-layout-pdf = { workspace = true }
 redrob-layout-tools = { workspace = true }
 redrob-layout-idml = { workspace = true }
+indd = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }

@@ -5,9 +5,9 @@ This file was generated without network access from the exact `Cargo.lock` resol
 
 Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). The editors under `editors/` came from four MIT OR Apache-2.0 projects; their NOTICE texts are recorded in `NOTICE` and `SOURCE_ORIGINS.md`; the workspace crates they contribute appear in the inventory below as `workspace source`.
 
-- Cargo.lock SHA-256: `aa9c29cb9ff8928c6cbe3396779bfa470423fa3f309e6ef68a0af1fcbf83a8cc`
-- Resolved packages: **923**
-- Unique reproduced license/notice texts: **545**
+- Cargo.lock SHA-256: `c66c8771192b87a572df3ade97d9f76afcc42e0e40b58744570b49b67c7e049f`
+- Resolved packages: **924**
+- Unique reproduced license/notice texts: **546**
 - Generation mode: `cargo metadata --locked --offline`; no network content was used.
 
 ## Cargo.lock package inventory
@@ -311,6 +311,7 @@ Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COP
 | `imagesize` | `0.14.0` | registry+https://github.com/rust-lang/crates.io-index | `09e54e57b4c48b40f7aec75635392b12b3421fa26fe8b4332e63138ed278459c` | `MIT` | `LICENSE@436637bd4909fde7` |
 | `imagesize` | `0.15.0` | registry+https://github.com/rust-lang/crates.io-index | `65b27460c2c92b037f3f94c538ed9a3342f3fdf923606781629ccb35f82d042a` | `MIT` | `LICENSE@fa0d694967d5c279` |
 | `imgref` | `1.12.3` | registry+https://github.com/rust-lang/crates.io-index | `6e44b0a4eaa4c82f441d50a963f2d5f05a787240aeee097597033e72accfd22f` | `CC0-1.0 OR Apache-2.0` | `LICENSE-APACHE@c71d239df91726fc`<br>`LICENSE-CC0@a2010f343487d3f7` |
+| `indd` | `0.1.0` | git+https://github.com/storytold/indd-utils?rev=136f973a9d5f1b3ef34e46e27f4a08af196efde7#136f973a9d5f1b3ef34e46e27f4a08af196efde7 | `git:136f973a9d5f1b3ef34e46e27f4a08af196efde7` | `MIT OR Apache-2.0` | `LICENSE-APACHE@0d542e0c8804e39a`<br>`LICENSE-MIT@03515604e5c375d2` |
 | `indexmap` | `2.14.2` | registry+https://github.com/rust-lang/crates.io-index | `cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855` | `Apache-2.0 OR MIT` | `LICENSE-APACHE@a60eea8175145316`<br>`LICENSE-MIT@ecc269ef87fd38a1` |
 | `inout` | `0.1.4` | registry+https://github.com/rust-lang/crates.io-index | `879f10e63c20629ecabbb64a8010319738c66a5cd0c29b02d63d272b03751d01` | `MIT OR Apache-2.0` | `LICENSE-APACHE@a9040321c3712d8f`<br>`LICENSE-MIT@304b898acad7f02e` |
 | `interpolate_name` | `0.2.4` | registry+https://github.com/rust-lang/crates.io-index | `c34819042dc3d3971c46c2190835914dfbe0c3c13f61449b2997f4e9722dfa60` | `MIT` | `LICENSE@8eb4fb5a6505da47` |
@@ -2292,6 +2293,38 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 ````
 
+### `03515604e5c375d2c2973c4dfe9c2f3b8ee2a505be92926066d5d613bd4a38a0`
+
+Used by:
+- indd 0.1.0 - LICENSE-MIT
+
+Original byte length: `1095`; trailing newline: `yes`.
+
+````text
+MIT License
+
+Copyright (c) 2026 aiongg and the indd-utils contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+````
+
 ### `035e70219855119df4273b3c5b97543ae82e0dd60c520416e759107c602f651b`
 
 Used by:
@@ -3464,6 +3497,7 @@ Used by:
 - fdeflate 0.3.7 - LICENSE-APACHE
 - image 0.25.10 - LICENSE-APACHE
 - image-webp 0.2.4 - LICENSE-APACHE
+- indd 0.1.0 - LICENSE-APACHE
 - miniz_oxide 0.8.9 - LICENSE-APACHE.md
 - miniz_oxide 0.9.1 - LICENSE-APACHE.md
 - pin-project 1.1.13 - LICENSE-APACHE

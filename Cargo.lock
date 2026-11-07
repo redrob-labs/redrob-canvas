@@ -3105,6 +3105,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6e44b0a4eaa4c82f441d50a963f2d5f05a787240aeee097597033e72accfd22f"
 
 [[package]]
+name = "indd"
+version = "0.1.0"
+source = "git+https://github.com/storytold/indd-utils?rev=136f973a9d5f1b3ef34e46e27f4a08af196efde7#136f973a9d5f1b3ef34e46e27f4a08af196efde7"
+
+[[package]]
 name = "indexmap"
 version = "2.14.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5588,6 +5593,7 @@ dependencies = [
  "hayro-cmap",
  "hayro-interpret",
  "hayro-syntax",
+ "indd",
  "kurbo 0.13.1",
  "log",
  "quick-xml",
