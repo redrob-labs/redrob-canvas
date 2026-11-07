@@ -19,7 +19,8 @@ asks the NOTICE to travel with every distribution, so they are inside the bundle
 The binary defaults to target/<target>/release/redrob-canvas[.exe]; --binary overrides it.
 
 The Info.plist is written here rather than committed so the version in it is the workspace version
-the build used; release.yml reads it back and refuses a mismatch.
+the build used; release.yml reads it back and refuses a mismatch. It also declares the document types
+(`document_types`), read from apps/redrob-canvas/src/routing.rs, so Finder opens them in Canvas.
 """
 from __future__ import annotations
 
@@ -44,6 +45,57 @@ ICNS = ROOT / "resources" / "icons" / "redrob-canvas.icns"
 BUNDLE_ID = "ai.redrob.canvas"
 APP_NAME = "Redrob Canvas"
 BINARY = "redrob-canvas"
+ROUTING = ROOT / "apps" / "redrob-canvas" / "src" / "routing.rs"
+
+# Finder's double-click and "Open With". The three native documents are ours: exported types,
+# Canvas the Owner. Every other kind Canvas opens (routing.rs) is Alternate, so Canvas shows under
+# "Open With" without taking another app's default.
+OWN_TYPES = (
+    ("rlayout", "Redrob Canvas Layout"),
+    ("rvector", "Redrob Canvas Vector"),
+    ("rphoto", "Redrob Canvas Photo"),
+)
+# The system's own type identifiers for the extensions macOS declares itself. An extension not here
+# is matched by its extension (CFBundleTypeExtensions), except idml, imported below.
+SYSTEM_UTIS = {
+    "png": "public.png",
+    "jpg": "public.jpeg",
+    "jpeg": "public.jpeg",
+    "tif": "public.tiff",
+    "tiff": "public.tiff",
+    "gif": "com.compuserve.gif",
+    "bmp": "com.microsoft.bmp",
+    "ico": "com.microsoft.ico",
+    "heic": "public.heic",
+    "heif": "public.heif",
+    "avif": "public.avif",
+    "webp": "org.webmproject.webp",
+    "psd": "com.adobe.photoshop-image",
+    "tga": "com.truevision.tga-image",
+    "exr": "com.ilm.openexr-image",
+    "dng": "com.adobe.raw-image",
+    "cr2": "com.canon.cr2-raw-image",
+    "cr3": "com.canon.cr3-raw-image",
+    "nef": "com.nikon.raw-image",
+    "nrw": "com.nikon.nrw-raw-image",
+    "arw": "com.sony.arw-raw-image",
+    "raf": "com.fuji.raw-image",
+    "orf": "com.olympus.raw-image",
+    "rw2": "com.panasonic.rw2-raw-image",
+    "pef": "com.pentax.raw-image",
+    "svg": "public.svg-image",
+    "pdf": "com.adobe.pdf",
+    "ai": "com.adobe.illustrator.ai-image",
+    "eps": "com.adobe.encapsulated-postscript",
+    "docx": "org.openxmlformats.wordprocessingml.document",
+    "xlsx": "org.openxmlformats.spreadsheetml.sheet",
+    "rtf": "public.rtf",
+}
+# Types macOS does not declare but other apps name the same way.
+IMPORTED_TYPES = {
+    "idml": ("com.adobe.indesign-idml", "InDesign Markup Document", ["public.zip-archive", "public.data"]),
+}
+ROUTING_LISTS = (("PHOTO_EXTENSIONS", "Photo"), ("VECTOR_EXTENSIONS", "Vector"), ("LAYOUT_EXTENSIONS", "Layout"))
 
 
 def copy_licenses(into: Path) -> None:
@@ -67,6 +119,84 @@ def stage_unix_or_windows(binary: Path, out: Path, windows: bool) -> None:
     if not windows:
         executable(dest)
     copy_licenses(out / "share" / "redrob-canvas" / "licenses")
+
+
+def routed_extensions() -> list[tuple[str, list[str]]]:
+    """Each mode's extensions as routing.rs lists them (the one list the app routes by)."""
+    text = ROUTING.read_text(encoding="utf-8").split("#[cfg(test)]")[0]
+    lists = []
+    for const, mode in ROUTING_LISTS:
+        match = re.search(rf"pub const {const}: &\[&str\] = &\[(.*?)\];", text, re.S)
+        if not match:
+            sys.exit(f"{ROUTING}: no {const}; the document types are read from it")
+        body = re.sub(r"//[^\n]*", "", match.group(1))
+        lists.append((mode, re.findall(r'"([a-z0-9]+)"', body)))
+    return lists
+
+
+def document_types() -> tuple[list[dict], list[dict], list[dict]]:
+    """CFBundleDocumentTypes, UTExportedTypeDeclarations and UTImportedTypeDeclarations."""
+    own = {ext for ext, _ in OWN_TYPES}
+    documents: list[dict] = []
+    exported: list[dict] = []
+    for ext, name in OWN_TYPES:
+        uti = f"{BUNDLE_ID}.{ext}"
+        exported.append(
+            {
+                "UTTypeIdentifier": uti,
+                "UTTypeDescription": name,
+                "UTTypeConformsTo": ["public.data", "public.content"],
+                "UTTypeIconFile": "AppIcon",
+                "UTTypeTagSpecification": {"public.filename-extension": [ext]},
+            }
+        )
+        documents.append(
+            {
+                "CFBundleTypeName": name,
+                "CFBundleTypeRole": "Editor",
+                "LSHandlerRank": "Owner",
+                "CFBundleTypeIconFile": "AppIcon",
+                "LSItemContentTypes": [uti],
+            }
+        )
+    imported = [
+        {
+            "UTTypeIdentifier": uti,
+            "UTTypeDescription": name,
+            "UTTypeConformsTo": conforms,
+            "UTTypeTagSpecification": {"public.filename-extension": [ext]},
+        }
+        for ext, (uti, name, conforms) in IMPORTED_TYPES.items()
+    ]
+    for mode, extensions in routed_extensions():
+        others = [e for e in extensions if e not in own]
+        utis: list[str] = []
+        for e in others:
+            uti = SYSTEM_UTIS.get(e) or IMPORTED_TYPES.get(e, (None,))[0]
+            if uti and uti not in utis:
+                utis.append(uti)
+        by_extension = [e for e in others if e not in SYSTEM_UTIS and e not in IMPORTED_TYPES]
+        # A document type with LSItemContentTypes ignores CFBundleTypeExtensions, so the two are
+        # separate entries.
+        if utis:
+            documents.append(
+                {
+                    "CFBundleTypeName": f"{mode} document",
+                    "CFBundleTypeRole": "Editor",
+                    "LSHandlerRank": "Alternate",
+                    "LSItemContentTypes": utis,
+                }
+            )
+        if by_extension:
+            documents.append(
+                {
+                    "CFBundleTypeName": f"Other {mode.lower()} document",
+                    "CFBundleTypeRole": "Editor",
+                    "LSHandlerRank": "Alternate",
+                    "CFBundleTypeExtensions": by_extension,
+                }
+            )
+    return documents, exported, imported
 
 
 def stage_macos(binary: Path, out: Path, version: str) -> None:
@@ -99,6 +229,10 @@ def stage_macos(binary: Path, out: Path, version: str) -> None:
         "NSHumanReadableCopyright": "Copyright 2026 Janghoon Lee (Redrob) and contributors. MIT OR Apache-2.0.",
         "NSSupportsAutomaticGraphicsSwitching": True,
     }
+    documents, exported, imported = document_types()
+    info["CFBundleDocumentTypes"] = documents
+    info["UTExportedTypeDeclarations"] = exported
+    info["UTImportedTypeDeclarations"] = imported
     with open(contents / "Info.plist", "wb") as handle:
         plistlib.dump(info, handle, sort_keys=True)
     (contents / "PkgInfo").write_text("APPL????", encoding="ascii")

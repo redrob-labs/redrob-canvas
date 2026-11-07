@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
+[package]
+name = "redrob-open-documents"
+description = "Finder's open-documents event for the Redrob Canvas window on macOS"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+repository.workspace = true
+publish = false
+
+# An isolated `unsafe` helper crate, like redrob-photo-tablet: adding a method to winit's
+# application delegate needs the Objective-C runtime. Only `src/macos.rs` allows `unsafe`; the
+# shell (apps/redrob-canvas) keeps the workspace's `unsafe_code = "forbid"`.
+[lints.rust]
+unsafe_code = "deny"
+
+[lints.clippy]
+dbg_macro = "warn"
+expect_used = "deny"
+panic = "deny"
+todo = "warn"
+unwrap_used = "deny"
+
+# Already in Cargo.lock (redrob-photo-tablet pins the same version); pinned exactly.
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "=0.6.4"
