@@ -5337,7 +5337,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-agent"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "async-trait",
  "futures-util",
@@ -5351,7 +5351,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-ai"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -5381,7 +5381,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-canvas"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "arboard",
  "eframe",
@@ -5437,14 +5437,14 @@ dependencies = [
 
 [[package]]
 name = "redrob-canvas-atomic"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "rustix 1.1.5",
 ]
 
 [[package]]
 name = "redrob-canvas-cms"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "moxcms",
  "rayon",
@@ -5452,7 +5452,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-canvas-pdf"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "bytemuck",
  "hayro",
@@ -5468,7 +5468,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-canvas-print"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "craft-winprint-gdi",
  "miniz_oxide 0.8.9",
@@ -5480,7 +5480,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-canvas-quit"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "dispatch2",
  "egui",
@@ -5491,7 +5491,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-canvas-settings"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "dirs 7.0.0",
  "redrob-canvas-atomic",
@@ -5502,7 +5502,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-canvas-ui"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "egui",
  "egui_extras",
@@ -5540,7 +5540,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-color"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "kurbo 0.13.1",
  "moxcms",
@@ -5552,7 +5552,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-compose"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "hypher",
  "log",
@@ -5570,7 +5570,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-doc"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "proptest",
  "redrob-layout-color",
@@ -5582,7 +5582,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-engine"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "caseless",
  "hayro-cmap",
@@ -5618,7 +5618,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-epub"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "redrob-layout-color",
  "redrob-layout-doc",
@@ -5627,7 +5627,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-fonts"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "harfrust 0.13.3",
  "kurbo 0.13.1",
@@ -5639,7 +5639,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-format"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "redrob-layout-doc",
  "serde",
@@ -5650,7 +5650,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-geom"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "flo_curves",
  "kurbo 0.13.1",
@@ -5663,7 +5663,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-idml"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "quick-xml",
  "redrob-layout-color",
@@ -5676,7 +5676,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-images"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "image",
  "redrob-layout-color",
@@ -5687,7 +5687,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-mcp"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "image",
  "log",
@@ -5700,7 +5700,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-pdf"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "hayro-cmap",
  "hayro-interpret",
@@ -5722,7 +5722,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-pptx"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "image",
  "quick-xml",
@@ -5739,7 +5739,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-render"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "hayro",
  "image",
@@ -5757,7 +5757,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-textimport"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "quick-xml",
  "redrob-layout-doc",
@@ -5766,7 +5766,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-tools"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "redrob-layout-color",
  "redrob-layout-compose",
@@ -5778,7 +5778,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-layout-ui-egui"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "egui",
  "egui_kittest",
@@ -5806,14 +5806,14 @@ dependencies = [
 
 [[package]]
 name = "redrob-open-documents"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "objc2 0.6.4",
 ]
 
 [[package]]
 name = "redrob-photo-affinity"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "crc32fast",
  "flate2",
@@ -5823,7 +5823,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-algo"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "rayon",
  "redrob-photo-color",
@@ -5836,7 +5836,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-automation"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "base64 0.22.1",
  "cap-std",
@@ -5858,7 +5858,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-cms"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "moxcms",
  "rayon",
@@ -5866,7 +5866,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-codecs"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "exr",
  "flate2",
@@ -5887,7 +5887,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-color"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "redrob-photo-cms",
  "serde",
@@ -5895,7 +5895,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-compose"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "criterion",
  "proptest",
@@ -5910,7 +5910,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-doc"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "redrob-photo-color",
  "redrob-photo-geom",
@@ -5921,7 +5921,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-engine"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "blake3",
  "exr",
@@ -5956,7 +5956,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-format"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "blake3",
  "crc32fast",
@@ -5977,14 +5977,14 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-geom"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "redrob-photo-gpu"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "half",
  "log",
@@ -6001,14 +6001,14 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-heif"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "heic-rs",
 ]
 
 [[package]]
 name = "redrob-photo-io"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "blake3",
  "crc32fast",
@@ -6040,14 +6040,14 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-ops"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "redrob-photo-doc",
 ]
 
 [[package]]
 name = "redrob-photo-paint"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "redrob-photo-color",
  "redrob-photo-geom",
@@ -6058,7 +6058,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-plugins"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "rayon",
  "redrob-photo-color",
@@ -6073,7 +6073,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-psd"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "flate2",
  "proptest",
@@ -6084,7 +6084,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-raster"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "proptest",
  "redrob-photo-color",
@@ -6094,7 +6094,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-raw"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "flate2",
  "image",
@@ -6109,7 +6109,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-tablet"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "block2 0.6.2",
  "objc2 0.6.4",
@@ -6121,7 +6121,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-testkit"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "memory-stats",
  "redrob-photo-color",
@@ -6132,7 +6132,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-text"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "flate2",
  "parley",
@@ -6146,7 +6146,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-ui-egui"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "base64 0.22.1",
  "eframe",
@@ -6187,7 +6187,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-photo-vector"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "rayon",
  "redrob-photo-color",
@@ -6198,7 +6198,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-affinity"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "crc32fast",
  "flate2",
@@ -6209,7 +6209,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-brush"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "kurbo 0.13.1",
  "redrob-vector-color",
@@ -6221,7 +6221,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-cad"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "image",
  "kurbo 0.13.1",
@@ -6237,7 +6237,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-color"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "kurbo 0.13.1",
  "moxcms",
@@ -6249,7 +6249,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-doc"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "image",
  "jpeg-encoder",
@@ -6266,7 +6266,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-effects"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "kurbo 0.13.1",
  "redrob-vector-color",
@@ -6282,7 +6282,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-engine"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "crc32fast",
  "flate2",
@@ -6318,7 +6318,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-eps"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "flate2",
  "image",
@@ -6339,7 +6339,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-format"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "flate2",
  "proptest",
@@ -6354,7 +6354,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-geom"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "kurbo 0.13.1",
  "proptest",
@@ -6366,7 +6366,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-mcp"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "image",
  "log",
@@ -6385,7 +6385,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-metafile"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "image",
  "kurbo 0.13.1",
@@ -6399,7 +6399,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-pathops"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "kurbo 0.13.1",
  "linesweeper",
@@ -6411,7 +6411,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-pdf"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "aes",
  "flate2",
@@ -6440,7 +6440,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-plugins"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "redrob-vector-color",
  "redrob-vector-doc",
@@ -6454,7 +6454,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-render"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "flate2",
  "gif 0.14.2",
@@ -6479,14 +6479,14 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-scriptcheck"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "proptest",
 ]
 
 [[package]]
 name = "redrob-vector-svg"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "flate2",
  "image",
@@ -6510,7 +6510,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-testkit"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "image",
  "kurbo 0.13.1",
@@ -6527,7 +6527,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-text"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "harfrust 0.13.3",
  "icu_segmenter",
@@ -6547,7 +6547,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-three-d"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "redrob-vector-geom",
  "redrob-vector-pathops",
@@ -6555,7 +6555,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-tools"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "image",
  "kurbo 0.13.1",
@@ -6570,7 +6570,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-trace"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "image",
  "kurbo 0.13.1",
@@ -6582,7 +6582,7 @@ dependencies = [
 
 [[package]]
 name = "redrob-vector-ui-egui"
-version = "0.14.0"
+version = "0.14.1"
 dependencies = [
  "egui",
  "egui_extras",
