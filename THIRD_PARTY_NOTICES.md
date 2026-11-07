@@ -5,8 +5,8 @@ This file was generated without network access from the exact `Cargo.lock` resol
 
 Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COPYRIGHT`). The editors under `editors/` came from four MIT OR Apache-2.0 projects; their NOTICE texts are recorded in `NOTICE` and `SOURCE_ORIGINS.md`; the workspace crates they contribute appear in the inventory below as `workspace source`.
 
-- Cargo.lock SHA-256: `1d42eb57784a0ff35526bb5454ee782c768b9bc761f30f9ab448d4ad208ef3ad`
-- Resolved packages: **922**
+- Cargo.lock SHA-256: `2d09829fadf93902f81927dc30e9d638b5d27e8ecd1b4a228e33c074a0c3fca6`
+- Resolved packages: **923**
 - Unique reproduced license/notice texts: **545**
 - Generation mode: `cargo metadata --locked --offline`; no network content was used.
 
@@ -560,6 +560,7 @@ Redrob Canvas itself is MIT OR Apache-2.0 (`LICENSE-MIT`, `LICENSE-APACHE`, `COP
 | `redrob-layout-textimport` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
 | `redrob-layout-tools` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
 | `redrob-layout-ui-egui` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
+| `redrob-open-documents` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
 | `redrob-photo-affinity` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | `README.md@3cdd59e1020b0fdc` |
 | `redrob-photo-algo` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |
 | `redrob-photo-automation` | `0.14.0` | workspace source | `workspace` | `MIT OR Apache-2.0` | (none shipped) |

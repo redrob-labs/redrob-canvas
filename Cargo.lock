@@ -5401,6 +5401,7 @@ dependencies = [
  "redrob-layout-pdf",
  "redrob-layout-render",
  "redrob-layout-ui-egui",
+ "redrob-open-documents",
  "redrob-photo-automation",
  "redrob-photo-codecs",
  "redrob-photo-color",
@@ -5801,6 +5802,13 @@ dependencies = [
  "unicode-bidi-mirroring",
  "unicode-segmentation",
  "zip",
+]
+
+[[package]]
+name = "redrob-open-documents"
+version = "0.14.0"
+dependencies = [
+ "objc2 0.6.4",
 ]
 
 [[package]]
