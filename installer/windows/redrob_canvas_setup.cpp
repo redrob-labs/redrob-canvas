@@ -27,13 +27,15 @@
 //      never leaves half of two versions. A running Redrob Canvas keeps its files locked; the setup asks
 //      the person to close it rather than closing it for them, because it may hold unsaved work.
 //   3. The uninstaller (this same app built without a payload) is written into the install folder;
-//      Start-menu and desktop shortcuts are made; the Settings > Apps entry is written under HKCU.
+//      Start-menu and desktop shortcuts are made; the Settings > Apps entry is written under HKCU, and so
+//      are the file types (WriteFileTypes): .rlayout, .rvector and .rphoto open in Canvas on double-click,
+//      and every other kind Canvas opens lists it under "Open with".
 //   4. Redrob Canvas is opened.
 // The steps report no progress of their own, so the bar is a time-based eased ramp capped at ~90% until
 // they finish.
 //
 // Uninstall (Settings > Apps, or the uninstaller directly): confirm, with "Also delete settings and the
-// AI engine" off by default; remove the shortcuts, the Settings > Apps entry and the install folder. The
+// AI engine" off by default; remove the shortcuts, the Settings > Apps entry, the file types and the install folder. The
 // running uninstaller cannot delete itself, so a hidden PowerShell removes it and the folder once it exits.
 //
 // Redrob Code (opt-in): the first screen asks before anything is installed, with "Also install Redrob Code"
@@ -1218,6 +1220,131 @@ static bool WriteArpEntry(const std::wstring& dir) {
   return ok;
 }
 
+// ---- file types ------------------------------------------------------------
+// Double-click and "Open with" in Explorer, per user under HKCU\Software\Classes. The three native
+// documents get their own ProgID and become the default for their extension; every other kind Canvas
+// opens (apps/redrob-canvas/src/routing.rs: PHOTO_EXTENSIONS, VECTOR_EXTENSIONS, LAYOUT_EXTENSIONS)
+// only lists RedrobCanvas.file under OpenWithProgids, so Canvas shows in "Open with" and never takes
+// another app's default. The exe opens a bare path argument in the editor its extension routes to.
+struct OwnType {
+  const wchar_t* ext;
+  const wchar_t* progId;
+  const wchar_t* name;
+};
+constexpr OwnType kOwnTypes[] = {
+    {L".rlayout", L"RedrobCanvas.rlayout", L"Redrob Canvas Layout"},
+    {L".rvector", L"RedrobCanvas.rvector", L"Redrob Canvas Vector"},
+    {L".rphoto", L"RedrobCanvas.rphoto", L"Redrob Canvas Photo"},
+};
+constexpr wchar_t kGenericProgId[] = L"RedrobCanvas.file";
+constexpr wchar_t kGenericName[] = L"Redrob Canvas document";
+// routing.rs, without the three above. Keep the two in step.
+constexpr const wchar_t* kOpenWithExts[] = {
+    // Photo
+    L".psd", L".psb", L".ora", L".kra", L".krz", L".pdn", L".tif", L".tiff", L".png", L".jpg", L".jpeg",
+    L".webp", L".avif", L".heic", L".heif", L".hif", L".gif", L".bmp", L".tga", L".exr", L".hdr", L".qoi",
+    L".ico", L".pnm", L".ppm", L".pgm", L".dpx", L".fits", L".fit", L".fts", L".dng", L".cr2", L".cr3",
+    L".nef", L".nrw", L".arw", L".pef", L".raf", L".orf", L".rw2", L".afphoto", L".pcraft",
+    // Vector
+    L".svg", L".svgz", L".ai", L".eps", L".pdf", L".dxf", L".emf", L".wmf", L".vectorcraft", L".drawcraft",
+    L".afdesign",
+    // Layout
+    L".idml", L".designcraft", L".indd", L".indt", L".docx", L".rtf", L".md", L".xlsx", L".afpub",
+};
+constexpr wchar_t kClassesRoot[] = L"Software\\Classes\\";
+// Applications\<exe name>: the "Open with" list's own entry for the exe, and the types it offers.
+constexpr wchar_t kAppRegKey[] = L"Software\\Classes\\Applications\\redrob-canvas.exe";
+
+// `value` as `name` (nullptr: the key's default) of HKCU\`subkey`, creating the key.
+static bool SetUserString(const std::wstring& subkey, const wchar_t* name, const std::wstring& value) {
+  HKEY key = nullptr;
+  if (RegCreateKeyExW(HKEY_CURRENT_USER, subkey.c_str(), 0, nullptr, 0, KEY_WRITE, nullptr, &key, nullptr) !=
+      ERROR_SUCCESS)
+    return false;
+  const bool ok = SetArpString(key, name, value);
+  RegCloseKey(key);
+  return ok;
+}
+
+// HKCU\`subkey`'s value `name` (nullptr: the default) when it is a string; empty otherwise.
+static std::wstring GetUserString(const std::wstring& subkey, const wchar_t* name) {
+  wchar_t buf[512];
+  DWORD size = sizeof(buf);
+  if (RegGetValueW(HKEY_CURRENT_USER, subkey.c_str(), name, RRF_RT_REG_SZ, nullptr, buf, &size) !=
+      ERROR_SUCCESS)
+    return L"";
+  return buf;
+}
+
+// Removes HKCU\`subkey` only when it holds no values and no subkeys, so a key another app also
+// writes to keeps whatever that app put there.
+static void DeleteUserKeyIfEmpty(const std::wstring& subkey) {
+  HKEY key = nullptr;
+  if (RegOpenKeyExW(HKEY_CURRENT_USER, subkey.c_str(), 0, KEY_READ, &key) != ERROR_SUCCESS) return;
+  DWORD subkeys = 0, values = 0;
+  const LONG info = RegQueryInfoKeyW(key, nullptr, nullptr, nullptr, &subkeys, nullptr, nullptr, &values,
+                                     nullptr, nullptr, nullptr, nullptr);
+  RegCloseKey(key);
+  if (info == ERROR_SUCCESS && subkeys == 0 && values == 0) RegDeleteKeyW(HKEY_CURRENT_USER, subkey.c_str());
+}
+
+// Removes the value `name` from HKCU\`subkey` (nullptr: the default), leaving the key.
+static void DeleteUserValue(const std::wstring& subkey, const wchar_t* name) {
+  HKEY key = nullptr;
+  if (RegOpenKeyExW(HKEY_CURRENT_USER, subkey.c_str(), 0, KEY_SET_VALUE, &key) != ERROR_SUCCESS) return;
+  RegDeleteValueW(key, name);
+  RegCloseKey(key);
+}
+
+static void WriteProgId(const std::wstring& progId, const std::wstring& name, const std::wstring& exe) {
+  const std::wstring base = kClassesRoot + progId;
+  SetUserString(base, nullptr, name);
+  SetUserString(base, L"FriendlyTypeName", name);
+  SetUserString(base + L"\\DefaultIcon", nullptr, L"\"" + exe + L"\",0");
+  SetUserString(base + L"\\shell\\open\\command", nullptr, L"\"" + exe + L"\" \"%1\"");
+}
+
+static void WriteFileTypes(const std::wstring& exe) {
+  for (const OwnType& t : kOwnTypes) {
+    WriteProgId(t.progId, t.name, exe);
+    const std::wstring ext = kClassesRoot + std::wstring(t.ext);
+    SetUserString(ext, nullptr, t.progId);  // our own format: Canvas is its default
+    SetUserString(ext + L"\\OpenWithProgids", t.progId, L"");
+  }
+  WriteProgId(kGenericProgId, kGenericName, exe);
+  for (const wchar_t* e : kOpenWithExts)
+    SetUserString(kClassesRoot + std::wstring(e) + L"\\OpenWithProgids", kGenericProgId, L"");
+
+  const std::wstring app = kAppRegKey;
+  SetUserString(app, L"FriendlyAppName", L"Redrob Canvas");
+  SetUserString(app + L"\\DefaultIcon", nullptr, L"\"" + exe + L"\",0");
+  SetUserString(app + L"\\shell\\open\\command", nullptr, L"\"" + exe + L"\" \"%1\"");
+  for (const OwnType& t : kOwnTypes) SetUserString(app + L"\\SupportedTypes", t.ext, L"");
+  for (const wchar_t* e : kOpenWithExts) SetUserString(app + L"\\SupportedTypes", e, L"");
+}
+
+// Exactly what WriteFileTypes wrote: our ProgIDs and the Applications entry go whole; from each
+// extension only our OpenWithProgids value, and the default only while it still names our ProgID (the
+// person may have given the extension to another app since). Keys left empty by that go too.
+static void RemoveFileTypes() {
+  for (const OwnType& t : kOwnTypes) {
+    const std::wstring ext = kClassesRoot + std::wstring(t.ext);
+    DeleteUserValue(ext + L"\\OpenWithProgids", t.progId);
+    DeleteUserKeyIfEmpty(ext + L"\\OpenWithProgids");
+    if (GetUserString(ext, nullptr) == t.progId) DeleteUserValue(ext, nullptr);
+    DeleteUserKeyIfEmpty(ext);
+    RegDeleteTreeW(HKEY_CURRENT_USER, (kClassesRoot + std::wstring(t.progId)).c_str());
+  }
+  for (const wchar_t* e : kOpenWithExts) {
+    const std::wstring ext = kClassesRoot + std::wstring(e);
+    DeleteUserValue(ext + L"\\OpenWithProgids", kGenericProgId);
+    DeleteUserKeyIfEmpty(ext + L"\\OpenWithProgids");
+    DeleteUserKeyIfEmpty(ext);
+  }
+  RegDeleteTreeW(HKEY_CURRENT_USER, (kClassesRoot + std::wstring(kGenericProgId)).c_str());
+  RegDeleteTreeW(HKEY_CURRENT_USER, kAppRegKey);
+}
+
 // The payload-less build of this app (IDR_UNINSTALLER) goes into the install folder; Settings > Apps runs it.
 bool SetupApp::InstallUninstaller(const std::wstring& dir) {
   return WriteResource(hinst_, IDR_UNINSTALLER, dir + kUninstallerName);
@@ -1298,7 +1425,8 @@ DWORD SetupApp::InstallCanvas() {
   const std::wstring desktop = DesktopShortcut();
   if (!desktop.empty()) MakeShortcut(desktop, exe, workDir);
   WriteArpEntry(dir);
-  SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);  // refresh shortcut icons
+  WriteFileTypes(exe);
+  SHChangeNotify(SHCNE_ASSOCCHANGED, SHCNF_IDLIST, nullptr, nullptr);  // refresh shortcut and file-type icons
 
   if (!silent_) ShellExecuteW(nullptr, L"open", exe.c_str(), nullptr, workDir.c_str(), SW_SHOWNORMAL);
   return 0;
@@ -1334,6 +1462,7 @@ DWORD SetupApp::RunUninstall() {
   const std::wstring desktop = DesktopShortcut();
   if (!desktop.empty()) DeleteFileW(desktop.c_str());
   RegDeleteTreeW(HKEY_CURRENT_USER, kArpKey);
+  RemoveFileTypes();
 
   wchar_t self[MAX_PATH];
   GetModuleFileNameW(nullptr, self, MAX_PATH);
