@@ -4,6 +4,15 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.14.1 - 2026-11-07
+
+### Added
+
+- **Double-click opens files.** On Windows the installer makes `.rlayout`, `.rvector` and `.rphoto`
+  open in Canvas and adds Canvas to "Open with" for every other format it reads (`.idml`, `.psd`,
+  `.ai`, `.svg`, `.pdf` ...) without taking their default app. On macOS Finder opens them in Canvas.
+- `redrob-canvas <file>` opens that file in the right mode.
+
 ## 0.14.0 - 2026-10-28
 
 ### Changed
