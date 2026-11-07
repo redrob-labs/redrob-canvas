@@ -4,6 +4,14 @@ The release workflow's notes point here, so this file is what a download's notes
 Versions follow the `vMAJOR.MINOR.PATCH` tags that trigger a release; while the major is 0 a
 minor bump is where behaviour may change.
 
+## 0.15.0 - 2026-11-08
+
+### Added
+
+- **InDesign documents open.** `.indd` and `.indt` (InDesign 3.0 to 2026) open in Layout as a new
+  document: Canvas converts them to IDML in memory with indd-utils and imports that, listing what
+  the conversion could not carry over. Saving writes `.rlayout`.
+
 ## 0.14.1 - 2026-11-07
 
 ### Added
