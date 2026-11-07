@@ -47,6 +47,17 @@ patched `krilla` / `hayro` PDF writer and reader under `vendor/`, which the root
 in by path. Its NOTICE records the PdfCraft, FilmCraft and EffectCraft revisions parts of it were
 extracted from.
 
+## INDD import (indd-utils)
+
+Copyright (c) 2026 aiongg and the indd-utils contributors. MIT OR Apache-2.0.
+
+Not copied into the tree: Layout opens InDesign documents and templates (.indd, .indt) through the
+`indd` crate from <https://github.com/storytold/indd-utils>, a git dependency pinned in the root
+`Cargo.toml` at `136f973a9d5f1b3ef34e46e27f4a08af196efde7`. It converts the file to IDML in memory,
+and the IDML importer in `editors/layout/crates/idml` reads the result. This is the route upstream
+DesignCraft took (storytold/designcraft #114, #808). The crate's licence texts come from its own
+source and are reproduced in `THIRD_PARTY_NOTICES.md`.
+
 ## Names and brand assets
 
 The origin projects' names, wordmarks and logos are trademarks of the ArtCraft Team and are not

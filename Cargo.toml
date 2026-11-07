@@ -45,6 +45,9 @@ hayro = { version = "=0.7.1", default-features = false }
 hayro-interpret = { version = "=0.7.0", default-features = false, features = ["embed-fonts", "embed-cmaps"] }
 hayro-syntax = { version = "=0.7.2", default-features = false, features = ["std"] }
 image = { version = "0.25", default-features = false, features = ["bmp", "gif", "jpeg", "png", "tiff", "webp"] }
+# INDD/INDT -> IDML conversion for Layout's File > Open (indd-utils; MIT OR Apache-2.0, no dependencies).
+# Pinned by rev: it parses untrusted files, so an update is a reviewed change, not a `cargo update`.
+indd = { git = "https://github.com/storytold/indd-utils", rev = "136f973a9d5f1b3ef34e46e27f4a08af196efde7" }
 jpeg-encoder = { version = "0.6", default-features = false, features = ["std"] }
 krilla = { version = "=0.8.2", default-features = false, features = ["raster-images"] }
 krilla-svg = "=0.8.1"
