@@ -1,6 +1,7 @@
 //! Redrob Canvas desktop app: photo, vector and layout editing in one window.
 //!
-//! Usage: `redrob-canvas [--mode photo|vector|layout] [--version]` opens the window;
+//! Usage: `redrob-canvas [--mode photo|vector|layout] [--version] [FILE...]` opens the window,
+//! with each FILE in the editor its extension routes to;
 //! `redrob-canvas photo|vector|layout ARGS` runs that editor from the command line (`cli`).
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 #![deny(clippy::unwrap_used, clippy::expect_used)]
@@ -9,6 +10,7 @@ mod ai;
 mod cli;
 mod handoff;
 mod i18n;
+mod open_requests;
 mod routing;
 mod services;
 mod shell;
@@ -85,10 +87,21 @@ fn main() -> std::process::ExitCode {
 fn window() -> eframe::Result {
     trace::init();
     let mut mode = Mode::Photo;
-    let mut args = std::env::args().skip(1);
-    while let Some(a) = args.next() {
-        match a.as_str() {
-            "--mode" => match args.next().as_deref().and_then(parse_mode) {
+    let mut files = Vec::new();
+    // `args_os`: a file path need not be valid Unicode, and `args` would panic on one.
+    let mut args = std::env::args_os().skip(1);
+    while let Some(raw) = args.next() {
+        let Some(a) = raw.to_str() else {
+            files.push(std::path::PathBuf::from(raw));
+            continue;
+        };
+        match a {
+            "--mode" => match args
+                .next()
+                .as_deref()
+                .and_then(std::ffi::OsStr::to_str)
+                .and_then(parse_mode)
+            {
                 Some(m) => mode = m,
                 None => {
                     eprintln!("redrob-canvas: --mode expects photo, vector or layout");
@@ -99,9 +112,19 @@ fn window() -> eframe::Result {
                 println!("redrob-canvas {}", env!("CARGO_PKG_VERSION"));
                 return Ok(());
             }
-            other => eprintln!("redrob-canvas: ignoring argument {other:?}"),
+            // The process serial number older macOS passes to an app started from Finder.
+            psn if psn.starts_with("-psn_") => {}
+            flag if flag.starts_with('-') => eprintln!("redrob-canvas: ignoring argument {flag:?}"),
+            // A file to open: Explorer's `"redrob-canvas.exe" "%1"`, a file manager, a terminal.
+            _ => files.push(std::path::PathBuf::from(raw)),
         }
     }
+    // Opened on the first frame through the same routing as the Open dialog (`routing::route`).
+    open_requests::push(
+        files
+            .into_iter()
+            .map(|p| std::path::absolute(&p).unwrap_or(p)),
+    );
     let mut options = native_options();
     // Centre only the first window. eframe centres after restoring the saved geometry, on the
     // primary monitor, with the size clamped to the LARGEST monitor: a window closed on an
@@ -109,6 +132,13 @@ fn window() -> eframe::Result {
     // OS title bar (Minimize, Close, the strip that moves it) above the top of the screen and its
     // right end past the edge, so it could be neither seen whole nor dragged back.
     options.centered = !has_saved_position(options.persistence_path.as_deref());
+    // Finder hands documents to a running or launching app as an Apple Event, not as arguments.
+    #[cfg(target_os = "macos")]
+    {
+        options.event_loop_builder = Some(Box::new(|_| {
+            redrob_open_documents::install(open_requests::push_vec)
+        }));
+    }
     // Nothing draws or dispatches indirectly, so wgpu's indirect-call validation only costs a
     // compute shader at start-up that some drivers cannot compile (as the upstream apps found).
     if let eframe::egui_wgpu::WgpuSetup::CreateNew(create) = &mut options.wgpu_options.wgpu_setup {
@@ -133,6 +163,7 @@ fn window() -> eframe::Result {
                     info.driver_info
                 );
             }
+            open_requests::set_context(&cc.egui_ctx);
             let mut app = ShellApp::new(cc.wgpu_render_state.clone());
             app.setup_context(&cc.egui_ctx);
             app.set_mode(mode);

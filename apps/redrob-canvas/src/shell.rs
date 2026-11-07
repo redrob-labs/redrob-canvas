@@ -1482,6 +1482,11 @@ impl eframe::App for ShellApp {
         self.shift_held = ctx.input(|i| i.modifiers.shift);
         self.handle_shortcuts(ctx);
         self.flush_pending_opens();
+        // Files the system asked us to open (a path argument, a macOS open-documents event).
+        let requested = crate::open_requests::take();
+        if !requested.is_empty() {
+            self.open_paths(requested);
+        }
         self.sync_fonts(ctx);
         self.apply_pending(ctx);
         // The agent's tool calls, against the mode the window shows now.
