@@ -1,8 +1,8 @@
 //! Headless Layout.
 //!
 //! ```text
-//! redrob-canvas layout run [--in FILE.rlayout|FILE.idml | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--export OUT.png|.jpg|.pdf|.rlayout|.idml|.epub|.pptx] [--pdf-options JSON] [--all-pages DIR]
-//! redrob-canvas layout run [--in FILE.rlayout|FILE.idml | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--pdf-options JSON] [--export OUT.png|.jpg|.pdf|.rlayout|.idml|.epub] [--all-pages DIR]
+//! redrob-canvas layout run [--in FILE.rlayout|FILE.idml|FILE.indd | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--export OUT.png|.jpg|.pdf|.rlayout|.idml|.epub|.pptx] [--pdf-options JSON] [--all-pages DIR]
+//! redrob-canvas layout run [--in FILE.rlayout|FILE.idml|FILE.indd | --sample] [--cmd ID[=JSON]]... [--page N] [--scale S] [--pdf-options JSON] [--export OUT.png|.jpg|.pdf|.rlayout|.idml|.epub] [--all-pages DIR]
 //!                                      # --page, --scale and --pdf-options apply to the exports that follow them
 //! redrob-canvas layout commands [FILTER]   # list commands (JSON), optionally only ids/labels/menus containing FILTER
 //! redrob-canvas layout describe ID          # one command: label, menu, shortcut, parameters
@@ -73,7 +73,7 @@ Most commands ignore parameters they do not know instead of rejecting them: chec
 with `redrob-canvas layout describe COMMAND`.
 
 Options:
-  --in FILE / --sample   open a document (.rlayout or .idml) or the sample first
+  --in FILE / --sample   open a document (.rlayout, .idml, .indd or .indt) or the sample first
   --save OUT             save as .rlayout after the script succeeds
   --export OUT           export after the script succeeds (.pdf, .idml, .epub, .png, .jpg); repeatable
   --keep-going           run every step, recording failures as {"error": ...} results

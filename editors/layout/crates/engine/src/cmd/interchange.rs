@@ -1,4 +1,5 @@
-//! Interchange formats: IDML (InDesign Markup Language) import and export.
+//! Interchange formats: IDML (InDesign Markup Language) import and export, and INDD/INDT
+//! import (converted to IDML in memory by indd-utils).
 
 use redrob_layout_doc::Document;
 use serde_json::{Value, json};
@@ -13,7 +14,7 @@ pub fn specs() -> Vec<CommandSpec> {
             "{path?, embedImages?: true} — writes an IDML package to `path`, or returns {base64} without a path",
             has_doc, export_idml),
         cmd!(noundo "file.openIdml", "Open IDML", [], None,
-            "{path | base64, name?} — opens an IDML package as a new document (linked images are read next to the file or from its Links/ folder; the fonts in a `Document Fonts` folder beside it load first) → {index, documentFonts, warnings: package parts missing, font files skipped}",
+            "{path | base64, name?} — opens an IDML package, or an InDesign document or template (.indd, .indt: converted to IDML first; its conversion warnings come first in `warnings`), as a new document (linked images are read next to the file or from its Links/ folder; the fonts in a `Document Fonts` folder beside it load first) → {index, documentFonts, warnings: package parts missing, font files skipped}",
             always, open_idml),
     ]
 }
@@ -142,32 +143,62 @@ fn read_packaged_link(link: &str, dir: Option<&std::path::Path>) -> Option<(Stri
 }
 
 pub(crate) fn open_idml(s: &mut Session, p: &Value) -> Result<Value> {
-    let (bytes, dir, name) = if let Some(b) = str_param(p, "base64") {
-        (base64_decode(b), None, str_param(p, "name").map(|n| n.trim_end_matches(".idml").to_string()))
+    let (bytes, dir, file, title) = if let Some(b) = str_param(p, "base64") {
+        let name = str_param(p, "name").unwrap_or_default();
+        (base64_decode(b), None, name.to_string(), without_document_extension(name).to_string())
     } else if let Some(path) = str_param(p, "path") {
         #[cfg(not(target_arch = "wasm32"))]
         let b = crate::io::read_file(path).map_err(EngineError::Other)?;
         #[cfg(target_arch = "wasm32")]
         let b: Vec<u8> = Vec::new();
         let pp = std::path::Path::new(path);
-        (b, pp.parent().map(|d| d.to_path_buf()), pp.file_stem().map(|n| n.to_string_lossy().to_string()))
+        let file = pp.file_name().map_or_else(|| path.to_string(), |n| n.to_string_lossy().to_string());
+        (b, pp.parent().map(|d| d.to_path_buf()), file, pp.file_stem().map(|n| n.to_string_lossy().to_string()).unwrap_or_default())
     } else {
         return Err(bad("file.openIdml", "missing `path` or `base64`"));
     };
-    let (mut d, mut warnings) = import_report(&bytes, dir.as_deref())?;
-    if let Some(n) = name {
-        d.title = n;
+    let mut warnings = Vec::new();
+    let bytes = if is_indd(&file, &bytes) {
+        let conversion = indd::convert(&bytes, &file).map_err(|e| EngineError::Other(format!("{file}: can't convert the InDesign file: {e}")))?;
+        warnings.extend(conversion.warnings.iter().map(|w| w.message().to_string()));
+        conversion.idml
+    } else {
+        bytes
+    };
+    let (mut d, import_warnings) = import_report(&bytes, dir.as_deref())?;
+    warnings.extend(import_warnings);
+    if !title.is_empty() {
+        d.title = title;
     }
     let (fonts, faces, font_warnings) = match str_param(p, "path").filter(|_| str_param(p, "base64").is_none()) {
         Some(path) => super::file::load_document_fonts(&mut d, path),
         None => (None, 0, Vec::new()),
     };
     warnings.extend(font_warnings);
-    // Never save over the .idml with the native format: the document starts unsaved.
+    // Never save over the .idml or .indd with the native format: the document starts unsaved.
     let mut st = DocState::new(d, None);
     st.fonts = fonts;
     let i = s.add_document(st);
     Ok(json!({"index": i, "documentFonts": faces, "warnings": warnings}))
+}
+
+/// An InDesign document or template (.indd, .indt): known by its signature, or by its name when
+/// the bytes are something else (the converter then says why it can't read them).
+pub(crate) fn is_indd(name: &str, bytes: &[u8]) -> bool {
+    bytes.starts_with(&indd::header::SIGNATURE) || has_indd_extension(name)
+}
+
+pub(crate) fn has_indd_extension(name: &str) -> bool {
+    let n = name.to_ascii_lowercase();
+    n.ends_with(".indd") || n.ends_with(".indt")
+}
+
+/// `name` without a trailing .idml, .indd or .indt (any case).
+fn without_document_extension(name: &str) -> &str {
+    match name.rsplit_once('.') {
+        Some((stem, ext)) if ["idml", "indd", "indt"].iter().any(|e| ext.eq_ignore_ascii_case(e)) => stem,
+        _ => name,
+    }
 }
 
 #[cfg(all(test, not(target_arch = "wasm32")))]

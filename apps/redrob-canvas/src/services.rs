@@ -762,8 +762,8 @@ pub mod layout {
             ],
             _ => &[
                 OpenFilter {
-                    name: "Redrob Canvas layout or IDML",
-                    extensions: &["rlayout", "designcraft", "idml"], // legacy: old documents still open
+                    name: "Redrob Canvas layout, IDML or InDesign",
+                    extensions: &["rlayout", "designcraft", "idml", "indd", "indt"], // legacy: old documents still open
                 },
                 OpenFilter {
                     name: "Redrob Canvas layout",
@@ -772,6 +772,10 @@ pub mod layout {
                 OpenFilter {
                     name: "InDesign Markup (IDML)",
                     extensions: &["idml"],
+                },
+                OpenFilter {
+                    name: "InDesign document or template (INDD, INDT)",
+                    extensions: &["indd", "indt"],
                 },
             ],
         }
